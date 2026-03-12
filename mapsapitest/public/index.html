@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚌 Route Finder - Transit & Driving</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- 사이드 패널 -->
+  <div class="side-panel" id="sidePanel">
+    <div class="panel-header">
+      <div class="header-row">
+        <div>
+          <h1>🗺️ Route Finder</h1>
+          <p class="subtitle">Find routes by transit or car</p>
+        </div>
+        <div class="lang-select">
+          <label for="langSelect">Language</label>
+          <select id="langSelect">
+            <option value="auto">Auto</option>
+            <option value="0">Korean</option>
+            <option value="1" selected>English</option>
+            <option value="2">日本語</option>
+            <option value="3">中文(简体)</option>
+            <option value="4">中文(繁體)</option>
+            <option value="5">Tiếng Việt</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- 이동수단 탭 -->
+    <div class="transport-tabs">
+      <button class="tab-btn active" id="tabTransit" data-mode="transit">🚌 Transit</button>
+      <button class="tab-btn" id="tabDriving" data-mode="driving">🚗 Driving</button>
+    </div>
+
+    <!-- 검색 영역 -->
+    <div class="search-section">
+      <div class="input-group">
+        <label>From</label>
+        <div class="input-wrapper">
+          <input type="text" id="startInput" placeholder="Search a starting point" autocomplete="off" />
+          <button class="clear-btn" id="clearStart">&times;</button>
+        </div>
+        <div class="autocomplete-list" id="startList"></div>
+        <div class="selected-info" id="startInfo"></div>
+      </div>
+
+      <button class="swap-btn" id="swapBtn" title="Swap start/end">⇅</button>
+
+      <div class="input-group">
+        <label>To</label>
+        <div class="input-wrapper">
+          <input type="text" id="endInput" placeholder="Search a destination" autocomplete="off" />
+          <button class="clear-btn" id="clearEnd">&times;</button>
+        </div>
+        <div class="autocomplete-list" id="endList"></div>
+        <div class="selected-info" id="endInfo"></div>
+      </div>
+
+      <button class="search-btn" id="searchBtn">
+        <span>🔍</span> Search routes
+      </button>
+    </div>
+
+    <!-- 지도 클릭 안내 -->
+    <div class="map-click-guide" id="mapClickGuide">
+      <p>💡 <strong>Tip:</strong> You can also click the map to set start/end points.</p>
+      <div class="click-mode-btns">
+        <button class="mode-btn active" id="modeStart">🟢 Select start</button>
+        <button class="mode-btn" id="modeEnd">🔴 Select end</button>
+      </div>
+    </div>
+
+    <!-- 로딩 -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Searching routes...</p>
+    </div>
+
+    <!-- 결과 영역 -->
+    <div class="results-section" id="resultsSection">
+      <h2>Results</h2>
+      <div class="route-list" id="routeList"></div>
+    </div>
+
+    <!-- 경로 상세 -->
+    <div class="route-detail" id="routeDetail">
+      <button class="back-btn" id="backBtn">← Back to list</button>
+      <div id="detailContent"></div>
+    </div>
+  </div>
+
+  <!-- 패널 토글 버튼 (모바일) -->
+  <button class="panel-toggle" id="panelToggle">☰</button>
+
+  <!-- 지도 -->
+  <div id="map"></div>
+
+  <!-- 네이버 지도 JS SDK -->
+  <script>
+    // 네이버 지도 Open API 인증 실패 시 호출됨
+    window.navermap_authFailure = function () {
+      console.error('NAVER Maps 인증 실패: 콘솔의 Error Code/URI/Key를 확인하세요.');
+    };
+  </script>
+  <script src="https://oapi.map.naver.com/openapi/v3/maps.js?ncpKeyId=dreiik2e8f&language=en"></script>
+  <script src="app.js"></script>
+</body>
+</html>
