@@ -52,8 +52,8 @@ pipeline {
             steps {
                 sh '''
                     cd $COMPOSE_DIR
-                    docker-compose -f docker-compose.backend.yml down || true
-                    docker-compose -f docker-compose.backend.yml up -d
+                    docker compose -f docker-compose.backend.yml down || true
+                    docker compose -f docker-compose.backend.yml up -d
                 '''
             }
         }
