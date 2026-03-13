@@ -52,9 +52,29 @@ services:
     image: nginx:latest
     container_name: nginx
     ports:
-      - "80:80"
+      - "80:80"    # HTTP (certbot challenge + HTTPS 리다이렉트)
+      - "443:443"  # HTTPS
+    volumes:
+      # Nginx 설정 파일 마운트 (conf.d/ 안의 .conf 파일들이 자동으로 로드됨)
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      # Let's Encrypt 인증서 디렉토리 공유 (certbot 컨테이너와 동일 경로)
+      - ./certbot/conf:/etc/letsencrypt
+      # certbot HTTP challenge용 webroot 공유
+      - ./certbot/www:/var/www/certbot
     networks:
       - app-network
+
+  # certbot: Let's Encrypt 인증서 발급 및 자동 갱신
+  # 실제 인증서 발급은 아래 '최초 인증서 발급' 섹션 참고
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      # Nginx와 동일한 경로를 공유해야 인증서를 Nginx가 읽을 수 있음
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    # 12시간마다 인증서 갱신 시도 (Let's Encrypt 인증서 유효기간 90일)
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
 networks:
   app-network:

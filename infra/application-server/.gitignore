@@ -1,1 +1,4 @@
 .env
+
+# Let's Encrypt 인증서 (서버에서 certbot이 생성, git 관리 불필요 + 보안상 위험)
+certbot/

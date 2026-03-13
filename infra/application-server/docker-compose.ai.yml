@@ -3,8 +3,9 @@ services:
     image: oh-my-guide-ai:latest
     container_name: fastapi
     env_file: ../../ai/.env
-    ports:
-      - "8000:8000"
+    # ports 제거: 외부에서 직접 접근 불가
+    # Nginx가 Docker 내부 네트워크(app-network)를 통해 컨테이너 이름으로 접근
+    # 외부 → Nginx(443) → fastapi:8000 (내부망)
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 10s
