@@ -31,7 +31,10 @@ pipeline {
                         returnStdout: true
                     ).trim()
                     echo "Changed files:\n${changedFiles}"
-                    env.AI_CHANGED = changedFiles.split('\n').any { it.startsWith('ai/') } ? 'true' : 'false'
+                    def aiFileChanged = changedFiles.split('\n').any { it.startsWith('ai/') }
+                    // 컨테이너가 실행 중이 아닌 경우에도 배포 (컨테이너 유실 복구)
+                    def containerRunning = sh(script: 'docker ps --filter "name=fastapi" --filter "status=running" -q', returnStdout: true).trim()
+                    env.AI_CHANGED = (aiFileChanged || containerRunning.isEmpty()) ? 'true' : 'false'
                 }
             }
         }
