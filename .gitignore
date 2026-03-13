@@ -3,5 +3,14 @@
 .env.*
 !.env.example
 
+# dependencies
+node_modules/
+
 # build outputs
 dist/
+
+# TypeScript compiled outputs in source dirs
+test/mapsapitest/src/**/*.js
+test/mapsapitest/src/**/*.js.map
+test/mapsapitest/src/**/*.d.ts
+test/mapsapitest/src/**/*.d.ts.map
