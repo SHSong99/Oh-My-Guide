@@ -1,0 +1,85 @@
+pipeline {
+    agent any
+
+    triggers {
+        gitlab(
+            triggerOnPush: false,
+            triggerOnMergeRequest: false,
+            triggerOnAcceptedMergeRequest: true,
+            branchFilterType: 'NameBasedFilter',
+            includeBranchesSpec: 'master'
+        )
+    }
+
+    environment {
+        AI_IMAGE    = 'oh-my-guide-ai:latest'
+        COMPOSE_DIR = 'infra/application-server'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Detect Changes') {
+            steps {
+                script {
+                    def changedFiles = sh(
+                        script: 'git diff --name-only HEAD~1 HEAD',
+                        returnStdout: true
+                    ).trim()
+                    echo "Changed files:\n${changedFiles}"
+                    env.AI_CHANGED = changedFiles.split('\n').any { it.startsWith('ai/') } ? 'true' : 'false'
+                }
+            }
+        }
+
+        stage('Build AI Image') {
+            when {
+                environment name: 'AI_CHANGED', value: 'true'
+            }
+            steps {
+                sh 'docker build -t $AI_IMAGE ./ai'
+            }
+        }
+
+        stage('Deploy AI') {
+            when {
+                environment name: 'AI_CHANGED', value: 'true'
+            }
+            steps {
+                withCredentials([file(credentialsId: 'ai-env-file', variable: 'ENV_FILE')]) {
+                    sh '''
+                        cp $ENV_FILE ./ai/.env
+                        cd $COMPOSE_DIR
+                        docker compose -f docker-compose.ai.yml down || true
+                        docker compose -f docker-compose.ai.yml up -d
+                    '''
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            withCredentials([string(credentialsId: 'mattermost-webhook-url', variable: 'WEBHOOK_URL')]) {
+                script {
+                    def msg = "✅ **AI 배포 성공**\n- Job: ${env.JOB_NAME}\n- Build: #${env.BUILD_NUMBER}\n- Branch: ${env.GIT_BRANCH}"
+                    def payload = groovy.json.JsonOutput.toJson([text: msg])
+                    sh "curl -s -X POST \"\$WEBHOOK_URL\" -H 'Content-Type: application/json' -d '${payload}'"
+                }
+            }
+        }
+        failure {
+            withCredentials([string(credentialsId: 'mattermost-webhook-url', variable: 'WEBHOOK_URL')]) {
+                script {
+                    def msg = "❌ **AI 배포 실패**\n- Job: ${env.JOB_NAME}\n- Build: #${env.BUILD_NUMBER}\n- Branch: ${env.GIT_BRANCH}\n- URL: ${env.BUILD_URL}"
+                    def payload = groovy.json.JsonOutput.toJson([text: msg])
+                    sh "curl -s -X POST \"\$WEBHOOK_URL\" -H 'Content-Type: application/json' -d '${payload}'"
+                }
+            }
+        }
+    }
+}
