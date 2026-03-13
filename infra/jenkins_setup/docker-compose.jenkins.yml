@@ -4,9 +4,24 @@ services:
     container_name: jenkins
     user: root # 권한 에러 방지용
     ports:
-      - "8989:8080" # 웹 브라우저 접속 포트
+      # 127.0.0.1 바인딩: Docker가 iptables를 통해 UFW를 우회하는 문제 방지
+      # 외부에서 8989 포트로 직접 접근 불가 → Nginx(443)를 통해서만 접근
+      # 비상시 서버 내부에서 직접 접근: curl http://localhost:8989/jenkins/
+      - "127.0.0.1:8989:8080"
       - "50000:50000" # 젠킨스 에이전트 통신 포트
+    environment:
+      # Jenkins가 /jenkins/ subpath에서 동작하도록 설정
+      # Nginx가 /jenkins/ → http://jenkins:8080/jenkins/ 로 라우팅
+      - JENKINS_OPTS=--prefix=/jenkins
     volumes:
       - ./jenkins_home:/var/jenkins_home           # 우분투와 컨테이너 데이터 연결
       - /var/run/docker.sock:/var/run/docker.sock  # 호스트 Docker 데몬 공유 (DooD)
     restart: always # 서버가 재부팅되어도 자동 실행
+    networks:
+      - app-network
+
+networks:
+  # application-server의 infra compose에서 생성한 네트워크 참조
+  # Jenkins ↔ Nginx 간 내부 통신용
+  app-network:
+    external: true
