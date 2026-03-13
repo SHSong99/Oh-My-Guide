@@ -1,0 +1,11 @@
+services:
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    user: root # 권한 에러 방지용
+    ports:
+      - "8989:8080" # 웹 브라우저 접속 포트
+      - "50000:50000" # 젠킨스 에이전트 통신 포트
+    volumes:
+      - ./jenkins_home:/var/jenkins_home # 우분투와 컨테이너 데이터 연결
+    restart: always # 서버가 재부팅되어도 자동 실행
