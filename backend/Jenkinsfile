@@ -68,7 +68,7 @@ pipeline {
                 sh """
                     curl -s -X POST \$WEBHOOK_URL \
                     -H 'Content-Type: application/json' \
-                    -d '{"text": "✅ **Backend 배포 성공**\\n- Job: ${env.JOB_NAME}\\n- Build: #${env.BUILD_NUMBER}\\n- Branch: ${env.GIT_BRANCH}"}'
+                    -d '{"text": "✅ **Backend 배포 성공!**\\n- Job: ${env.JOB_NAME}\\n- Build: #${env.BUILD_NUMBER}\\n- Branch: ${env.GIT_BRANCH}"}'
                 """
             }
         }
