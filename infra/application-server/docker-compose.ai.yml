@@ -7,7 +7,7 @@ services:
     # Nginx가 Docker 내부 네트워크(app-network)를 통해 컨테이너 이름으로 접근
     # 외부 → Nginx(443) → fastapi:8000 (내부망)
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 10s
       timeout: 5s
       retries: 5
