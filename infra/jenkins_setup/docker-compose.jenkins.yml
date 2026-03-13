@@ -1,6 +1,6 @@
 services:
   jenkins:
-    image: jenkins/jenkins:lts
+    build: .
     container_name: jenkins
     user: root # 권한 에러 방지용
     ports:
@@ -8,6 +8,5 @@ services:
       - "50000:50000" # 젠킨스 에이전트 통신 포트
     volumes:
       - ./jenkins_home:/var/jenkins_home           # 우분투와 컨테이너 데이터 연결
-      - /var/run/docker.sock:/var/run/docker.sock  # 호스트 Docker socket 마운트
-      - /usr/bin/docker:/usr/bin/docker            # 호스트 docker CLI 마운트
+      - /var/run/docker.sock:/var/run/docker.sock  # 호스트 Docker 데몬 공유 (DooD)
     restart: always # 서버가 재부팅되어도 자동 실행
