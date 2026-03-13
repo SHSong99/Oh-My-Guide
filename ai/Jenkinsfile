@@ -63,6 +63,9 @@ pipeline {
     }
 
     post {
+        always {
+            sh 'rm -f ./ai/.env'
+        }
         success {
             withCredentials([string(credentialsId: 'mattermost-webhook-url', variable: 'WEBHOOK_URL')]) {
                 script {
