@@ -65,20 +65,18 @@ pipeline {
     post {
         success {
             withCredentials([string(credentialsId: 'mattermost-webhook-url', variable: 'WEBHOOK_URL')]) {
-                sh """
-                    curl -s -X POST \$WEBHOOK_URL \
-                    -H 'Content-Type: application/json' \
-                    -d '{"text": "✅ **Backend 배포 성공!**\\n- Job: ${env.JOB_NAME}\\n- Build: #${env.BUILD_NUMBER}\\n- Branch: ${env.GIT_BRANCH}"}'
-                """
+                script {
+                    def msg = "✅ **Backend 배포 성공**\\n- Job: ${env.JOB_NAME}\\n- Build: #${env.BUILD_NUMBER}\\n- Branch: ${env.GIT_BRANCH}"
+                    sh "curl -s -X POST \"\$WEBHOOK_URL\" -H \"Content-Type: application/json\" -d \"{\\\"text\\\": \\\"${msg}\\\"}\""
+                }
             }
         }
         failure {
             withCredentials([string(credentialsId: 'mattermost-webhook-url', variable: 'WEBHOOK_URL')]) {
-                sh """
-                    curl -s -X POST \$WEBHOOK_URL \
-                    -H 'Content-Type: application/json' \
-                    -d '{"text": "❌ **Backend 배포 실패**\\n- Job: ${env.JOB_NAME}\\n- Build: #${env.BUILD_NUMBER}\\n- Branch: ${env.GIT_BRANCH}\\n- URL: ${env.BUILD_URL}"}'
-                """
+                script {
+                    def msg = "❌ **Backend 배포 실패**\\n- Job: ${env.JOB_NAME}\\n- Build: #${env.BUILD_NUMBER}\\n- Branch: ${env.GIT_BRANCH}\\n- URL: ${env.BUILD_URL}"
+                    sh "curl -s -X POST \"\$WEBHOOK_URL\" -H \"Content-Type: application/json\" -d \"{\\\"text\\\": \\\"${msg}\\\"}\""
+                }
             }
         }
     }
