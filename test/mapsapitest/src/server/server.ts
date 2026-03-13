@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import axios from 'axios';
@@ -11,7 +12,7 @@ const app = express();
 const PORT: number = 3000;
 
 // ODsay API
-const ODSAY_API_KEY: string = 'jxt1l35mqg6RryD4p2/3QQ';
+const ODSAY_API_KEY: string = process.env.ODSAY_API_KEY || '';
 const ODSAY_HEADERS = {
   headers: { Referer: 'http://localhost:3000' },
 };
