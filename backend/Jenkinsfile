@@ -31,7 +31,10 @@ pipeline {
                         returnStdout: true
                     ).trim()
                     echo "Changed files:\n${changedFiles}"
-                    env.BACKEND_CHANGED = changedFiles.split('\n').any { it.startsWith('backend/') } ? 'true' : 'false'
+                    def backendFileChanged = changedFiles.split('\n').any { it.startsWith('backend/') }
+                    // 컨테이너가 실행 중이 아닌 경우에도 배포 (컨테이너 유실 복구)
+                    def containerRunning = sh(script: 'docker ps --filter "name=spring-boot" --filter "status=running" -q', returnStdout: true).trim()
+                    env.BACKEND_CHANGED = (backendFileChanged || containerRunning.isEmpty()) ? 'true' : 'false'
                 }
             }
         }
