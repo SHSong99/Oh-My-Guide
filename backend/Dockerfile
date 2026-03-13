@@ -12,4 +12,4 @@ RUN chmod +x gradlew && ./gradlew bootJar --no-daemon -x test
 
 EXPOSE 8080
 
-ENTRYPOINT ["java", "-jar", "build/libs/oh-my-guide-*.jar"]
+ENTRYPOINT ["sh", "-c", "java -jar build/libs/oh-my-guide-*.jar"]

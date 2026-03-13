@@ -1,0 +1,70 @@
+pipeline {
+    agent any
+
+    triggers {
+        gitlab(
+            triggerOnPush: false,
+            triggerOnMergeRequest: false,
+            triggerOnAcceptedMergeRequest: true,
+            branchFilterType: 'NameBasedFilter',
+            includeBranchesSpec: 'master'
+        )
+    }
+
+    environment {
+        BACKEND_IMAGE = 'oh-my-guide-backend:latest'
+        COMPOSE_DIR   = 'infra/application-server'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Detect Changes') {
+            steps {
+                script {
+                    def changedFiles = sh(
+                        script: 'git diff --name-only HEAD~1 HEAD',
+                        returnStdout: true
+                    ).trim()
+                    echo "Changed files:\n${changedFiles}"
+                    env.BACKEND_CHANGED = changedFiles.split('\n').any { it.startsWith('backend/') } ? 'true' : 'false'
+                }
+            }
+        }
+
+        stage('Build Backend Image') {
+            when {
+                environment name: 'BACKEND_CHANGED', value: 'true'
+            }
+            steps {
+                sh 'docker build -t $BACKEND_IMAGE ./backend'
+            }
+        }
+
+        stage('Deploy Backend') {
+            when {
+                environment name: 'BACKEND_CHANGED', value: 'true'
+            }
+            steps {
+                sh '''
+                    cd $COMPOSE_DIR
+                    docker compose -f docker-compose.backend.yml down || true
+                    docker compose -f docker-compose.backend.yml up -d
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Backend deployment succeeded.'
+        }
+        failure {
+            echo 'Backend deployment failed.'
+        }
+    }
+}

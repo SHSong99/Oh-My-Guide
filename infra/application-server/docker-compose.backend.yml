@@ -1,17 +1,10 @@
 services:
   spring-boot:
-    image: spring-boot:latest
+    image: oh-my-guide-backend:latest
     container_name: spring-boot
-    env_file: .env
+    env_file: ../../backend/.env
     ports:
       - "8080:8080"
-    depends_on:
-      postgresql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      kafka:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
       interval: 10s
