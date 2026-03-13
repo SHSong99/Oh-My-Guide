@@ -50,11 +50,14 @@ pipeline {
                 environment name: 'BACKEND_CHANGED', value: 'true'
             }
             steps {
-                sh '''
-                    cd $COMPOSE_DIR
-                    docker compose -f docker-compose.backend.yml down || true
-                    docker compose -f docker-compose.backend.yml up -d
-                '''
+                withCredentials([file(credentialsId: 'backend-env-file', variable: 'ENV_FILE')]) {
+                    sh '''
+                        cp $ENV_FILE ./backend/.env
+                        cd $COMPOSE_DIR
+                        docker compose -f docker-compose.backend.yml down || true
+                        docker compose -f docker-compose.backend.yml up -d
+                    '''
+                }
             }
         }
     }
