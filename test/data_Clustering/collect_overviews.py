@@ -20,9 +20,12 @@ import pandas as pd
 import time
 import os
 from tqdm import tqdm
+from dotenv import load_dotenv
 
-# ── 여기에 인증키 붙여넣기 ──
-SERVICE_KEY = "db6e1d5fd6aefc819ca3cf2f480bed86fc7ac78dc9c750821ca21ecfce650226"
+load_dotenv()
+
+# ── .env 파일에서 인증키 로드 ──
+SERVICE_KEY = os.environ.get("TOURAPI_SERVICE_KEY", "")
 
 # ── 설정 ──
 BASE_URL = "https://apis.data.go.kr/B551011/KorService2"
@@ -180,11 +183,11 @@ def collect_all():
 
 
 if __name__ == "__main__":
-    if SERVICE_KEY == "여기에_인증키_붙여넣기":
+    if not SERVICE_KEY:
         print("❌ SERVICE_KEY를 설정해주세요!")
         print("   1. https://www.data.go.kr 가입")
         print("   2. '한국관광공사_국문 관광정보 서비스_GW' 검색 → 활용신청")
         print("   3. 마이페이지 → 인증키 복사")
-        print("   4. 이 파일의 SERVICE_KEY에 붙여넣기")
+        print("   4. .env 파일의 TOURAPI_SERVICE_KEY에 붙여넣기")
     else:
         collect_all()
