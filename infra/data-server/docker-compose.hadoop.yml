@@ -1,0 +1,141 @@
+services:
+  # ─────────────────────────────────────────────
+  # HDFS NameNode
+  # 역할: 메타데이터 관리 (파일명, 블록 위치 등)
+  # Web UI: http://<host>:9870
+  # RPC:    hdfs://<host>:9000
+  # ─────────────────────────────────────────────
+  namenode:
+    image: apache/hadoop:3
+    container_name: namenode
+    hostname: namenode
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    # NameNode 초기화 및 실행
+    # user: root → 볼륨 권한 수정 후 hadoop 유저로 전환하여 실행
+    command: >
+      sh -c "
+        mkdir -p /opt/hadoop/data/nameNode /opt/hadoop/data/tmp &&
+        chown -R hadoop:hadoop /opt/hadoop/data &&
+        if [ ! -d /opt/hadoop/data/nameNode/current ]; then
+          su hadoop -c 'hdfs namenode -format -nonInteractive';
+        fi &&
+        su hadoop -c 'hdfs namenode'
+      "
+    ports:
+      - "9870:9870"   # Web UI
+      - "9000:9000"   # HDFS RPC (Spring Boot 접근용)
+      - "8020:8020"   # IPC
+    volumes:
+      - namenode-data:/opt/hadoop/data/nameNode
+      - ./hadoop-config:/opt/hadoop/etc/hadoop
+    healthcheck:
+      # 9870 Web UI 포트가 열리면 namenode 기동 완료로 판단
+      test: ["CMD-SHELL", "nc -z localhost 9870 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+    networks:
+      - data-network
+
+  # ─────────────────────────────────────────────
+  # HDFS DataNode
+  # 역할: 실제 데이터 블록 저장
+  # ─────────────────────────────────────────────
+  datanode:
+    image: apache/hadoop:3
+    container_name: datanode
+    hostname: datanode
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    command: >
+      sh -c "
+        mkdir -p /opt/hadoop/data/dataNode &&
+        chown -R hadoop:hadoop /opt/hadoop/data &&
+        su hadoop -c 'hdfs datanode'
+      "
+    volumes:
+      - datanode-data:/opt/hadoop/data/dataNode
+      - ./hadoop-config:/opt/hadoop/etc/hadoop
+    depends_on:
+      namenode:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9864 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - data-network
+
+  # ─────────────────────────────────────────────
+  # Spark Master
+  # 역할: 클러스터 리소스 관리, Job 스케줄링
+  # Web UI:         http://<host>:8080
+  # Submit 포트:    spark://<host>:7077
+  # REST API 포트:  http://<host>:6066  (Spring Boot에서 Job 제출용)
+  # ─────────────────────────────────────────────
+  spark-master:
+    image: apache/spark:latest
+    container_name: spark-master
+    hostname: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=18080
+      - SPARK_MASTER_REST_PORT=6066
+    ports:
+      - "18080:18080"   # Web UI
+      - "7077:7077"   # Spark 클러스터 통신
+      - "6066:6066"   # REST API (Spring Boot Job 제출용)
+    volumes:
+      - ./spark-jobs:/opt/spark-jobs  # Job 파일 마운트 (git pull만 해도 자동 반영)
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:18080 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - data-network
+
+  # ─────────────────────────────────────────────
+  # Spark Worker
+  # 역할: 실제 Job 실행 노드
+  # ─────────────────────────────────────────────
+  spark-worker:
+    image: apache/spark:latest
+    container_name: spark-worker
+    hostname: spark-worker
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_WEBUI_PORT=8081
+    ports:
+      - "8081:8081"   # Worker Web UI
+    volumes:
+      - ./spark-jobs:/opt/spark-jobs  # Job 파일 마운트 (Master와 동일 경로)
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data-network
+
+volumes:
+  namenode-data:
+  datanode-data:
+
+networks:
+  data-network:
+    driver: bridge

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <!--
+    복제 팩터: DataNode가 1개이므로 1로 설정
+    (운영 환경에서는 3 권장)
+  -->
+  <property>
+    <name>dfs.replication</name>
+    <value>1</value>
+  </property>
+
+  <!--
+    NameNode 데이터 저장 경로
+  -->
+  <property>
+    <name>dfs.namenode.name.dir</name>
+    <value>/opt/hadoop/data/nameNode</value>
+  </property>
+
+  <!--
+    DataNode 데이터 저장 경로
+  -->
+  <property>
+    <name>dfs.datanode.data.dir</name>
+    <value>/opt/hadoop/data/dataNode</value>
+  </property>
+
+  <!--
+    DataNode가 외부(Spring Boot, Spark)에서 접근 가능하도록
+    hostname 대신 IP/외부주소 사용 허용
+  -->
+  <property>
+    <name>dfs.client.use.datanode.hostname</name>
+    <value>false</value>
+  </property>
+
+  <!--
+    Web UI 접근 권한: 모든 IP 허용
+  -->
+  <property>
+    <name>dfs.permissions.enabled</name>
+    <value>false</value>
+  </property>
+
+  <!--
+    Safe mode 자동 해제 (단일 DataNode 환경)
+  -->
+  <property>
+    <name>dfs.namenode.safemode.threshold-pct</name>
+    <value>0.0</value>
+  </property>
+</configuration>
