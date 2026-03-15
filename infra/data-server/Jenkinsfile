@@ -1,16 +1,6 @@
 pipeline {
     agent any
 
-    triggers {
-        gitlab(
-            triggerOnPush: false,
-            triggerOnMergeRequest: false,
-            triggerOnAcceptedMergeRequest: true,
-            branchFilterType: 'NameBasedFilter',
-            includeBranchesSpec: 'master'
-        )
-    }
-
     environment {
         DATA_SERVER_HOST = 'ubuntu@j14e103.p.ssafy.io'
         DATA_SERVER_DIR  = '/home/ubuntu/data-server'
