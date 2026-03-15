@@ -1,6 +1,16 @@
 pipeline {
     agent any
 
+    triggers {
+        gitlab(
+            triggerOnPush: false,
+            triggerOnMergeRequest: false,
+            triggerOnAcceptedMergeRequest: true,
+            branchFilterType: 'NameBasedFilter',
+            includeBranchesSpec: 'master'
+        )
+    }
+
     environment {
         AI_IMAGE    = 'oh-my-guide-ai:latest'
         COMPOSE_DIR = 'infra/application-server'
