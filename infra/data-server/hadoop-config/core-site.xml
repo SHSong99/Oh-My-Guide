@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <!--
+    HDFS NameNode 주소 설정
+    - namenode: Docker 네트워크 내부 hostname
+    - 9000: NameNode RPC 포트
+    - Spring Boot에서 hdfs://j14e103.p.ssafy.io:9000 으로 접근
+  -->
+  <property>
+    <name>fs.defaultFS</name>
+    <value>hdfs://namenode:9000</value>
+  </property>
+
+  <!--
+    Hadoop 임시 파일 저장 경로
+  -->
+  <property>
+    <name>hadoop.tmp.dir</name>
+    <value>/opt/hadoop/data/tmp</value>
+  </property>
+</configuration>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <!--
+    YARN은 현재 구성에서 사용하지 않음 (Spark Standalone 모드 사용)
+    추후 확장 시 활성화 가능
+  -->
+</configuration>
