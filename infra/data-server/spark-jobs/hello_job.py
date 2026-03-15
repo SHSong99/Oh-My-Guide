@@ -5,7 +5,7 @@ spark = SparkSession.builder \
     .getOrCreate()
 
 print("=" * 40)
-print("Welcome E103!! ")
+print("hello world E103!! ")
 print("=" * 40)
 
 spark.stop()
