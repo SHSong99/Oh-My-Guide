@@ -28,7 +28,7 @@ public class Attraction extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "attr_id")
-    private Integer id;
+    private Long id;
 
     @Column(name = "title", length = 500)
     private String title;

@@ -17,13 +17,13 @@ public class ContentType {
 
     @Id
     @Column(name = "content_type_id")
-    private Integer contentTypeId;
+    private Long contentTypeId;
 
     @Column(name = "content_type_name", length = 45)
     private String contentTypeName;
 
     @Builder
-    private ContentType(Integer contentTypeId, String contentTypeName) {
+    private ContentType(Long contentTypeId, String contentTypeName) {
         this.contentTypeId = contentTypeId;
         this.contentTypeName = contentTypeName;
     }

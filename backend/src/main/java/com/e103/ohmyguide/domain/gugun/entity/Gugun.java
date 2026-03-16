@@ -20,7 +20,7 @@ public class Gugun extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "guguns_id")
-    private Integer id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sido_code", referencedColumnName = "sido_code", nullable = false)

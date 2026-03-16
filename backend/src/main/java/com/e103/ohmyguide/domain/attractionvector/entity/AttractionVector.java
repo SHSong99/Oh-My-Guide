@@ -16,7 +16,7 @@ public class AttractionVector extends BaseEntity {
 
     @Id
     @Column(name = "attr_id")
-    private Integer attrId;
+    private Long attrId;
 
     @OneToOne(fetch = FetchType.LAZY)
     @MapsId

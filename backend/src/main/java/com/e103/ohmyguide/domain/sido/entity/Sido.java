@@ -16,7 +16,7 @@ public class Sido extends BaseEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "sidos_id")
-    private Integer id;
+    private Long id;
 
     @Column(name = "sido_code", nullable = false, unique = true)
     private Integer sidoCode;
