@@ -41,9 +41,12 @@ public class Attraction extends BaseEntity {
     @JoinColumn(name = "sido_code", referencedColumnName = "sido_code")
     private Sido sido;
 
+    @Column(name = "gugun_code")
+    private Integer gugunCode;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumns({
-            @JoinColumn(name = "gugun_code", referencedColumnName = "gugun_code"),
+            @JoinColumn(name = "gugun_code", referencedColumnName = "gugun_code", insertable = false, updatable = false),
             @JoinColumn(name = "sido_code", referencedColumnName = "sido_code", insertable = false, updatable = false)
     })
     private Gugun gugun;
@@ -76,7 +79,7 @@ public class Attraction extends BaseEntity {
     private String overview;
 
     @Builder
-    private Attraction(String title, ContentType contentType, Sido sido, Gugun gugun,
+    private Attraction(String title, ContentType contentType, Sido sido, Integer gugunCode, Gugun gugun,
                        String addr1, String addr2, String tel,
                        BigDecimal latitude, BigDecimal longitude,
                        String firstImage1, String firstImage2,
@@ -84,6 +87,7 @@ public class Attraction extends BaseEntity {
         this.title = title;
         this.contentType = contentType;
         this.sido = sido;
+        this.gugunCode = gugunCode;
         this.gugun = gugun;
         this.addr1 = addr1;
         this.addr2 = addr2;

@@ -26,6 +26,9 @@ public class Gugun extends BaseEntity {
     @JoinColumn(name = "sido_code", referencedColumnName = "sido_code", nullable = false)
     private Sido sido;
 
+    @Column(name = "sido_code", insertable = false, updatable = false)
+    private Integer sidoCode;
+
     @Column(name = "gugun_code", nullable = false)
     private Integer gugunCode;
 
