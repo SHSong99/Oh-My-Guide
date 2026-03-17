@@ -53,5 +53,16 @@ jwt:
   secret: ${JWT_SECRET}
   expiration: ${JWT_EXPIRATION}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+
+  metrics:
+    tags:
+      # 모든 메트릭에 application 레이블 추가 (Grafana 대시보드 필터링용)
+      application: ${spring.application.name}
+      namespace: ${NAMESPACE:local} # 아무 값이나 넣어도 됨
 server:
   port: 8080
