@@ -1,0 +1,5 @@
+# docker-compose.monitoring.local.yml
+services:
+  prometheus:
+    volumes:
+      - ./prometheus/prometheus.local.yml:/etc/prometheus/prometheus.yml
