@@ -22,7 +22,7 @@ import com.ohmyguide.app.ui.screen.transport.TransitDetailScreen
 import com.ohmyguide.app.ui.screen.transport.TransportPickerScreen
 
 @Composable
-fun NavGraph(navController: NavHostController, navMinimizedState: NavMinimizedState) {
+fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String, mode: String) -> Unit = { _, _ -> }) {
     NavHost(
         navController = navController,
         startDestination = Screen.Splash.route
@@ -100,7 +100,7 @@ fun NavGraph(navController: NavHostController, navMinimizedState: NavMinimizedSt
                 placeId = placeId,
                 mode = mode,
                 onMinimize = {
-                    navMinimizedState.minimize(placeId, mode)
+                    onNaviMinimize(placeId, mode)
                     navController.popBackStack()
                 },
             )

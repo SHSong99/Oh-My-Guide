@@ -32,7 +32,9 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize()) {
                     NavGraph(
                         navController = navController,
-                        navMinimizedState = navMinimizedState,
+                        onNaviMinimize = { placeId, mode ->
+                            navMinimizedState.minimize(placeId, mode)
+                        },
                     )
 
                     if (navMinimizedState.isMinimized) {
