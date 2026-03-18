@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
+import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -18,8 +21,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.ui.theme.BgSub
+import com.ohmyguide.app.ui.theme.InfoGreen
+import com.ohmyguide.app.ui.theme.InfoGreenBg
+import com.ohmyguide.app.ui.theme.InfoPurple
+import com.ohmyguide.app.ui.theme.InfoPurpleBg
+import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 
@@ -48,8 +57,8 @@ fun InfoCard(
         ) {
             Icon(
                 icon,
-                contentDescription = null,
-                modifier = Modifier.size(if (label != null) 18.dp else 18.dp),
+                contentDescription = label ?: value,
+                modifier = Modifier.size(18.dp),
                 tint = iconTint,
             )
         }
@@ -68,6 +77,33 @@ fun InfoCard(
             else MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
             color = TextPrimary,
             maxLines = 1,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun InfoCardWithLabelPreview() {
+    OhMyGuideTheme {
+        InfoCard(
+            icon = Icons.Filled.AccessTime,
+            iconTint = InfoPurple,
+            label = "Hours",
+            value = "09:00-18:00",
+            bgColor = InfoPurpleBg,
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun InfoCardWithoutLabelPreview() {
+    OhMyGuideTheme {
+        InfoCard(
+            icon = Icons.Filled.AttachMoney,
+            iconTint = InfoGreen,
+            value = "Free",
+            bgColor = InfoGreenBg,
         )
     }
 }
