@@ -30,6 +30,9 @@ public class Attraction extends BaseEntity {
     @Column(name = "attr_id")
     private Long id;
 
+    @Column(name = "content_id")
+    private Integer contentId;
+
     @Column(name = "title", length = 500)
     private String title;
 
@@ -66,10 +69,10 @@ public class Attraction extends BaseEntity {
     @Column(name = "longitude", precision = 20, scale = 17)
     private BigDecimal longitude;
 
-    @Column(name = "first_image1", length = 100)
+    @Column(name = "first_image1", length = 500)
     private String firstImage1;
 
-    @Column(name = "first_image2", length = 100)
+    @Column(name = "first_image2", length = 500)
     private String firstImage2;
 
     @Column(name = "homepage", length = 1000)
@@ -79,11 +82,12 @@ public class Attraction extends BaseEntity {
     private String overview;
 
     @Builder
-    private Attraction(String title, ContentType contentType, Sido sido, Integer gugunCode, Gugun gugun,
+    private Attraction(Integer contentId, String title, ContentType contentType, Sido sido, Integer gugunCode, Gugun gugun,
                        String addr1, String addr2, String tel,
                        BigDecimal latitude, BigDecimal longitude,
                        String firstImage1, String firstImage2,
                        String homepage, String overview) {
+        this.contentId = contentId;
         this.title = title;
         this.contentType = contentType;
         this.sido = sido;
@@ -98,5 +102,11 @@ public class Attraction extends BaseEntity {
         this.firstImage2 = firstImage2;
         this.homepage = homepage;
         this.overview = overview;
+    }
+
+    public void fillImageAndOverview(String firstImage1, String firstImage2, String overview) {
+        if (this.firstImage1 == null || this.firstImage1.isEmpty()) this.firstImage1 = firstImage1;
+        if (this.firstImage2 == null || this.firstImage2.isEmpty()) this.firstImage2 = firstImage2;
+        if (this.overview == null || this.overview.isEmpty()) this.overview = overview;
     }
 }

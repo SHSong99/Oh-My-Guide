@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(./gradlew compileJava 2>&1 | tail -20)",
+      "Bash(./gradlew bootJar -x test 2>&1 | tail -20)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill' 2>&1)",
+      "Bash(./gradlew bootJar -x test 2>&1 | tail -5)",
+      "Bash(netstat:*)",
+      "Bash(taskkill:*)",
+      "Bash(curl:*)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8081' 2>&1)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8888' 2>&1)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8080' 2>&1)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=0' 2>&1)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=0 --spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.kafka.KafkaAutoConfiguration' 2>&1)",
+      "Bash(./gradlew bootJar -x test)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8082' 2>&1)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=9090' 2>&1)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=18080' 2>&1)",
+      "Bash(./gradlew --stop 2>&1)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=28080' 2>&1)",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill')",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8090')",
+      "WebFetch(domain:apis.data.go.kr)"
+    ]
+  }
+}
