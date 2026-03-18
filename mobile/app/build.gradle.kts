@@ -1,9 +1,18 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
+}
+
+val localProperties = Properties().apply {
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        load(localPropertiesFile.inputStream())
+    }
 }
 
 android {
@@ -17,6 +26,9 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        manifestPlaceholders["NAVER_MAP_CLIENT_ID"] =
+            localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")
     }
 
     buildTypes {
@@ -73,6 +85,7 @@ dependencies {
 
     // Naver Map
     implementation(libs.naver.map)
+    implementation(libs.naver.map.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -16,6 +16,7 @@ coroutines = "1.8.1"
 lifecycleViewmodel = "2.8.6"
 navigationCompose = "2.8.3"
 naverMap = "3.20.0"
+naverMapCompose = "1.7.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -44,6 +45,7 @@ coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutin
 lifecycle-viewmodel-compose = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodel" }
 navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 naver-map = { group = "com.naver.maps", name = "map-sdk", version.ref = "naverMap" }
+naver-map-compose = { group = "io.github.fornewid", name = "naver-map-compose", version.ref = "naverMapCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -4,7 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.screen.auth.AuthScreen
+import com.ohmyguide.app.ui.screen.onboarding.SplashScreen
+import com.ohmyguide.app.ui.screen.onboarding.CategoryScreen
+import com.ohmyguide.app.ui.screen.onboarding.GpsPermissionScreen
+import com.ohmyguide.app.ui.screen.onboarding.LoadingScreen
+import com.ohmyguide.app.ui.screen.onboarding.WelcomeScreen
 import com.ohmyguide.app.ui.screen.explore.ExploreScreen
 import com.ohmyguide.app.ui.screen.home.HomeScreen
 import com.ohmyguide.app.ui.screen.map.MapScreen
@@ -12,19 +18,61 @@ import com.ohmyguide.app.ui.screen.mypage.MyPageScreen
 import com.ohmyguide.app.ui.screen.navi.NaviScreen
 import com.ohmyguide.app.ui.screen.phrases.PhrasesScreen
 import com.ohmyguide.app.ui.screen.place.PlaceScreen
-import com.ohmyguide.app.ui.screen.story.StoryScreen
+import com.ohmyguide.app.ui.screen.transport.TransitDetailScreen
+import com.ohmyguide.app.ui.screen.transport.TransportPickerScreen
 
 @Composable
-fun NavGraph(navController: NavHostController) {
+fun NavGraph(navController: NavHostController, navMinimizedState: NavMinimizedState) {
     NavHost(
         navController = navController,
         startDestination = Screen.Splash.route
     ) {
-        composable(Screen.Splash.route) { AuthScreen(navController) }
-        composable(Screen.Welcome.route) { AuthScreen(navController) }
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onFinish = {
+                    navController.navigate(Screen.Welcome.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(Screen.Welcome.route) {
+            WelcomeScreen(
+                onSignIn = {
+                    navController.navigate(Screen.GpsPermission.route) {
+                        popUpTo(Screen.Welcome.route) { inclusive = true }
+                    }
+                },
+            )
+        }
         composable(Screen.Login.route) { AuthScreen(navController) }
-        composable(Screen.GpsPermission.route) { AuthScreen(navController) }
-        composable(Screen.InterestSelect.route) { AuthScreen(navController) }
+        composable(Screen.GpsPermission.route) {
+            GpsPermissionScreen(
+                onAllow = {
+                    navController.navigate(Screen.InterestSelect.route) {
+                        popUpTo(Screen.GpsPermission.route) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(Screen.InterestSelect.route) {
+            CategoryScreen(
+                onConfirm = {
+                    navController.navigate(Screen.Loading.route) {
+                        popUpTo(Screen.InterestSelect.route) { inclusive = true }
+                    }
+                },
+            )
+        }
+        composable(Screen.Loading.route) {
+            LoadingScreen(
+                onFinish = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Loading.route) { inclusive = true }
+                    }
+                },
+            )
+        }
 
         composable(Screen.Home.route) { HomeScreen(navController) }
         composable(Screen.Map.route) { MapScreen(navController) }
@@ -36,13 +84,26 @@ fun NavGraph(navController: NavHostController) {
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             PlaceScreen(navController, placeId)
         }
+        composable(Screen.Transport.route) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
+            TransportPickerScreen(navController, placeId)
+        }
+        composable(Screen.TransitDetail.route) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
+            TransitDetailScreen(navController, placeId)
+        }
         composable(Screen.Navi.route) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
-            NaviScreen(navController, placeId)
-        }
-        composable(Screen.Story.route) { backStackEntry ->
-            val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
-            StoryScreen(navController, placeId)
+            val mode = backStackEntry.arguments?.getString("mode") ?: "walk"
+            NaviScreen(
+                navController = navController,
+                placeId = placeId,
+                mode = mode,
+                onMinimize = {
+                    navMinimizedState.minimize(placeId, mode)
+                    navController.popBackStack()
+                },
+            )
         }
     }
 }

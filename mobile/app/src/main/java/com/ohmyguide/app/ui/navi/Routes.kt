@@ -15,14 +15,20 @@ sealed class Screen(val route: String) {
     object Phrases : Screen("phrases")
     object MyPage : Screen("mypage")
 
+    // Onboarding
+    object Loading : Screen("loading")
+
     // Detail
     object Place : Screen("place/{placeId}") {
         fun createRoute(placeId: String) = "place/$placeId"
     }
-    object Navi : Screen("navi/{placeId}") {
-        fun createRoute(placeId: String) = "navi/$placeId"
+    object Transport : Screen("transport/{placeId}") {
+        fun createRoute(placeId: String) = "transport/$placeId"
     }
-    object Story : Screen("story/{placeId}") {
-        fun createRoute(placeId: String) = "story/$placeId"
+    object TransitDetail : Screen("transit_detail/{placeId}") {
+        fun createRoute(placeId: String) = "transit_detail/$placeId"
+    }
+    object Navi : Screen("navi/{placeId}/{mode}") {
+        fun createRoute(placeId: String, mode: String = "walk") = "navi/$placeId/$mode"
     }
 }
