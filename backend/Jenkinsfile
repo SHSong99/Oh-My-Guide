@@ -63,27 +63,11 @@ pipeline {
                 }
             }
         }
-
-        stage('Deploy Monitoring') {
-            when {
-                environment name: 'BACKEND_CHANGED', value: 'true'
-            }
-            steps {
-                withCredentials([file(credentialsId: 'infra-env-file', variable: 'INFRA_ENV_FILE')]) {
-                    sh '''
-                        cp $INFRA_ENV_FILE $COMPOSE_DIR/.env
-                        cd $COMPOSE_DIR
-                        docker compose -f docker-compose.monitoring.yml up -d
-                    '''
-                }
-            }
-        }
     }
 
     post {
         always {
             sh 'rm -f ./backend/.env'
-            sh 'rm -f $COMPOSE_DIR/.env'
         }
         success {
             script {
