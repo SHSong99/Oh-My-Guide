@@ -43,7 +43,7 @@ import com.ohmyguide.app.fixtures.CATEGORIES
 import com.ohmyguide.app.fixtures.Category
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.PrimaryButton
-import com.ohmyguide.app.ui.common.PrimaryGradient
+import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.BorderCategory

@@ -44,14 +44,24 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.R
+import com.ohmyguide.app.ui.theme.BgDivider
+import com.ohmyguide.app.ui.theme.BgScreen
 import com.ohmyguide.app.ui.theme.BgWhite
-import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.BorderLight
 import com.ohmyguide.app.ui.theme.Error
+import com.ohmyguide.app.ui.theme.MenuBookmark
+import com.ohmyguide.app.ui.theme.MenuBookmarkBg
+import com.ohmyguide.app.ui.theme.MenuLang
+import com.ohmyguide.app.ui.theme.MenuLangBg
+import com.ohmyguide.app.ui.theme.MenuNoti
+import com.ohmyguide.app.ui.theme.MenuNotiBg
+import com.ohmyguide.app.ui.theme.MenuStory
+import com.ohmyguide.app.ui.theme.MenuStoryBg
+import com.ohmyguide.app.ui.theme.MenuTheme
+import com.ohmyguide.app.ui.theme.MenuThemeBg
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
@@ -70,11 +80,11 @@ private data class MenuItem(
 
 private val MENU_ITEMS = listOf(
     MenuItem(Icons.Filled.LocationOn, Primary, PrimaryBg, "Visit History", "Places you've been", count = 0),
-    MenuItem(Icons.Filled.Bookmark, Color(0xFFF59E0B), Color(0xFFFFFBEB), "Bookmarks", "Saved places & phrases", count = 0),
-    MenuItem(Icons.Filled.Headphones, Color(0xFF8B5CF6), Color(0xFFF5F3FF), "Story Archive", "Stories you've listened", count = 0),
-    MenuItem(Icons.Filled.Language, Color(0xFF06B6D4), Color(0xFFECFEFF), "Language", "English"),
-    MenuItem(Icons.Filled.Notifications, Color(0xFFEF4444), Color(0xFFFEF2F2), "Notifications", "On"),
-    MenuItem(Icons.Filled.Palette, Color(0xFFEC4899), Color(0xFFFDF2F8), "Theme", "Light"),
+    MenuItem(Icons.Filled.Bookmark, MenuBookmark, MenuBookmarkBg, "Bookmarks", "Saved places & phrases", count = 0),
+    MenuItem(Icons.Filled.Headphones, MenuStory, MenuStoryBg, "Story Archive", "Stories you've listened", count = 0),
+    MenuItem(Icons.Filled.Language, MenuLang, MenuLangBg, "Language", "English"),
+    MenuItem(Icons.Filled.Notifications, MenuNoti, MenuNotiBg, "Notifications", "On"),
+    MenuItem(Icons.Filled.Palette, MenuTheme, MenuThemeBg, "Theme", "Light"),
 )
 
 sealed class MyPageUiState {
@@ -88,9 +98,8 @@ fun MyPageScreen(navController: NavController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8FAFF)),
+            .background(BgScreen),
     ) {
-        // ── Header ──
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -110,32 +119,21 @@ fun MyPageScreen(navController: NavController) {
                 .background(BorderLight),
         )
 
-        // ── Content ──
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
         ) {
-            // Profile card
             ProfileCard()
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Menu items
             MenuCard()
-
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Sign out
-            SignOutButton(onClick = { /* TODO */ })
-
+            SignOutButton(onClick = { })
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }
-
-// ── Profile Card ──
 
 @Composable
 private fun ProfileCard() {
@@ -199,8 +197,6 @@ private fun InterestTag(icon: ImageVector, color: Color, label: String) {
     }
 }
 
-// ── Menu Card ──
-
 @Composable
 private fun MenuCard() {
     Column(
@@ -214,7 +210,7 @@ private fun MenuCard() {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { /* TODO */ }
+                    .clickable { }
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -256,14 +252,12 @@ private fun MenuCard() {
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .height(1.dp)
-                        .background(Color(0xFFF8F9FB)),
+                        .background(BgDivider),
                 )
             }
         }
     }
 }
-
-// ── Sign Out ──
 
 @Composable
 private fun SignOutButton(onClick: () -> Unit) {

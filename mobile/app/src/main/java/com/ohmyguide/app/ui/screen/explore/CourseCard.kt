@@ -42,6 +42,7 @@ import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Star
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
+import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
 fun CourseCard(
@@ -51,7 +52,7 @@ fun CourseCard(
     featured: Boolean = false,
 ) {
     val catGroup = EXPLORE_CATEGORY_GROUPS.find { it.key == course.category }
-    val catColor = catGroup?.color ?: Color.Gray
+    val catColor = catGroup?.color ?: TextCaption
     val height = if (featured) 200.dp else 160.dp
 
     Box(
