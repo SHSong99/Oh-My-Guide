@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Primary
+import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 import kotlin.math.roundToInt

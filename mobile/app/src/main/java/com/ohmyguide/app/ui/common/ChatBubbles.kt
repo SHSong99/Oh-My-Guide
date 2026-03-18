@@ -30,6 +30,7 @@ import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
+import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.TextPrimary
 
 @Composable

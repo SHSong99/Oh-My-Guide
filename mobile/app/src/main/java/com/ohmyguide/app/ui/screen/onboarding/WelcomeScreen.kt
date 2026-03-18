@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ohmyguide.app.R
-import com.ohmyguide.app.ui.common.PrimaryGradient
+import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary

@@ -19,9 +19,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
@@ -33,7 +33,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -42,12 +41,19 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.fixtures.PlaceDetail
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
-import com.ohmyguide.app.fixtures.SAMPLE_PLACES
-import com.ohmyguide.app.ui.common.PrimaryGradient
+import com.ohmyguide.app.ui.common.InfoCard
+import com.ohmyguide.app.ui.common.OmgButton
 import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
-import com.ohmyguide.app.ui.theme.BorderLight
+import com.ohmyguide.app.ui.theme.InfoBlue
+import com.ohmyguide.app.ui.theme.InfoBlueBg
+import com.ohmyguide.app.ui.theme.InfoGreen
+import com.ohmyguide.app.ui.theme.InfoGreenBg
+import com.ohmyguide.app.ui.theme.InfoPurple
+import com.ohmyguide.app.ui.theme.InfoPurpleBg
+import com.ohmyguide.app.ui.theme.InfoRose
+import com.ohmyguide.app.ui.theme.InfoRoseBg
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Star
 import com.ohmyguide.app.ui.theme.TextCaption
@@ -71,17 +77,14 @@ fun PlaceScreen(navController: NavController, placeId: String) {
             .fillMaxSize()
             .background(BgWhite),
     ) {
-        // ── Hero Image ──
         HeroSection(detail = detail, onBack = { navController.popBackStack() })
 
-        // ── Content ──
         Column(
             modifier = Modifier
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
         ) {
-            // Name & Rating
             Text(
                 text = detail.place.nameKr,
                 style = MaterialTheme.typography.bodySmall,
@@ -119,7 +122,6 @@ fun PlaceScreen(navController: NavController, placeId: String) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Description
             Text(
                 text = detail.desc,
                 style = MaterialTheme.typography.bodyMedium,
@@ -129,25 +131,24 @@ fun PlaceScreen(navController: NavController, placeId: String) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Info cards grid
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 InfoCard(
                     icon = Icons.Filled.AccessTime,
-                    iconTint = Color(0xFF7C3AED),
+                    iconTint = InfoPurple,
                     label = "Hours",
                     value = detail.hours,
-                    bgColor = Color(0xFFEDE9FE),
+                    bgColor = InfoPurpleBg,
                     modifier = Modifier.weight(1f),
                 )
                 InfoCard(
                     icon = Icons.Filled.AttachMoney,
-                    iconTint = Color(0xFF16A34A),
+                    iconTint = InfoGreen,
                     label = "Fee",
                     value = detail.fee,
-                    bgColor = Color(0xFFDCFCE7),
+                    bgColor = InfoGreenBg,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -158,32 +159,29 @@ fun PlaceScreen(navController: NavController, placeId: String) {
             ) {
                 InfoCard(
                     icon = Icons.AutoMirrored.Filled.DirectionsWalk,
-                    iconTint = Color(0xFFE11D48),
+                    iconTint = InfoRose,
                     label = "Distance",
                     value = detail.walkTime,
-                    bgColor = Color(0xFFFFE4E6),
+                    bgColor = InfoRoseBg,
                     modifier = Modifier.weight(1f),
                 )
                 InfoCard(
                     icon = Icons.Filled.Map,
-                    iconTint = Color(0xFF2563EB),
+                    iconTint = InfoBlue,
                     label = "Map",
                     value = "Preview",
-                    bgColor = Color(0xFFDBEAFE),
+                    bgColor = InfoBlueBg,
                     modifier = Modifier.weight(1f),
                 )
             }
         }
 
-        // ── Bottom buttons ──
         BottomButtons(
             onNo = { navController.popBackStack() },
             onGo = { navController.navigate(Screen.Transport.createRoute(placeId)) },
         )
     }
 }
-
-// ── Hero section ──
 
 @Composable
 private fun HeroSection(detail: PlaceDetail, onBack: () -> Unit) {
@@ -194,7 +192,6 @@ private fun HeroSection(detail: PlaceDetail, onBack: () -> Unit) {
             .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
             .background(BgSub),
     ) {
-        // Placeholder
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
@@ -204,7 +201,6 @@ private fun HeroSection(detail: PlaceDetail, onBack: () -> Unit) {
                 fontSize = 48.sp,
             )
         }
-        // Gradient overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -214,7 +210,6 @@ private fun HeroSection(detail: PlaceDetail, onBack: () -> Unit) {
                     )
                 ),
         )
-        // Back button
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
@@ -227,7 +222,6 @@ private fun HeroSection(detail: PlaceDetail, onBack: () -> Unit) {
         ) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextPrimary)
         }
-        // Place name
         Text(
             text = detail.place.name,
             style = MaterialTheme.typography.headlineMedium,
@@ -238,49 +232,6 @@ private fun HeroSection(detail: PlaceDetail, onBack: () -> Unit) {
         )
     }
 }
-
-// ── Info card ──
-
-@Composable
-private fun InfoCard(
-    icon: ImageVector,
-    iconTint: Color,
-    label: String,
-    value: String,
-    bgColor: Color,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(BgSub)
-            .padding(16.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(32.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(bgColor),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = iconTint)
-        }
-        Spacer(modifier = Modifier.height(10.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = TextCaption,
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.titleSmall,
-            color = TextPrimary,
-        )
-    }
-}
-
-// ── Bottom buttons ──
 
 @Composable
 private fun BottomButtons(onNo: () -> Unit, onGo: () -> Unit) {
@@ -306,21 +257,11 @@ private fun BottomButtons(onNo: () -> Unit, onGo: () -> Unit) {
                 color = TextCaption,
             )
         }
-        Box(
-            modifier = Modifier
-                .weight(2f)
-                .clip(RoundedCornerShape(16.dp))
-                .background(PrimaryGradient)
-                .clickable(onClick = onGo)
-                .padding(vertical = 16.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = "GO",
-                style = MaterialTheme.typography.titleMedium,
-                color = BgWhite,
-            )
-        }
+        OmgButton(
+            text = "GO",
+            onClick = onGo,
+            modifier = Modifier.weight(2f),
+        )
     }
 }
 
