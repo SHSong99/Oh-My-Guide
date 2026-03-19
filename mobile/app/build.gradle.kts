@@ -29,6 +29,12 @@ android {
 
         manifestPlaceholders["NAVER_MAP_CLIENT_ID"] =
             localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")
+
+        buildConfigField(
+            "String",
+            "NAVER_MAP_CLIENT_ID",
+            "\"${localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")}\""
+        )
     }
 
     buildTypes {
@@ -49,6 +55,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -87,6 +94,9 @@ dependencies {
     // Naver Map
     implementation(libs.naver.map)
     implementation(libs.naver.map.compose)
+
+    // Location
+    implementation(libs.play.services.location)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
