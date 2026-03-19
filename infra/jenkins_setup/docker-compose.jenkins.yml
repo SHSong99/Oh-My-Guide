@@ -1,8 +1,10 @@
 services:
   jenkins:
-    build: .
+    build:
+      context: .
+      args:
+        DOCKER_GID: ${DOCKER_GID:-988}
     container_name: jenkins
-    user: root # 권한 에러 방지용
     ports:
       # 127.0.0.1 바인딩: Docker가 iptables를 통해 UFW를 우회하는 문제 방지
       # 외부에서 8989 포트로 직접 접근 불가 → Nginx(443)를 통해서만 접근
