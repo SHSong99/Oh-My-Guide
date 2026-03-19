@@ -32,8 +32,11 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import android.location.Geocoder
+import java.util.Locale
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -43,11 +46,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.fixtures.CATEGORIES
 import com.ohmyguide.app.fixtures.Category
+import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.TypingIndicator
 import com.ohmyguide.app.ui.common.UserBubble
@@ -71,15 +76,36 @@ private enum class ChatStep { GPS, MSG1, MSG2, CARDS, SENT, DONE }
 fun CategoryScreen(
     onConfirm: (List<String>) -> Unit,
 ) {
+    val context = LocalContext.current
     val selected = remember { mutableStateListOf<String>() }
     var step by remember { mutableStateOf(ChatStep.GPS) }
     var locationName by remember { mutableStateOf("") }
     val scrollState = rememberScrollState()
+    val locationData by LocationForegroundService.locationFlow.collectAsState()
 
-    // Sequential chat animation
+    // GPS 좌표 → 영어 주소 변환
+    LaunchedEffect(locationData) {
+        if (locationName.isNotEmpty()) return@LaunchedEffect
+        val loc = locationData ?: return@LaunchedEffect
+        try {
+            val geocoder = Geocoder(context, Locale.ENGLISH)
+            val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+            val address = addresses?.firstOrNull()
+            if (address != null) {
+                val district = address.subLocality ?: address.locality ?: ""
+                val city = address.adminArea ?: ""
+                locationName = if (district.isNotEmpty() && city.isNotEmpty()) "$district, $city"
+                else city.ifEmpty { "Your Location" }
+            }
+        } catch (_: Exception) {
+            // Geocoder 실패 시 무시, 타이머 폴백으로 처리
+        }
+    }
+
+    // 채팅 애니메이션 (한 번만 실행)
     LaunchedEffect(Unit) {
         delay(1800L)
-        locationName = "Jongno, Seoul"
+        if (locationName.isEmpty()) locationName = "Your Location"
         step = ChatStep.MSG1
         delay(600L)
         step = ChatStep.MSG2

@@ -1,5 +1,7 @@
 package com.ohmyguide.app.ui.screen.home
 
+import android.location.Geocoder
+import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,8 +23,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,12 +40,15 @@ import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberCameraPositionState
+import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
+import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.common.BottomNavBar
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.TypingIndicator
@@ -68,15 +76,56 @@ fun HomeScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition(DEFAULT_POSITION, 14.0)
+    val context = LocalContext.current
+    val locationData by LocationForegroundService.locationFlow.collectAsState()
+    val locationSource = rememberFusedLocationSource()
+    var locationName by remember { mutableStateOf("") }
+
+    // GPS 좌표 → 영어 주소 변환
+    LaunchedEffect(locationData) {
+        if (locationName.isNotEmpty()) return@LaunchedEffect
+        val loc = locationData ?: return@LaunchedEffect
+        try {
+            val geocoder = Geocoder(context, Locale.ENGLISH)
+            val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+            val address = addresses?.firstOrNull()
+            if (address != null) {
+                val district = address.subLocality ?: address.locality ?: ""
+                val city = address.adminArea ?: ""
+                locationName = if (district.isNotEmpty() && city.isNotEmpty()) "$district, $city"
+                else city.ifEmpty { "your area" }
+            }
+        } catch (_: Exception) {
+            locationName = "your area"
+        }
     }
 
-    val mapProperties = remember { MapProperties() }
+    val initialPosition = locationData?.let { LatLng(it.latitude, it.longitude) }
+        ?: DEFAULT_POSITION
+
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition(initialPosition, 14.0)
+    }
+
+    // 첫 GPS 위치가 들어오면 카메라를 내 위치로 이동
+    LaunchedEffect(locationData) {
+        val loc = locationData ?: return@LaunchedEffect
+        if (cameraPositionState.position.target == DEFAULT_POSITION) {
+            cameraPositionState.animate(
+                CameraUpdate.scrollAndZoomTo(LatLng(loc.latitude, loc.longitude), 14.0),
+            )
+        }
+    }
+
+    val mapProperties = remember {
+        MapProperties(
+            locationTrackingMode = LocationTrackingMode.NoFollow,
+        )
+    }
     val mapUiSettings = remember {
         MapUiSettings(
             isZoomControlEnabled = false,
-            isLocationButtonEnabled = false,
+            isLocationButtonEnabled = true,
         )
     }
 
@@ -152,6 +201,7 @@ fun HomeScreen(
                     when (state.sheetMode) {
                         SheetMode.RECOMMENDATIONS -> RecommendationsSheet(
                             state = state,
+                            locationName = locationName,
                             onPlaceClick = { placeId -> viewModel.selectPlace(placeId) },
                             onShowMore = { title -> viewModel.onShowMore(title) },
                             onSelectOption = { option -> viewModel.onSelectOption(option) },
@@ -174,6 +224,7 @@ fun HomeScreen(
                     NaverMap(
                         modifier = Modifier.fillMaxSize(),
                         cameraPositionState = cameraPositionState,
+                        locationSource = locationSource,
                         properties = mapProperties,
                         uiSettings = mapUiSettings,
                     ) {
@@ -217,6 +268,7 @@ fun HomeScreen(
 @Composable
 private fun RecommendationsSheet(
     state: HomeUiState,
+    locationName: String,
     onPlaceClick: (String) -> Unit,
     onShowMore: (String) -> Unit,
     onSelectOption: (String) -> Unit,
@@ -234,7 +286,7 @@ private fun RecommendationsSheet(
             .verticalScroll(scrollState)
             .padding(bottom = 12.dp),
     ) {
-        LocationBar(spotCount = state.spotCount)
+        LocationBar(spotCount = state.spotCount, locationName = locationName)
 
         state.chatMessages.forEachIndexed { index, msg ->
             if (msg is ChatMessage.FindOtherPlacesBtn) return@forEachIndexed
