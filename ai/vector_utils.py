@@ -1,0 +1,178 @@
+"""
+벡터 파싱, 코사인 유사도 계산, cold-start 임시 벡터 생성.
+"""
+
+import numpy as np
+
+# 24차원 순서 (DB JSON 키 기준, 양쪽 벡터가 이 순서로 정렬됨)
+DIM_ORDER = [
+    # 카테고리 8
+    "nature", "culture", "festival", "activity", "shopping", "food", "cafe", "lodging",
+    # 분위기 10
+    "healing", "aesthetic", "gourmet", "learning", "heritage", "mood_nature",
+    "romantic", "family", "active", "nightlife",
+    # 실용 6
+    "free_entry", "parking_available", "pet_friendly", "baby_friendly", "indoor", "outdoor",
+]
+
+
+def parse_vector(json_dict: dict) -> np.ndarray:
+    """DB JSON → 24차원 numpy 배열."""
+    return np.array([float(json_dict.get(dim, 0.0)) for dim in DIM_ORDER], dtype=np.float32)
+
+
+def cosine_similarity(a: np.ndarray, b: np.ndarray) -> float:
+    """두 벡터의 코사인 유사도. 한쪽이 영벡터면 0.0 반환."""
+    norm_a = np.linalg.norm(a)
+    norm_b = np.linalg.norm(b)
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return float(np.dot(a, b) / (norm_a * norm_b))
+
+
+# ── cold-start 임시 벡터 생성 ─────────────────────────────────────────────────
+
+# content_type_id → 카테고리 차원명
+_CATEGORY_DIM = {
+    12: "nature", 14: "culture", 15: "festival",
+    28: "activity", 38: "shopping", 39: "food", 32: "lodging",
+}
+
+# 동행 유형 → 분위기 차원 부스트 (CLAUDE.md 설계 기반, 가장 강한 신호)
+_COMPANION_BOOST = {
+    "couple":  {"romantic": 0.7, "aesthetic": 0.5, "nightlife": 0.4, "gourmet": 0.5},
+    "family":  {"family": 0.8, "healing": 0.4, "learning": 0.4, "mood_nature": 0.4},
+    "friends": {"active": 0.5, "nightlife": 0.5, "gourmet": 0.5, "aesthetic": 0.4},
+    "solo":    {"healing": 0.6, "mood_nature": 0.5, "learning": 0.5, "heritage": 0.5},
+}
+
+# 나이대 → 분위기 부스트 (약한 신호 × 0.6)
+# ⚠️  임시 규칙 기반 값 — 배치 파이프라인 완성 후 DB 기반으로 교체 예정
+#
+# 교체 계획:
+#   Spark 배치(매일 새벽 4시)가 연령대×성별×동행유형 세그먼트별 Go/Skip 통계를 집계하고,
+#   세그먼트에서 Go 상위 5개 장소의 벡터 평균을 segment_vectors 테이블에 저장.
+#   이후 build_cold_start_vector()에서 _AGE_BOOST 대신
+#   DB의 segment_vectors를 조회하도록 수정한다.
+_AGE_BOOST = [
+    ((10, 29), {"active": 0.4, "aesthetic": 0.4, "nightlife": 0.4}),
+    ((30, 49), {"gourmet": 0.3, "healing": 0.3, "family": 0.3}),
+    ((50, 99), {"heritage": 0.4, "learning": 0.4, "healing": 0.3}),
+]
+
+# 언어 → 분위기 부스트 (외국 관광객 여행 패턴, 약한 신호 × 0.5)
+_LANGUAGE_BOOST = {
+    "zh": {"shopping": 0.4, "gourmet": 0.4, "heritage": 0.3},  # 중국어
+    "ja": {"heritage": 0.4, "aesthetic": 0.4, "healing": 0.3},  # 일본어
+    "en": {"heritage": 0.3, "mood_nature": 0.4, "aesthetic": 0.3},  # 영어
+}
+
+
+def build_cold_start_vector(
+    companion: str | None = None,
+    age: int | None = None,
+    gender: str | None = None,
+    language: str | None = None,
+    country: str | None = None,
+    content_type_ids: list[int] | None = None,
+) -> np.ndarray:
+    """
+    사용자 메타데이터로 cold-start 임시 벡터 생성.
+    학습된 벡터가 없을 때 코사인 유사도 계산에 사용.
+
+    우선순위:
+      1. companion (동행 유형) - 가장 강한 신호
+      2. content_type_ids (선택 카테고리) - 카테고리 차원 직접 설정
+      3. age (나이대) - 보조 신호
+      4. language (언어/국가) - 가장 약한 신호
+    """
+    scores = {dim: 0.0 for dim in DIM_ORDER}
+
+    # 1. 동행 유형 → 분위기 차원 직접 부스트
+    if companion:
+        boost = _COMPANION_BOOST.get(companion.lower(), {})
+        for dim, val in boost.items():
+            scores[dim] = max(scores[dim], val)
+
+    # 2. 선택한 카테고리 → 카테고리 차원 1.0
+    for ct_id in (content_type_ids or []):
+        cat_dim = _CATEGORY_DIM.get(ct_id)
+        if cat_dim:
+            scores[cat_dim] = 1.0
+
+    # 3. 나이대 → 보조 부스트
+    if age:
+        for (low, high), boost in _AGE_BOOST:
+            if low <= age <= high:
+                for dim, val in boost.items():
+                    scores[dim] = max(scores[dim], val * 0.6)
+                break
+
+    # 4. 언어 → 약한 부스트
+    if language:
+        lang_boost = _LANGUAGE_BOOST.get(language.lower(), {})
+        for dim, val in lang_boost.items():
+            scores[dim] = max(scores[dim], val * 0.5)
+
+    return np.array([scores[dim] for dim in DIM_ORDER], dtype=np.float32)
+
+
+def apply_vector_delta(user_vec: np.ndarray, delta: dict, lr: float = 0.25) -> np.ndarray:
+    """
+    사용자 벡터에 delta dict를 학습률로 반영. (refine_text LLM 결과 적용)
+    delta: {dim_name: value (-1.0 ~ 1.0)}
+    """
+    result = user_vec.copy()
+    for i, dim in enumerate(DIM_ORDER):
+        d = delta.get(dim, 0.0)
+        if d != 0.0:
+            result[i] = float(np.clip(result[i] + lr * d, -1.0, 1.0))
+    return result
+
+
+def apply_vector_choices(user_vec: np.ndarray, choices: list[str], lr: float = 0.20) -> np.ndarray:
+    """
+    선택지 차원명 목록으로 사용자 벡터 해당 차원 직접 상향. (refine_choices 적용)
+    choices: 차원명 리스트 (예: ["healing", "indoor"])
+    """
+    result = user_vec.copy()
+    dim_index = {dim: i for i, dim in enumerate(DIM_ORDER)}
+    for dim in choices:
+        if dim in dim_index:
+            i = dim_index[dim]
+            result[i] = float(np.clip(result[i] + lr, -1.0, 1.0))
+    return result
+
+
+def rank_places(places: list[dict], user_vec: np.ndarray, top_n: int = 20) -> list[dict]:
+    """
+    places: list of dict (attr_vector 포함)
+    user_vec: 24차원 사용자 벡터
+    반환: similarity_score 내림차순 상위 top_n개
+    """
+    if len(places) == 0:
+        return []
+
+    # 장소 벡터 행렬로 만들어서 한번에 계산
+    attr_matrix = np.stack([p["attr_vector"] for p in places])  # (N, 24)
+    norms = np.linalg.norm(attr_matrix, axis=1)                 # (N,)
+    user_norm = np.linalg.norm(user_vec)
+
+    if user_norm == 0:
+        scores = np.zeros(len(places))
+    else:
+        dots = attr_matrix @ user_vec                            # (N,)
+        norms = np.where(norms == 0, 1e-9, norms)
+        scores = dots / (norms * user_norm)
+
+    # 상위 top_n 인덱스
+    top_idx = np.argsort(scores)[::-1][:top_n]
+
+    result = []
+    for i in top_idx:
+        p = places[i].copy()
+        p.pop("attr_vector", None)
+        p["similarity_score"] = round(float(scores[i]), 4)
+        result.append(p)
+
+    return result
