@@ -1,4 +1,16 @@
 services:
+  namenode:
+    ports:
+      - "9870:9870"   # HDFS Web UI
+      - "9000:9000"   # HDFS RPC (Spring Boot 접근용)
+      - "8020:8020"   # IPC
+
+  datanode:
+    ports:
+      - "9864:9864"   # DataNode HTTP
+      - "9866:9866"   # DataNode 데이터 전송
+      - "9867:9867"   # DataNode IPC
+
   spark-master:
     ports:
       - "18080:18080"

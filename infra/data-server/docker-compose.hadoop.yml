@@ -51,12 +51,17 @@ services:
     user: root
     environment:
       - HADOOP_HOME=/opt/hadoop
+      - DATANODE_HOSTNAME=${DATANODE_HOSTNAME}
     command: >
       sh -c "
         mkdir -p /opt/hadoop/data/dataNode &&
         chown -R hadoop:hadoop /opt/hadoop/data &&
         su hadoop -c 'hdfs datanode'
       "
+    ports:
+      - "9864:9864"   # DataNode HTTP (Web UI / 데이터 전송)
+      - "9866:9866"   # DataNode 데이터 전송
+      - "9867:9867"   # DataNode IPC
     volumes:
       - datanode-data:/opt/hadoop/data/dataNode
       - ./hadoop-config:/opt/hadoop/etc/hadoop
