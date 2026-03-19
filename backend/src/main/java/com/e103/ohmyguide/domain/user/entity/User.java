@@ -44,7 +44,7 @@ public class User extends BaseEntity {
 
     private String providerId;
 
-    @Builder
+    @Builder(builderClassName = "DefaultUserBuilder")
     private User(String email, String nickname, String profileImageUrl, Boolean onboardingCompleted) {
         this.email = email;
         this.nickname = nickname;
@@ -52,7 +52,7 @@ public class User extends BaseEntity {
         this.onboardingCompleted = onboardingCompleted != null ? onboardingCompleted : false;
     }
 
-    @Builder(builderMethodName = "oauth2Builder")
+    @Builder(builderMethodName = "oauth2Builder", builderClassName = "OAuth2UserBuilder")
     private User(String email, String name, String imageUrl, AuthProvider provider, String providerId) {
         this.email = email;
         this.name = name;

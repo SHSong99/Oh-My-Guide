@@ -58,9 +58,11 @@ app:
     tokenExpirationMsec: ${TOKEN_EXPIRE}
   cors:
     allowedOrigins: ${CORS_URL}
+  oauth2:
+    authorizedRedirectUris: http://localhost:8080/oauth2/redirect,myandroidapp://oauth2/redirect
 
 server:
-  port: 8080
+port: 8080
 
 tour-api:
   service-key: ${TOUR_API_KEY}

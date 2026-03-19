@@ -22,7 +22,8 @@
       "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=28080' 2>&1)",
       "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill')",
       "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8090')",
-      "WebFetch(domain:apis.data.go.kr)"
+      "WebFetch(domain:apis.data.go.kr)",
+      "Bash(find /c/Users/SSAFY/Desktop/OMG/S14P21E103/backend -name *.yml -o -name *.yaml -o -name *.properties)"
     ]
   }
 }
