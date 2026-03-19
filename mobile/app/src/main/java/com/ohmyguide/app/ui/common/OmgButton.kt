@@ -80,8 +80,9 @@ fun PrimaryButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    icon: ImageVector? = null,
 ) {
-    OmgButton(text = text, onClick = onClick, modifier = modifier, enabled = enabled)
+    OmgButton(text = text, onClick = onClick, modifier = modifier, enabled = enabled, icon = icon)
 }
 
 @Preview(showBackground = true)

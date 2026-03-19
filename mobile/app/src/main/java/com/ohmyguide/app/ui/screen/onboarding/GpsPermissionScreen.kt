@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -204,6 +205,91 @@ fun GpsPermissionScreen(
                     permissionLauncher.launch(permissions.toTypedArray())
                 },
                 modifier = Modifier.padding(start = 46.dp),
+                icon = Icons.Filled.LocationOn,
+            )
+        }
+    }
+
+    // Age input bar — only visible during AGE step
+    if (step == OnboardStep.AGE) {
+        AgeInputBar(
+            value = ageInput,
+            onValueChange = { ageInput = it },
+            onSend = {
+                if (ageInput.isNotBlank()) {
+                    ageLabel = "${ageInput} years old"
+                    ageInput = ""
+                    step = OnboardStep.COUNTRY
+                }
+            },
+        )
+    }
+    }
+}
+
+@Composable
+private fun AgeInputBar(
+    value: String,
+    onValueChange: (String) -> Unit,
+    onSend: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BgWhite)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = { newVal ->
+                if (newVal.all { it.isDigit() } && newVal.length <= 3) {
+                    onValueChange(newVal)
+                }
+            },
+            placeholder = {
+                Text(
+                    text = "Enter your age",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextCaption,
+                )
+            },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(100.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(
+                keyboardType = KeyboardType.Number,
+                imeAction = ImeAction.Send,
+            ),
+            keyboardActions = KeyboardActions(onSend = { onSend() }),
+            textStyle = MaterialTheme.typography.bodyMedium,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Primary,
+                unfocusedBorderColor = Border,
+                focusedContainerColor = BgWhite,
+                unfocusedContainerColor = BgWhite,
+            ),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(
+                    if (value.isNotBlank()) PrimaryGradient
+                    else Brush.linearGradient(listOf(BgSub, BgSub))
+                )
+                .then(
+                    if (value.isNotBlank()) Modifier.clickable(onClick = onSend)
+                    else Modifier
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.Send,
+                contentDescription = "Send",
+                modifier = Modifier.size(20.dp),
+                tint = if (value.isNotBlank()) BgWhite else TextCaption,
             )
         }
     }

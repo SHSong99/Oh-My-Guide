@@ -49,6 +49,7 @@ import com.naver.maps.map.compose.rememberMarkerState
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.service.LocationForegroundService
+import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.TypingIndicator
 import com.ohmyguide.app.ui.screen.story.StoryOverlay
@@ -127,17 +128,17 @@ fun NaviScreen(
                 }
             },
             sheetContent = {
-                // ETA header
-                EtaCard(
+                // Unified header: place info + progress + stop
+                NaviSheetHeader(
                     placeName = placeName,
+                    placeNameKr = placeNameKr,
                     distance = distance,
                     eta = eta,
                     modeLabel = modeLabel,
-                )
-                NaviProgressBar(
-                    placeName = placeName,
-                    placeNameKr = placeNameKr,
                     progressPct = state.progressPct,
+                    onStop = {
+                        navController.popBackStack(Screen.Home.route, inclusive = false)
+                    },
                 )
 
                 // Chat messages

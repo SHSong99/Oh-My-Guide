@@ -28,6 +28,12 @@ sealed class Screen(val route: String) {
     object TransitDetail : Screen("transit_detail/{placeId}") {
         fun createRoute(placeId: String) = "transit_detail/$placeId"
     }
+    object CourseDetail : Screen("course/{courseId}") {
+        fun createRoute(courseId: String) = "course/$courseId"
+    }
+    object CourseNavi : Screen("course_navi/{courseId}") {
+        fun createRoute(courseId: String) = "course_navi/$courseId"
+    }
     object Navi : Screen("navi/{placeId}/{mode}") {
         fun createRoute(placeId: String, mode: String = "walk") = "navi/$placeId/$mode"
     }

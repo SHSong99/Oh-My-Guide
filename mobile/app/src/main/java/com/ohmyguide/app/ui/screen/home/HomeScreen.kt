@@ -115,9 +115,18 @@ fun HomeScreen(
             .fillMaxSize()
             .background(BgWhite),
     ) {
-        HomeHeader()
+        HomeHeader(
+            onReset = {
+                navController.navigate(Screen.InterestSelect.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                }
+            },
+        )
 
         Box(modifier = Modifier.weight(1f)) {
+            val showFindBtn = state.sheetMode == SheetMode.RECOMMENDATIONS &&
+                state.chatMessages.any { it is ChatMessage.FindOtherPlacesBtn }
+
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
                 sheetPeekHeight = 360.dp,
@@ -145,7 +154,6 @@ fun HomeScreen(
                             state = state,
                             onPlaceClick = { placeId -> viewModel.selectPlace(placeId) },
                             onShowMore = { title -> viewModel.onShowMore(title) },
-                            onFindOtherPlaces = { viewModel.onFindOtherPlaces() },
                             onSelectOption = { option -> viewModel.onSelectOption(option) },
                         )
                         SheetMode.PLACE_DETAIL -> {
@@ -179,6 +187,19 @@ fun HomeScreen(
                     }
                 }
             }
+
+            // Find other places — floating at bottom of Box, above sheet
+            if (showFindBtn) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(BgWhite)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    FindOtherPlacesButton(onClick = { viewModel.onFindOtherPlaces() })
+                }
+            }
         }
 
         BottomNavBar(
@@ -198,7 +219,6 @@ private fun RecommendationsSheet(
     state: HomeUiState,
     onPlaceClick: (String) -> Unit,
     onShowMore: (String) -> Unit,
-    onFindOtherPlaces: () -> Unit,
     onSelectOption: (String) -> Unit,
 ) {
     val scrollState = rememberScrollState()
@@ -208,73 +228,58 @@ private fun RecommendationsSheet(
         scrollState.animateScrollTo(scrollState.maxValue)
     }
 
-    Column(modifier = Modifier.fillMaxWidth()) {
-        // Scrollable chat area
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(scrollState)
-                .padding(bottom = 12.dp),
-        ) {
-            LocationBar(spotCount = state.spotCount)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(scrollState)
+            .padding(bottom = 12.dp),
+    ) {
+        LocationBar(spotCount = state.spotCount)
 
-            state.chatMessages.forEachIndexed { index, msg ->
-                if (msg is ChatMessage.FindOtherPlacesBtn) return@forEachIndexed
-                val msgModifier = Modifier.padding(horizontal = 16.dp)
-                when (msg) {
-                    is ChatMessage.BotText -> {
-                        GuideBubble(
-                            text = msg.text,
-                            modifier = msgModifier.padding(vertical = 4.dp),
-                            showAvatar = index == 0 ||
-                                state.chatMessages.getOrNull(index - 1) !is ChatMessage.BotText,
-                        )
-                    }
-                    is ChatMessage.BotTyping -> {
-                        TypingIndicator(
-                            modifier = msgModifier.padding(vertical = 4.dp),
-                            showAvatar = state.chatMessages.getOrNull(index - 1)
-                                .let { it !is ChatMessage.BotText && it !is ChatMessage.BotRecommendation },
-                        )
-                    }
-                    is ChatMessage.UserText -> {
-                        UserBubble(
-                            text = msg.text,
-                            modifier = msgModifier.padding(vertical = 4.dp),
-                        )
-                    }
-                    is ChatMessage.BotRecommendation -> {
-                        RecommendationBlock(
-                            section = msg.section,
-                            onPlaceClick = onPlaceClick,
-                            onShowMore = if (msg.section.btnText.isNotEmpty()) {
-                                { onShowMore(msg.section.title) }
-                            } else null,
-                        )
-                    }
-                    is ChatMessage.BotOptions -> {
-                        ChatOptionButtons(
-                            options = msg.options,
-                            answered = msg.answered,
-                            selectedOption = msg.selectedOption,
-                            onSelect = onSelectOption,
-                            modifier = msgModifier.padding(vertical = 4.dp),
-                        )
-                    }
-                    else -> {}
+        state.chatMessages.forEachIndexed { index, msg ->
+            if (msg is ChatMessage.FindOtherPlacesBtn) return@forEachIndexed
+            val msgModifier = Modifier.padding(horizontal = 16.dp)
+            when (msg) {
+                is ChatMessage.BotText -> {
+                    GuideBubble(
+                        text = msg.text,
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                        showAvatar = index == 0 ||
+                            state.chatMessages.getOrNull(index - 1) !is ChatMessage.BotText,
+                    )
                 }
-            }
-        }
-
-        // Fixed bottom: Find other places button
-        if (state.chatMessages.any { it is ChatMessage.FindOtherPlacesBtn }) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(BgWhite)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                FindOtherPlacesButton(onClick = onFindOtherPlaces)
+                is ChatMessage.BotTyping -> {
+                    TypingIndicator(
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                        showAvatar = state.chatMessages.getOrNull(index - 1)
+                            .let { it !is ChatMessage.BotText && it !is ChatMessage.BotRecommendation },
+                    )
+                }
+                is ChatMessage.UserText -> {
+                    UserBubble(
+                        text = msg.text,
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                    )
+                }
+                is ChatMessage.BotRecommendation -> {
+                    RecommendationBlock(
+                        section = msg.section,
+                        onPlaceClick = onPlaceClick,
+                        onShowMore = if (msg.section.btnText.isNotEmpty()) {
+                            { onShowMore(msg.section.title) }
+                        } else null,
+                    )
+                }
+                is ChatMessage.BotOptions -> {
+                    ChatOptionButtons(
+                        options = msg.options,
+                        answered = msg.answered,
+                        selectedOption = msg.selectedOption,
+                        onSelect = onSelectOption,
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                    )
+                }
+                else -> {}
             }
         }
     }

@@ -61,7 +61,7 @@ import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
-fun HomeHeader() {
+fun HomeHeader(onReset: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -109,7 +109,7 @@ fun HomeHeader() {
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
                 .background(BgSub)
-                .clickable { }
+                .clickable(onClick = onReset)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
