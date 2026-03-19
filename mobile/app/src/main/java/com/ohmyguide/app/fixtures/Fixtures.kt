@@ -3,6 +3,10 @@ package com.ohmyguide.app.fixtures
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.FamilyRestroom
+import androidx.compose.material.icons.filled.Luggage
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.ohmyguide.app.ui.theme.CatAttraction
@@ -101,6 +105,41 @@ val SAMPLE_PLACE_DETAILS = mapOf(
         fee = "Free",
         walkTime = "5 min walk",
     ),
+    "p3" to PlaceDetail(
+        place = Place("p3", "Hyundai Card Music Library", "현대카드 뮤직 라이브러리", 4.7f, "2.5km", "Culture", CatCulture),
+        desc = "A curated vinyl library with over 10,000 records. Enjoy music in a beautifully designed space with headphones and turntables.",
+        hours = "12:00 - 21:00",
+        fee = "Free (Hyundai Card holders)",
+        walkTime = "30 min walk",
+    ),
+    "p4" to PlaceDetail(
+        place = Place("p4", "Seoul Forest", "서울숲", 4.8f, "4.1km", "Nature", CatAttraction),
+        desc = "A massive urban park with deer gardens, butterfly houses, and art installations. Perfect for a relaxing afternoon stroll.",
+        hours = "Open 24h",
+        fee = "Free",
+        walkTime = "50 min walk",
+    ),
+    "p5" to PlaceDetail(
+        place = Place("p5", "Onion Anguk", "어니언 안국", 4.6f, "800m", "Café", CatCafe),
+        desc = "A trendy bakery-café set inside a renovated hanok. Famous for its pandoro bread and rustic interior.",
+        hours = "08:00 - 22:00",
+        fee = "₩5,000-12,000",
+        walkTime = "10 min walk",
+    ),
+    "cm_m1" to PlaceDetail(
+        place = Place("cm_m1", "Kasina Hannam", "카시나 한남", 4.7f, "2.8km", "Streetwear", CatCulture),
+        desc = "A premium streetwear select shop in Hannam-dong. Curates global and Korean designer brands with limited-edition drops.",
+        hours = "11:00 - 21:00",
+        fee = "Free entry",
+        walkTime = "35 min walk",
+    ),
+    "cm_m2" to PlaceDetail(
+        place = Place("cm_m2", "Anthracite Coffee", "앤트러사이트", 4.6f, "1.2km", "Café", CatCafe),
+        desc = "A specialty coffee roaster housed in a converted shoe factory. Industrial-chic atmosphere with excellent single-origin brews.",
+        hours = "09:00 - 22:00",
+        fee = "₩5,000-8,000",
+        walkTime = "15 min walk",
+    ),
 )
 
 // ── Korean Phrases ──
@@ -177,7 +216,13 @@ val PHRASE_SECTIONS = listOf(
 // ── Onboarding (GpsPermissionScreen) ──
 
 data class LanguageOption(val id: String, val label: String)
-data class CompanionOption(val id: String, val label: String, val emoji: String)
+data class CompanionOption(
+    val id: String,
+    val label: String,
+    val icon: ImageVector,
+    val iconColor: Color,
+    val bgColor: Color,
+)
 data class CountryOption(val id: String, val flag: String, val name: String)
 
 val LANGUAGE_OPTIONS = listOf(
@@ -189,10 +234,10 @@ val LANGUAGE_OPTIONS = listOf(
 val GENDER_OPTIONS = listOf("Female", "Male")
 
 val COMPANION_OPTIONS = listOf(
-    CompanionOption("friends", "Friends", "\uD83D\uDC6B"),
-    CompanionOption("family", "Family", "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67"),
-    CompanionOption("solo", "Solo", "\uD83C\uDF92"),
-    CompanionOption("partner", "Partner", "\u2764\uFE0F"),
+    CompanionOption("friends", "Friends", Icons.Filled.Groups, Color(0xFF5478FF), Color(0xFFEEF2FF)),
+    CompanionOption("family", "Family", Icons.Filled.FamilyRestroom, Color(0xFF16A34A), Color(0xFFF0FDF4)),
+    CompanionOption("solo", "Solo", Icons.Filled.Luggage, Color(0xFFEA580C), Color(0xFFFFF7ED)),
+    CompanionOption("partner", "Partner", Icons.Filled.Favorite, Color(0xFFE11D48), Color(0xFFFFF1F2)),
 )
 
 val COUNTRY_OPTIONS = listOf(

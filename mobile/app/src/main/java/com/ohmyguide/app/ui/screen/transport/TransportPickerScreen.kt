@@ -57,11 +57,6 @@ fun TransportPickerScreen(navController: NavController, placeId: String) {
     Column(
         modifier = Modifier.fillMaxSize(),
     ) {
-        OmgTopBar(
-            title = "Choose Transport",
-            onBack = { navController.popBackStack() },
-        )
-
         Box(
             modifier = Modifier
                 .fillMaxWidth()

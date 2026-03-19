@@ -2,40 +2,21 @@ package com.ohmyguide.app.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import com.ohmyguide.app.R
 
 // ── Font Families ──
-// 실제 .ttf 파일을 res/font/ 에 넣은 후 아래 주석을 해제하세요.
-//
-// val Pretendard = FontFamily(
-//     Font(R.font.pretendard_regular, FontWeight.Normal),
-//     Font(R.font.pretendard_medium, FontWeight.Medium),
-//     Font(R.font.pretendard_semibold, FontWeight.SemiBold),
-//     Font(R.font.pretendard_bold, FontWeight.Bold),
-// )
-//
-// val Fredoka = FontFamily(
-//     Font(R.font.fredoka_regular, FontWeight.Normal),
-//     Font(R.font.fredoka_semibold, FontWeight.SemiBold),
-//     Font(R.font.fredoka_bold, FontWeight.Bold),
-// )
-//
-// val NotoSansJP = FontFamily(
-//     Font(R.font.notosansjp_regular, FontWeight.Normal),
-//     Font(R.font.notosansjp_medium, FontWeight.Medium),
-//     Font(R.font.notosansjp_bold, FontWeight.Bold),
-// )
-//
-// val NotoSansSC = FontFamily(
-//     Font(R.font.notosanssc_regular, FontWeight.Normal),
-//     Font(R.font.notosanssc_medium, FontWeight.Medium),
-//     Font(R.font.notosanssc_bold, FontWeight.Bold),
-// )
 
-// 폰트 파일 추가 후 Pretendard → 실제 FontFamily로 교체
-val Pretendard = FontFamily.Default
+val Pretendard = FontFamily(
+    Font(R.font.pretendard_regular, FontWeight.Normal),
+    Font(R.font.pretendard_medium, FontWeight.Medium),
+    Font(R.font.pretendard_semibold, FontWeight.SemiBold),
+    Font(R.font.pretendard_bold, FontWeight.Bold),
+)
+
 val Fredoka = FontFamily.Default
 
 // ── Typography ──
