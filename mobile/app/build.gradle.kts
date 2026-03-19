@@ -35,6 +35,16 @@ android {
             "NAVER_MAP_CLIENT_ID",
             "\"${localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")}\""
         )
+        buildConfigField(
+            "String",
+            "BASE_URL",
+            "\"${localProperties.getProperty("BASE_URL", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "GOOGLE_WEB_CLIENT_ID",
+            "\"${localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "")}\""
+        )
     }
 
     buildTypes {
@@ -84,6 +94,7 @@ dependencies {
 
     // Coroutines
     implementation(libs.coroutines.android)
+    implementation(libs.coroutines.play.services)
 
     // ViewModel
     implementation(libs.lifecycle.viewmodel.compose)
@@ -97,6 +108,17 @@ dependencies {
 
     // Location
     implementation(libs.play.services.location)
+
+    // Credential Manager (Google Sign-In)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play)
+    implementation(libs.googleid)
+
+    // DataStore
+    implementation(libs.datastore.preferences)
+
+    // Google Sign-In (Authorization API for access token)
+    implementation(libs.play.services.auth)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
