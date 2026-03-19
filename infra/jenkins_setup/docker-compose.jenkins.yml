@@ -1,6 +1,9 @@
 services:
   jenkins:
-    build: .
+    build:
+      context: .
+      args:
+        DOCKER_GID: ${DOCKER_GID:-988}
     container_name: jenkins
     ports:
       # 127.0.0.1 바인딩: Docker가 iptables를 통해 UFW를 우회하는 문제 방지
