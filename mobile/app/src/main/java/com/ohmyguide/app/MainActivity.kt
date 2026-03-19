@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,7 +30,7 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val navMinimizedState = remember { NavMinimizedState() }
 
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
                     NavGraph(
                         navController = navController,
                         onNaviMinimize = { placeId, mode ->

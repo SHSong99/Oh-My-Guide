@@ -77,7 +77,7 @@ fun PlaceScreen(navController: NavController, placeId: String) {
             .fillMaxSize()
             .background(BgWhite),
     ) {
-        HeroSection(detail = detail, onBack = { navController.popBackStack() })
+        HeroSection(detail = detail)
 
         Column(
             modifier = Modifier
@@ -184,7 +184,7 @@ fun PlaceScreen(navController: NavController, placeId: String) {
 }
 
 @Composable
-private fun HeroSection(detail: PlaceDetail, onBack: () -> Unit) {
+private fun HeroSection(detail: PlaceDetail) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -210,18 +210,6 @@ private fun HeroSection(detail: PlaceDetail, onBack: () -> Unit) {
                     )
                 ),
         )
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(12.dp)
-                .size(36.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(BgWhite.copy(alpha = 0.9f))
-                .clickable(onClick = onBack),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextPrimary)
-        }
         Text(
             text = detail.place.name,
             style = MaterialTheme.typography.headlineMedium,

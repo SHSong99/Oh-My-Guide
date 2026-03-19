@@ -76,11 +76,6 @@ fun TransitDetailScreen(navController: NavController, placeId: String) {
     Column(
         modifier = Modifier.fillMaxSize(),
     ) {
-        OmgTopBar(
-            title = "Transit Routes",
-            onBack = { navController.popBackStack() },
-        )
-
         Column(
             modifier = Modifier
                 .weight(1f)
