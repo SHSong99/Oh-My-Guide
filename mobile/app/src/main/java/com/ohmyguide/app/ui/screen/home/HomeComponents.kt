@@ -125,7 +125,7 @@ fun HomeHeader(onReset: () -> Unit = {}) {
 }
 
 @Composable
-fun LocationBar(spotCount: Int) {
+fun LocationBar(spotCount: Int, locationName: String = "your area") {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -137,7 +137,7 @@ fun LocationBar(spotCount: Int) {
             Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = Primary)
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Near Jongno",
+                text = "Near $locationName",
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
             )
