@@ -16,11 +16,14 @@ RUN apt-get update && \
     apt-get install -y docker-ce-cli docker-compose-plugin rsync && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# 호스트 docker 그룹 GID와 동일한 그룹 생성 후 jenkins 유저 추가
-# GID 불일치 시 빌드 실패로 명시적 오류 처리
-RUN groupadd -g ${DOCKER_GID} docker 2>/dev/null || \
-    (getent group docker | grep -q ":${DOCKER_GID}:" || \
-    (echo "Error: Group 'docker' exists with a different GID, or GID ${DOCKER_GID} is taken." && exit 1)) && \
-    usermod -aG docker jenkins
+# 1단계: docker 그룹 생성 시도 (이미 존재하면 무시)
+RUN groupadd -g ${DOCKER_GID} docker 2>/dev/null || true
+
+# 2단계: 생성된 docker 그룹의 GID가 호스트와 일치하는지 검증
+RUN getent group docker | grep -q ":${DOCKER_GID}:" || \
+    (echo "Error: Group 'docker' exists with a different GID, or GID ${DOCKER_GID} is taken." && exit 1)
+
+# 3단계: jenkins 유저를 docker 그룹에 추가
+RUN usermod -aG docker jenkins
 
 USER jenkins
