@@ -3,13 +3,13 @@ package com.e103.ohmyguide.global.exception;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
-@ResponseStatus(HttpStatus.BAD_REQUEST)
-public class BadRequestException extends RuntimeException {
-    public BadRequestException(String message) {
+@ResponseStatus(HttpStatus.UNAUTHORIZED)
+public class UnAuthorizedException extends RuntimeException {
+    public UnAuthorizedException(String message) {
         super(message);
     }
 
-    public BadRequestException(String message, Throwable cause) {
+    public UnAuthorizedException(String message, Throwable cause) {
         super(message, cause);
     }
 }
