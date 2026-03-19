@@ -2,6 +2,8 @@ FROM jenkins/jenkins:lts
 
 USER root
 
+ARG DOCKER_GID=988
+
 # Docker CLI 및 Docker Compose 플러그인 설치
 RUN apt-get update && \
     apt-get install -y ca-certificates curl && \
@@ -13,3 +15,9 @@ RUN apt-get update && \
     apt-get update && \
     apt-get install -y docker-ce-cli docker-compose-plugin rsync && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# 호스트 docker 그룹 GID와 동일한 그룹 생성 후 jenkins 유저 추가
+RUN groupadd -g ${DOCKER_GID} docker || true && \
+    usermod -aG docker jenkins
+
+USER jenkins
