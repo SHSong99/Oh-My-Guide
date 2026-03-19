@@ -44,7 +44,7 @@ CONTENT_TYPE_NAMES = {
 
 MOOD_DIMS = [
     "healing", "aesthetic", "gourmet", "learning", "heritage",
-    "nature", "romantic", "family", "active", "nightlife",
+    "mood_nature", "romantic", "family", "active", "nightlife",
 ]
 
 MOOD_DESC = {
@@ -53,7 +53,7 @@ MOOD_DESC = {
     "gourmet": "미식/맛집 (전문점, 요리, 셰프, 코스요리)",
     "learning": "학습/문화/공연 (박물관, 전시, 극장, 공연장)",
     "heritage": "역사/유적/전통 (사찰, 궁궐, 문화재, 독립운동)",
-    "nature": "자연경관/산/바다 (등산, 계곡, 해변, 폭포)",
+    "mood_nature": "자연경관/산/바다 (등산, 계곡, 해변, 폭포)",
     "romantic": "연인/데이트 (야경, 노을, 분수, 유람선)",
     "family": "가족/어린이 (놀이터, 동물원, 체험, 캠핑)",
     "active": "스포츠/액티비티 (서핑, 래프팅, 스키, 자전거)",
@@ -151,12 +151,14 @@ def call_nano(title: str, content_type: str, overview: str, system_prompt: str) 
             data = resp.json()
             text = data["output"][0]["content"][0]["text"]
 
-            # JSON 추출
-            json_match = re.search(r'\{[^{}]*\}', text, re.DOTALL)
-            if not json_match:
-                raise Exception(f"JSON 파싱 실패: {text[:100]}")
-
-            scores = json.loads(json_match.group())
+            # JSON 추출: 직접 파싱 시도 → 실패 시 regex 폴백
+            try:
+                scores = json.loads(text.strip())
+            except json.JSONDecodeError:
+                json_match = re.search(r'\{[^{}]*\}', text, re.DOTALL)
+                if not json_match:
+                    raise Exception(f"JSON 파싱 실패: {text[:100]}")
+                scores = json.loads(json_match.group())
             for dim in MOOD_DIMS:
                 if dim not in scores:
                     scores[dim] = 0.0
@@ -363,10 +365,9 @@ def save_to_db():
                 vector["cafe"] = 1.0
                 vector["food"] = 0.3  # 음식점 속성도 약간 유지
 
-        # 분위기 10개 (CSV의 "nature"는 DB에서 "mood_nature"로 저장)
+        # 분위기 10개 (CSV와 DB 키 이름 동일)
         for dim in MOOD_DIMS:
-            db_key = "mood_nature" if dim == "nature" else dim
-            vector[db_key] = float(row.get(dim, 0.0))
+            vector[dim] = float(row.get(dim, 0.0))
 
         # 실용 6개 (현재 기본값)
         for dim in PRACTICAL_DIMS:

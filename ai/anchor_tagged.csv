@@ -1,4 +1,4 @@
-﻿attr_id,title,content_type_id,addr1,healing,aesthetic,gourmet,learning,heritage,nature,romantic,family,active,nightlife
+﻿attr_id,title,content_type_id,addr1,healing,aesthetic,gourmet,learning,heritage,mood_nature,romantic,family,active,nightlife
 58553,조선대학교 장미원,12,광주광역시 동구 조선대길 146 (서석동),0.8,0.9,0.0,0.2,0.2,0.6,0.9,0.5,0.0,0.0
 57595,덕적도 갈대 군락지,12,인천광역시 옹진군 덕적면 덕적북로 130,0.8,0.8,0.0,0.0,0.0,1.0,0.8,0.3,0.5,0.6
 59663,무주채폭포,12,경기도 가평군 북면 제령리,0.8,0.7,0.0,0.0,0.2,1.0,0.5,0.4,0.4,0.0

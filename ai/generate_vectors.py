@@ -42,7 +42,7 @@ BULK_FILE   = "bulk_tagged.csv"
 
 # 24차원 키 이름 (DB 저장 기준)
 CATEGORY_DIMS  = ["nature", "culture", "festival", "activity", "shopping", "food", "cafe", "lodging"]
-MOOD_DIMS_DB   = ["healing", "aesthetic", "gourmet", "learning", "heritage",
+MOOD_DIMS      = ["healing", "aesthetic", "gourmet", "learning", "heritage",
                    "mood_nature", "romantic", "family", "active", "nightlife"]
 PRACTICAL_DIMS = ["free_entry", "parking_available", "pet_friendly", "baby_friendly", "indoor", "outdoor"]
 
@@ -56,10 +56,14 @@ CATEGORY_MAP = {
 }
 
 CAFE_TITLE_KW  = ["카페", "커피", "디저트", "베이커리", "빵집", "케이크", "로스터리", "브루어리"]
-INDOOR_KW  = ["실내", "박물관", "미술관", "전시관", "공연장", "극장", "아쿠아리움",
-               "수족관", "과학관", "쇼핑몰", "백화점", "마트", "센터", "홀", "스튜디오"]
-OUTDOOR_KW = ["야외", "공원", "해변", "해수욕장", "계곡", "폭포", "등산", "트레킹",
-               "올레길", "들판", "숲", "광장", "정원", "산책로"]
+INDOOR_KW    = ["실내", "박물관", "미술관", "전시관", "공연장", "극장", "아쿠아리움",
+                "수족관", "과학관", "쇼핑몰", "백화점", "마트", "센터", "홀", "스튜디오"]
+OUTDOOR_KW   = ["야외", "공원", "해변", "해수욕장", "계곡", "폭포", "등산", "트레킹",
+                "올레길", "들판", "숲", "광장", "정원", "산책로"]
+FREE_ENTRY_KW      = ["무료입장", "무료 입장", "입장료 없", "무료개방", "무료 개방", "무료로 즐"]
+PARKING_KW         = ["주차장", "주차 가능", "주차가능", "주차공간", "무료주차", "유료주차"]
+PET_FRIENDLY_KW    = ["반려동물", "반려견", "애완동물", "펫", "동물 동반", "개 동반"]
+BABY_FRIENDLY_KW   = ["유모차", "유아", "영유아", "아기", "수유실", "어린이 동반"]
 
 
 # ── 특성 추출 ─────────────────────────────────────────────────────────────────
@@ -150,7 +154,7 @@ def load_llm_tagged() -> dict:
     """anchor_tagged.csv + bulk_tagged.csv → {attr_id: scores_dict}"""
     tagged = {}
     csv_mood_dims = ["healing", "aesthetic", "gourmet", "learning", "heritage",
-                     "nature", "romantic", "family", "active", "nightlife"]
+                     "mood_nature", "romantic", "family", "active", "nightlife"]
     for filepath in [ANCHOR_FILE, BULK_FILE]:
         if not os.path.exists(filepath):
             print(f"  [경고] 파일 없음: {filepath}")
@@ -188,6 +192,14 @@ def category_dims(content_type_id: int, title: str, llm_aesthetic: float) -> dic
 def practical_dims(title: str, overview: str) -> dict:
     text = (title or "") + " " + (overview or "")
     vec = {dim: 0.0 for dim in PRACTICAL_DIMS}
+    if any(kw in text for kw in FREE_ENTRY_KW):
+        vec["free_entry"] = 1.0
+    if any(kw in text for kw in PARKING_KW):
+        vec["parking_available"] = 1.0
+    if any(kw in text for kw in PET_FRIENDLY_KW):
+        vec["pet_friendly"] = 1.0
+    if any(kw in text for kw in BABY_FRIENDLY_KW):
+        vec["baby_friendly"] = 1.0
     if any(kw in text for kw in INDOOR_KW):
         vec["indoor"] = 0.8
     if any(kw in text for kw in OUTDOOR_KW):
@@ -218,7 +230,7 @@ def run():
     # 3. 학습셋 / 예측셋 분리
     print("\n[3/5] KNN 학습 및 예측...")
     csv_mood_dims = ["healing", "aesthetic", "gourmet", "learning", "heritage",
-                     "nature", "romantic", "family", "active", "nightlife"]
+                     "mood_nature", "romantic", "family", "active", "nightlife"]
 
     train_records = []
     train_labels  = []
@@ -272,10 +284,9 @@ def run():
         # 카테고리 8개
         vec.update(category_dims(ct_id, title, aesthetic))
 
-        # 분위기 10개 (CSV "nature" → DB "mood_nature")
+        # 분위기 10개 (CSV와 DB 키 이름 동일)
         for dim in csv_mood_dims:
-            db_key = "mood_nature" if dim == "nature" else dim
-            vec[db_key] = round(float(mood_scores_csv[dim]), 3)
+            vec[dim] = round(float(mood_scores_csv[dim]), 3)
 
         # 레포츠 active 강제
         if ct_id == 28:

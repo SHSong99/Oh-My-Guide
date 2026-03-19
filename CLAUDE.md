@@ -497,6 +497,22 @@ py -3 generate_vectors.py        # 전체 벡터 재생성 → DB 저장 (토큰
 - 신규 사용자에게 동일 세그먼트 통계 벡터를 초기값으로 부여 (콜드 스타트 해결)
 - 데이터 쌓일수록 규칙 기반 → 랭킹 모델 기반 추천으로 확장
 
+### 나이대별 cold-start 개선 계획 (배치 연동)
+
+**현재 (임시)**: `vector_utils.py`의 `_AGE_BOOST` 딕셔너리에 규칙 기반 하드코딩 값 사용.
+- 10~29세: active, aesthetic, nightlife 상향
+- 30~49세: gourmet, healing, family 상향
+- 50세~: heritage, learning, healing 상향
+
+**목표 (배치 완성 후 교체)**:
+- Spark 배치가 매일 새벽 4시에 연령대 × 성별 × 동행 유형 세그먼트별 Go/Skip 통계 집계
+- 각 세그먼트에서 가장 많이 Go한 장소 Top 5의 벡터 평균 → 세그먼트 대표 벡터 계산
+- 결과를 별도 테이블(예: `segment_vectors`)에 저장
+- `build_cold_start_vector()` 함수를 수정하여 `_AGE_BOOST` 대신 DB에서 해당 세그먼트 벡터를 조회하도록 변경
+- 즉, `_AGE_BOOST`는 배치 파이프라인이 붙기 전까지만 쓰는 임시 규칙이고, 실제 데이터 기반 통계로 교체 예정
+
+**교체 시 수정 위치**: `ai/vector_utils.py`의 `_AGE_BOOST` 및 `build_cold_start_vector()` 함수
+
 ---
 
 ## 벡터DB(RediSearch)를 안 쓰는 이유
