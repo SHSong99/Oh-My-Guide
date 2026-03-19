@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.LocationOn
@@ -36,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,60 +54,67 @@ import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
 
-// ── ETA Card ──
+// ── Sheet Header (unified: place info + progress + stop) ──
 
 @Composable
-fun EtaCard(placeName: String, distance: String, eta: String, modeLabel: String) {
-    Row(
+fun NaviSheetHeader(
+    placeName: String,
+    placeNameKr: String,
+    distance: String,
+    eta: String,
+    modeLabel: String,
+    progressPct: Float,
+    onStop: () -> Unit,
+) {
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(BgWhite)
-            .padding(horizontal = 20.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column {
-            Text(text = modeLabel, style = MaterialTheme.typography.labelSmall, color = TextCaption)
-            Text(text = placeName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(text = distance, style = MaterialTheme.typography.headlineSmall, color = Primary)
-            Text(text = eta, style = MaterialTheme.typography.labelSmall, color = TextCaption)
-        }
-    }
-}
-
-// ── Progress Bar ──
-
-@Composable
-fun NaviProgressBar(placeName: String, placeNameKr: String, progressPct: Float) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(PrimaryBg),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = Primary)
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column {
-                Text(text = placeName, style = MaterialTheme.typography.titleSmall, color = TextPrimary)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(text = modeLabel, style = MaterialTheme.typography.labelSmall, color = TextCaption)
+                Text(text = placeName, style = MaterialTheme.typography.titleMedium, color = TextPrimary)
                 Text(text = placeNameKr, style = MaterialTheme.typography.labelSmall, color = TextCaption)
             }
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(end = 8.dp),
+            ) {
+                Text(text = distance, style = MaterialTheme.typography.headlineSmall, color = Primary)
+                Text(text = eta, style = MaterialTheme.typography.labelSmall, color = TextCaption)
+            }
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(100.dp))
+                    .background(BgSub)
+                    .clickable(onClick = onStop)
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextCaption)
+                Spacer(modifier = Modifier.width(4.dp))
+                Text(
+                    text = "Stop",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = TextCaption,
+                )
+            }
         }
-        Row(verticalAlignment = Alignment.CenterVertically) {
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             LinearProgressIndicator(
                 progress = { progressPct },
-                modifier = Modifier.width(64.dp).height(6.dp).clip(RoundedCornerShape(3.dp)),
+                modifier = Modifier.weight(1f).height(6.dp).clip(RoundedCornerShape(3.dp)),
                 color = Primary,
                 trackColor = Border,
             )

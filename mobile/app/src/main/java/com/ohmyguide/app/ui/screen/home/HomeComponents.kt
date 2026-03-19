@@ -61,7 +61,7 @@ import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
-fun HomeHeader() {
+fun HomeHeader(onReset: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -109,7 +109,7 @@ fun HomeHeader() {
             modifier = Modifier
                 .clip(RoundedCornerShape(20.dp))
                 .background(BgSub)
-                .clickable { }
+                .clickable(onClick = onReset)
                 .padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -125,7 +125,7 @@ fun HomeHeader() {
 }
 
 @Composable
-fun LocationBar(spotCount: Int) {
+fun LocationBar(spotCount: Int, locationName: String = "your area") {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -137,7 +137,7 @@ fun LocationBar(spotCount: Int) {
             Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = Primary)
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Near Jongno",
+                text = "Near $locationName",
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
             )

@@ -80,6 +80,14 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
         composable(Screen.Phrases.route) { PhrasesScreen(navController) }
         composable(Screen.MyPage.route) { MyPageScreen(navController) }
 
+        composable(Screen.CourseDetail.route) { backStackEntry ->
+            val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
+            com.ohmyguide.app.ui.screen.explore.CourseDetailScreen(navController, courseId)
+        }
+        composable(Screen.CourseNavi.route) { backStackEntry ->
+            val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
+            com.ohmyguide.app.ui.screen.explore.CourseNaviScreen(navController, courseId)
+        }
         composable(Screen.Place.route) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             PlaceScreen(navController, placeId)
@@ -101,7 +109,9 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
                 mode = mode,
                 onMinimize = {
                     onNaviMinimize(placeId, mode)
-                    navController.popBackStack()
+                    navController.navigate(Screen.Place.createRoute(placeId)) {
+                        popUpTo(Screen.Home.route)
+                    }
                 },
             )
         }

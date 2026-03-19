@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -204,6 +205,7 @@ fun GpsPermissionScreen(
                     permissionLauncher.launch(permissions.toTypedArray())
                 },
                 modifier = Modifier.padding(start = 46.dp),
+                icon = Icons.Filled.LocationOn,
             )
         }
     }

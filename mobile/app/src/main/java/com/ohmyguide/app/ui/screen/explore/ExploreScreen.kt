@@ -101,7 +101,7 @@ fun ExploreScreen(navController: NavController) {
                         Spacer(modifier = Modifier.height(12.dp))
                         CourseCard(
                             course = featuredCourse,
-                            onClick = { },
+                            onClick = { navController.navigate(Screen.CourseDetail.createRoute(featuredCourse.id)) },
                             featured = true,
                             modifier = Modifier.padding(horizontal = 16.dp),
                         )
@@ -131,7 +131,7 @@ fun ExploreScreen(navController: NavController) {
                         displayCourses.forEach { course ->
                             CourseCard(
                                 course = course,
-                                onClick = { },
+                                onClick = { navController.navigate(Screen.CourseDetail.createRoute(course.id)) },
                                 modifier = Modifier.padding(horizontal = 16.dp),
                             )
                             Spacer(modifier = Modifier.height(16.dp))
