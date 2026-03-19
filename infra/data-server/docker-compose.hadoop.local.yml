@@ -1,0 +1,13 @@
+services:
+  spark-master:
+    ports:
+      - "18080:18080"
+      - "7077:7077"
+
+  spark-worker:
+    ports:
+      - "8081:8081"
+
+  livy:
+    ports:
+      - "8998:8998"
