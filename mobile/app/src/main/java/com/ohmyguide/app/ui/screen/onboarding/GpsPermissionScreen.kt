@@ -31,6 +31,11 @@ import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import android.Manifest
+import android.content.Intent
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -41,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
@@ -49,6 +55,7 @@ import com.ohmyguide.app.fixtures.COMPANION_OPTIONS
 import com.ohmyguide.app.fixtures.COUNTRY_OPTIONS
 import com.ohmyguide.app.fixtures.GENDER_OPTIONS
 import com.ohmyguide.app.fixtures.LANGUAGE_OPTIONS
+import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.PrimaryButton
 import com.ohmyguide.app.ui.common.UserBubble
@@ -69,6 +76,7 @@ private enum class OnboardStep { LANGUAGE, GENDER, AGE, COUNTRY, COMPANION, GPS 
 fun GpsPermissionScreen(
     onAllow: () -> Unit,
 ) {
+    val context = LocalContext.current
     var step by remember { mutableStateOf(OnboardStep.LANGUAGE) }
     var languageLabel by remember { mutableStateOf("") }
     var genderLabel by remember { mutableStateOf("") }
@@ -76,6 +84,18 @@ fun GpsPermissionScreen(
     var ageInput by remember { mutableStateOf("") }
     var countryLabel by remember { mutableStateOf("") }
     var companionLabel by remember { mutableStateOf("") }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions(),
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+            permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            val intent = Intent(context, LocationForegroundService::class.java)
+            context.startForegroundService(intent)
+        }
+        onAllow()
+    }
 
     val scrollState = rememberScrollState()
 
@@ -173,7 +193,16 @@ fun GpsPermissionScreen(
 
             PrimaryButton(
                 text = "Allow Location Access",
-                onClick = onAllow,
+                onClick = {
+                    val permissions = mutableListOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.ACCESS_COARSE_LOCATION,
+                    )
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissions.add(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    permissionLauncher.launch(permissions.toTypedArray())
+                },
                 modifier = Modifier.padding(start = 46.dp),
             )
         }

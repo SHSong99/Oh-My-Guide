@@ -37,15 +37,18 @@ import androidx.navigation.compose.rememberNavController
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.PathOverlay
 import com.naver.maps.map.compose.rememberCameraPositionState
+import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
+import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.TypingIndicator
 import com.ohmyguide.app.ui.screen.story.StoryOverlay
@@ -208,8 +211,6 @@ fun NaviScreen(
                 placeId = placeId,
                 placeName = placeName,
                 mode = mode,
-                userLat = state.userLat,
-                userLng = state.userLng,
                 onMinimize = onMinimize,
             )
         }
@@ -226,28 +227,37 @@ private fun MapArea(
     placeId: String,
     placeName: String,
     mode: String,
-    userLat: Double,
-    userLng: Double,
     onMinimize: () -> Unit,
 ) {
     val destinationPosition = PLACE_COORDINATES[placeId] ?: DEFAULT_USER_POSITION
     val route = FALLBACK_ROUTES[placeId to mode]
     val routeCoords = route?.points?.map { LatLng(it.lat, it.lng) }
-    val userPosition = LatLng(userLat, userLng)
+
+    // GPS 실시간 위치 가져오기
+    val locationData by LocationForegroundService.locationFlow.collectAsState()
+    val userPosition = locationData?.let { LatLng(it.latitude, it.longitude) }
+        ?: DEFAULT_USER_POSITION
+
+    val locationSource = rememberFusedLocationSource()
 
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition(destinationPosition, 15.0)
+        position = CameraPosition(userPosition, 15.0)
     }
 
-    val mapProperties = remember { MapProperties() }
+    val mapProperties = remember {
+        MapProperties(
+            locationTrackingMode = LocationTrackingMode.Follow,
+        )
+    }
     val mapUiSettings = remember {
-        MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = false)
+        MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = true)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         NaverMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
+            locationSource = locationSource,
             properties = mapProperties,
             uiSettings = mapUiSettings,
         ) {
@@ -261,11 +271,7 @@ private fun MapArea(
                 )
             }
 
-            Marker(
-                state = rememberMarkerState(position = userPosition),
-                captionText = "You",
-            )
-
+            // 목적지 마커
             Marker(
                 state = rememberMarkerState(position = destinationPosition),
                 captionText = placeName,
@@ -282,7 +288,7 @@ private fun MapArea(
                 .clickable(onClick = onMinimize),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(18.dp), tint = TextPrimary)
+            Icon(Icons.Filled.Close, contentDescription = "Minimize", modifier = Modifier.size(18.dp), tint = TextPrimary)
         }
     }
 }
