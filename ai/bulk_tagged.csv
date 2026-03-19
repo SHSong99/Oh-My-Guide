@@ -1,4 +1,4 @@
-﻿attr_id,title,content_type_id,healing,aesthetic,gourmet,learning,heritage,nature,romantic,family,active,nightlife
+﻿attr_id,title,content_type_id,healing,aesthetic,gourmet,learning,heritage,mood_nature,romantic,family,active,nightlife
 56644,가회동성당,12,0.2,0.8,0.0,0.9,0.8,0.0,0.3,0.4,0.2,0.1
 56645,간데메공원,12,0.8,0.7,0.0,0.2,0.2,0.6,0.3,0.9,0.4,0.1
 56646,갈산근린공원,12,0.4,0.6,0.0,0.7,0.8,0.7,0.3,0.6,0.5,0.1
