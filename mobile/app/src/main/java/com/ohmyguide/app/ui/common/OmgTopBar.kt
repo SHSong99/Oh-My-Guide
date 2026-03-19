@@ -16,9 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
+import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.TextPrimary
 
 @Composable
@@ -44,7 +46,7 @@ fun OmgTopBar(
         ) {
             Icon(
                 Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = null,
+                contentDescription = "Back",
                 modifier = Modifier.size(20.dp),
                 tint = TextPrimary,
             )
@@ -55,5 +57,13 @@ fun OmgTopBar(
             color = TextPrimary,
             modifier = Modifier.align(Alignment.Center),
         )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun OmgTopBarPreview() {
+    OhMyGuideTheme {
+        OmgTopBar(title = "Choose Transport", onBack = {})
     }
 }

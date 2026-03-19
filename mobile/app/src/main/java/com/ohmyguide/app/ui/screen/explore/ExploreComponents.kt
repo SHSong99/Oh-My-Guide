@@ -81,7 +81,7 @@ fun HeroBanner() {
         ) {
             Image(
                 painter = painterResource(R.drawable.masot),
-                contentDescription = null,
+                contentDescription = "Guide mascot",
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
@@ -115,7 +115,7 @@ fun HeroBanner() {
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Whatshot, contentDescription = null, modifier = Modifier.size(12.dp), tint = BgWhite)
+                    Icon(Icons.Filled.Whatshot, contentDescription = "Trending", modifier = Modifier.size(12.dp), tint = BgWhite)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
                         text = "TRENDING",
@@ -257,7 +257,7 @@ fun SectionHeader(
                 .background(iconBg),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, modifier = Modifier.size(15.dp), tint = iconTint)
+            Icon(icon, contentDescription = title, modifier = Modifier.size(15.dp), tint = iconTint)
         }
         Spacer(modifier = Modifier.width(8.dp))
         Text(
@@ -291,7 +291,7 @@ fun EmptyState() {
                 .background(PrimaryBg),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Search, contentDescription = null, modifier = Modifier.size(28.dp), tint = Primary)
+            Icon(Icons.Filled.Search, contentDescription = "Search", modifier = Modifier.size(28.dp), tint = Primary)
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
