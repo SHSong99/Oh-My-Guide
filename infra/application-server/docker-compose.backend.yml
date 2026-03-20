@@ -3,6 +3,9 @@ services:
     image: oh-my-guide-backend:latest
     container_name: spring-boot
     env_file: ../../backend/.env
+    extra_hosts:
+      - "namenode:host-gateway"
+      - "datanode:host-gateway"
     # ports 제거: 외부에서 직접 접근 불가
     # Nginx가 Docker 내부 네트워크(app-network)를 통해 컨테이너 이름으로 접근
     # 외부 → Nginx(443) → spring-boot:8080 (내부망)
