@@ -1,6 +1,7 @@
 package com.e103.ohmyguide.domain.uservector.repository;
 
 import com.e103.ohmyguide.IntegrationTestSupport;
+import com.e103.ohmyguide.domain.auth.oauth2.AuthProvider;
 import com.e103.ohmyguide.domain.user.entity.User;
 import com.e103.ohmyguide.domain.user.repository.UserRepository;
 import com.e103.ohmyguide.domain.uservector.entity.UserVector;
@@ -20,14 +21,21 @@ class UserVectorRepositoryTest extends IntegrationTestSupport {
     @Autowired
     private UserRepository userRepository;
 
+    private User buildUser(String email) {
+        return User.oauth2Builder()
+                .email(email)
+                .name("테스터")
+                .imageUrl("https://image.url")
+                .provider(AuthProvider.google)
+                .providerId("google-id-123")
+                .build();
+    }
+
     @DisplayName("UserVector 를 저장하고 ID 로 조회한다.")
     @Test
     void saveAndFindById() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         UserVector userVector = UserVector.builder()
                 .user(user)
@@ -47,10 +55,7 @@ class UserVectorRepositoryTest extends IntegrationTestSupport {
     @Test
     void userVectorPkEqualsUserId() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         UserVector saved = userVectorRepository.save(UserVector.builder()
                 .user(user)
@@ -65,10 +70,7 @@ class UserVectorRepositoryTest extends IntegrationTestSupport {
     @Test
     void findWithUserRelation() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         userVectorRepository.save(UserVector.builder()
                 .user(user)
@@ -86,10 +88,7 @@ class UserVectorRepositoryTest extends IntegrationTestSupport {
     @Test
     void updatePreferenceVector() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         UserVector userVector = userVectorRepository.save(UserVector.builder()
                 .user(user)

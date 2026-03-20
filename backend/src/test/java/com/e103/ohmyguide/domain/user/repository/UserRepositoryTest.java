@@ -1,6 +1,7 @@
 package com.e103.ohmyguide.domain.user.repository;
 
 import com.e103.ohmyguide.IntegrationTestSupport;
+import com.e103.ohmyguide.domain.auth.oauth2.AuthProvider;
 import com.e103.ohmyguide.domain.user.entity.User;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,14 +18,21 @@ class UserRepositoryTest extends IntegrationTestSupport {
     @Autowired
     private UserRepository userRepository;
 
+    private User buildUser(String email) {
+        return User.oauth2Builder()
+                .email(email)
+                .name("테스터")
+                .imageUrl("https://image.url")
+                .provider(AuthProvider.google)
+                .providerId("google-id-123")
+                .build();
+    }
+
     @DisplayName("User 를 저장하고 ID 로 조회한다.")
     @Test
     void saveAndFindById() {
         // given
-        User user = User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build();
+        User user = buildUser("test@test.com");
 
         // when
         User saved = userRepository.save(user);
@@ -33,7 +41,7 @@ class UserRepositoryTest extends IntegrationTestSupport {
         // then
         assertThat(found).isPresent();
         assertThat(found.get().getEmail()).isEqualTo("test@test.com");
-        assertThat(found.get().getNickname()).isEqualTo("테스터");
+        assertThat(found.get().getName()).isEqualTo("테스터");
         assertThat(found.get().getOnboardingCompleted()).isFalse();
     }
 
@@ -41,10 +49,7 @@ class UserRepositoryTest extends IntegrationTestSupport {
     @Test
     void completeOnboarding() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         // when
         user.completeOnboarding();
@@ -57,10 +62,7 @@ class UserRepositoryTest extends IntegrationTestSupport {
     @Test
     void updateProfile() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         // when
         user.updateProfile("새닉네임", "https://new-image.url");
@@ -74,10 +76,7 @@ class UserRepositoryTest extends IntegrationTestSupport {
     @Test
     void delete() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         // when
         userRepository.deleteById(user.getId());
@@ -90,17 +89,11 @@ class UserRepositoryTest extends IntegrationTestSupport {
     @Test
     void duplicateEmailThrowsException() {
         // given
-        userRepository.saveAndFlush(User.builder()
-                .email("duplicate@test.com")
-                .nickname("테스터1")
-                .build());
+        userRepository.saveAndFlush(buildUser("duplicate@test.com"));
 
         // when & then
         assertThatThrownBy(() ->
-                userRepository.saveAndFlush(User.builder()
-                        .email("duplicate@test.com")
-                        .nickname("테스터2")
-                        .build())
+                userRepository.saveAndFlush(buildUser("duplicate@test.com"))
         ).isInstanceOf(DataIntegrityViolationException.class);
     }
 }

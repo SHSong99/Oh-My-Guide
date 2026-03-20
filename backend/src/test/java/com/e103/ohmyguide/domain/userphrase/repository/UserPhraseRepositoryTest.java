@@ -1,6 +1,7 @@
 package com.e103.ohmyguide.domain.userphrase.repository;
 
 import com.e103.ohmyguide.IntegrationTestSupport;
+import com.e103.ohmyguide.domain.auth.oauth2.AuthProvider;
 import com.e103.ohmyguide.domain.phrase.entity.Phrase;
 import com.e103.ohmyguide.domain.phrase.entity.PhraseLanguage;
 import com.e103.ohmyguide.domain.phrase.repository.PhraseRepository;
@@ -35,9 +36,12 @@ class UserPhraseRepositoryTest extends IntegrationTestSupport {
 
     @BeforeEach
     void setUp() {
-        user = userRepository.save(User.builder()
+        user = userRepository.save(User.oauth2Builder()
                 .email("test@test.com")
-                .nickname("테스터")
+                .name("테스터")
+                .imageUrl("https://image.url")
+                .provider(AuthProvider.google)
+                .providerId("google-id-123")
                 .build());
 
         phrase = phraseRepository.save(Phrase.builder()

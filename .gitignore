@@ -25,9 +25,7 @@ test/mapsapitest/src/**/*.js.map
 test/mapsapitest/src/**/*.d.ts
 test/mapsapitest/src/**/*.d.ts.map
 
-<<<<<<< HEAD
 CLAUDE.md
-=======
+
 # Claude Code
 .claude/
->>>>>>> 0c9c7fa7734d8cba56bc3910ea0ace39d21a00f7
