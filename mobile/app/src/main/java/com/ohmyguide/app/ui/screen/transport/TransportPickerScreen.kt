@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +31,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
@@ -47,8 +49,13 @@ import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
-fun TransportPickerScreen(navController: NavController, placeId: String) {
+fun TransportPickerScreen(
+    navController: NavController,
+    placeId: String,
+    viewModel: TransportPickerViewModel = hiltViewModel(),
+) {
     val strings = LocalStrings.current
+    val timeInfo by viewModel.timeInfo.collectAsState()
     val detail = SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
     val placeName = detail?.place?.name ?: strings.destination
@@ -111,9 +118,16 @@ fun TransportPickerScreen(navController: NavController, placeId: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TransportMode.entries.forEach { mode ->
+                val (time, eta) = when (mode) {
+                    TransportMode.Walk -> timeInfo.walkTime to timeInfo.walkEta
+                    TransportMode.Transit -> timeInfo.transitTime to timeInfo.transitEta
+                    TransportMode.Car -> timeInfo.carTime to timeInfo.carEta
+                }
                 TransportModeCard(
                     mode = mode,
                     selected = selectedMode == mode,
+                    time = time,
+                    eta = eta,
                     onClick = { selectedMode = mode },
                 )
             }
@@ -144,7 +158,13 @@ fun TransportPickerScreen(navController: NavController, placeId: String) {
             else strings.startNavigation,
             onClick = {
                 if (selectedMode == TransportMode.Transit) {
-                    navController.navigate(Screen.TransitDetail.createRoute(placeId))
+                    navController.navigate(
+                        Screen.TransitDetail.createRoute(
+                            placeId,
+                            detail?.place?.lat ?: 0.0,
+                            detail?.place?.lng ?: 0.0,
+                        )
+                    )
                 } else {
                     navController.navigate(
                         Screen.Navi.createRoute(placeId, selectedMode.name.lowercase())

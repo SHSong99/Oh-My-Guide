@@ -49,6 +49,7 @@ import com.naver.maps.map.compose.PathOverlay
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
+import com.ohmyguide.app.domain.model.NaviRouteData
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.navi.Screen
@@ -59,23 +60,23 @@ import com.ohmyguide.app.ui.theme.DragHandle
 import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
-import com.ohmyguide.app.ui.theme.Primary
-import com.ohmyguide.app.ui.theme.PrimaryDark
 import com.ohmyguide.app.ui.theme.TextPrimary
+import com.ohmyguide.app.ui.theme.TransitAmber
+import com.ohmyguide.app.ui.theme.TransitGray
 
 private val PLACE_COORDINATES = mapOf(
-    "dm3" to LatLng(37.5700, 126.9990),
-    "dm4" to LatLng(37.5826, 126.9831),
-    "dm5" to LatLng(37.5512, 126.9882),
-    "dm6" to LatLng(37.5735, 126.9920),
-    "dm7" to LatLng(37.5690, 126.9780),
+    "dm3" to LatLng(35.0807, 128.8785),
+    "dm4" to LatLng(35.1044, 128.9459),
+    "dm5" to LatLng(35.1795, 128.9383),
+    "dm6" to LatLng(35.2110, 128.9722),
+    "dm7" to LatLng(35.0720, 128.9650),
 )
-private val DEFAULT_USER_POSITION = LatLng(37.5665, 126.9780)
+private val DEFAULT_USER_POSITION = LatLng(35.0950, 128.8560)
 
 private fun getModeLabel(mode: String, strings: com.ohmyguide.app.ui.theme.AppStrings): String = when (mode) {
     "walk" -> strings.walkingTo
     "transit" -> strings.transitTo
-    "taxi" -> strings.drivingTo
+    "car" -> strings.drivingTo
     else -> strings.walkingTo
 }
 
@@ -95,6 +96,7 @@ fun NaviScreen(
     val detail = viewModel.detail
     val placeName = detail?.place?.name ?: strings.destination
     val placeNameKr = detail?.place?.nameKr ?: ""
+    val naviRoute by viewModel.naviRoute.collectAsState()
     val route = FALLBACK_ROUTES[placeId to mode]
     val distance = route?.let { "${it.distanceMeters}m" } ?: "350m"
     val eta = route?.let { "${it.durationMin} min" } ?: detail?.walkTime ?: "5 min"
@@ -239,6 +241,7 @@ fun NaviScreen(
                 placeId = placeId,
                 placeName = placeName,
                 mode = mode,
+                naviRoute = naviRoute,
                 onMinimize = onMinimize,
             )
         }
@@ -255,11 +258,12 @@ private fun MapArea(
     placeId: String,
     placeName: String,
     mode: String,
+    naviRoute: NaviRouteData?,
     onMinimize: () -> Unit,
 ) {
     val destinationPosition = PLACE_COORDINATES[placeId] ?: DEFAULT_USER_POSITION
     val route = FALLBACK_ROUTES[placeId to mode]
-    val routeCoords = route?.points?.map { LatLng(it.lat, it.lng) }
+    val fallbackCoords = route?.points?.map { LatLng(it.lat, it.lng) }
 
     // GPS 실시간 위치 가져오기
     val locationData by LocationForegroundService.locationFlow.collectAsState()
@@ -291,15 +295,50 @@ private fun MapArea(
         ) {
             val mapLocale = LanguageManager.current.value.locale
             MapEffect(mapLocale) { naverMap ->
-                naverMap.setLocale(mapLocale)
+                naverMap.locale = mapLocale
             }
-            if (routeCoords != null && routeCoords.size >= 2) {
+
+            if (naviRoute != null) {
+                // Multi-colored polylines per segment
+                naviRoute.segments.forEach { segment ->
+                    val segCoords = segment.coords.map { LatLng(it.lat, it.lng) }
+                    if (segCoords.size >= 2) {
+                        PathOverlay(
+                            coords = segCoords,
+                            width = 8.dp,
+                            color = segment.color,
+                            outlineWidth = 2.dp,
+                            outlineColor = segment.color.copy(alpha = 0.5f),
+                        )
+                    }
+                }
+
+                // Transfer markers at segment boundaries
+                naviRoute.segments.forEachIndexed { index, segment ->
+                    if (index > 0 && segment.coords.isNotEmpty()) {
+                        val pt = segment.coords.first()
+                        Marker(
+                            state = rememberMarkerState(
+                                key = "transfer_$index",
+                                position = LatLng(pt.lat, pt.lng),
+                            ),
+                            captionText = segment.lineName,
+                            width = 20.dp,
+                            height = 20.dp,
+                        )
+                    }
+                }
+            } else if (fallbackCoords != null && fallbackCoords.size >= 2) {
+                val pathColor = when (mode) {
+                    "car" -> TransitAmber
+                    else -> TransitGray
+                }
                 PathOverlay(
-                    coords = routeCoords,
+                    coords = fallbackCoords,
                     width = 8.dp,
-                    color = Primary,
+                    color = pathColor,
                     outlineWidth = 2.dp,
-                    outlineColor = PrimaryDark,
+                    outlineColor = pathColor.copy(alpha = 0.5f),
                 )
             }
 

@@ -46,33 +46,34 @@ internal enum class TransportMode(
     val labelKey: (AppStrings) -> String,
     val icon: ImageVector,
     val descKey: (AppStrings) -> String,
-    val time: String,
-    val eta: String,
     val color: Color,
 ) {
-    Walk({ it.walk }, Icons.AutoMirrored.Filled.DirectionsWalk, { it.enjoyScenery }, "5 min", "ETA 9:46 AM", InfoGreen),
-    Transit({ it.transit }, Icons.Filled.DirectionsBus, { it.busAndSubway }, "12 min", "ETA 9:53 AM", InfoPurple),
-    Taxi({ it.taxi }, Icons.Filled.LocalTaxi, { it.taxiCar }, "3 min", "ETA 9:44 AM", InfoRose),
+    Walk({ it.walk }, Icons.AutoMirrored.Filled.DirectionsWalk, { it.enjoyScenery }, InfoGreen),
+    Transit({ it.transit }, Icons.Filled.DirectionsBus, { it.busAndSubway }, InfoPurple),
+    Car({ it.taxi }, Icons.Filled.LocalTaxi, { it.taxiCar }, InfoRose),
 }
 
 @Composable
 internal fun TransportModeCard(
     mode: TransportMode,
     selected: Boolean,
+    time: String,
+    eta: String,
     onClick: () -> Unit,
 ) {
     val borderColor = if (selected) Primary else Border
     val bgColor = if (selected) PrimaryBg else BgWhite
+    val borderWidth = if (selected) 2.dp else 1.dp
 
     val strings = LocalStrings.current
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(if (selected) 4.dp else 0.dp, RoundedCornerShape(16.dp))
+            .shadow(if (selected) 6.dp else 0.dp, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))
             .background(bgColor)
-            .border(1.5.dp, borderColor, RoundedCornerShape(16.dp))
+            .border(borderWidth, borderColor, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -81,18 +82,25 @@ internal fun TransportModeCard(
             modifier = Modifier
                 .size(44.dp)
                 .clip(CircleShape)
-                .background(mode.color.copy(alpha = 0.1f)),
+                .background(if (selected) mode.color.copy(alpha = 0.2f) else mode.color.copy(alpha = 0.1f)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(mode.icon, contentDescription = null, modifier = Modifier.size(24.dp), tint = mode.color)
+            Icon(
+                mode.icon,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = if (selected) mode.color else TextCaption,
+            )
         }
         Spacer(modifier = Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = mode.labelKey(strings),
-                style = MaterialTheme.typography.titleSmall,
-                color = TextPrimary,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                ),
+                color = if (selected) Primary else TextPrimary,
             )
             Text(
                 text = mode.descKey(strings),
@@ -103,12 +111,12 @@ internal fun TransportModeCard(
 
         Column(horizontalAlignment = Alignment.End) {
             Text(
-                text = mode.time,
+                text = time,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                color = mode.color,
+                color = if (selected) Primary else mode.color,
             )
             Text(
-                text = mode.eta,
+                text = eta,
                 style = MaterialTheme.typography.labelSmall,
                 color = TextCaption,
             )

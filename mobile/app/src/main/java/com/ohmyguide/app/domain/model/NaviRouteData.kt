@@ -1,0 +1,20 @@
+package com.ohmyguide.app.domain.model
+
+import androidx.compose.ui.graphics.Color
+
+data class RouteCoord(val lat: Double, val lng: Double)
+
+data class RouteSegmentGeo(
+    val type: String,
+    val coords: List<RouteCoord>,
+    val color: Color,
+    val lineName: String,
+    val fromName: String,
+    val toName: String,
+)
+
+data class NaviRouteData(
+    val mode: String,
+    val segments: List<RouteSegmentGeo>,
+    val totalDurationMin: Int,
+)

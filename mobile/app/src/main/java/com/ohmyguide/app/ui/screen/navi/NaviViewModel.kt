@@ -3,11 +3,22 @@ package com.ohmyguide.app.ui.screen.navi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
+import com.ohmyguide.app.BuildConfig
+import com.ohmyguide.app.data.model.ApiResult
+import com.ohmyguide.app.data.repository.NaverDirectionsRepository
+import com.ohmyguide.app.domain.model.NaviRouteCache
+import com.ohmyguide.app.domain.model.NaviRouteData
+import com.ohmyguide.app.domain.model.RouteCoord
+import com.ohmyguide.app.domain.model.RouteSegmentGeo
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
 import com.ohmyguide.app.fixtures.SAMPLE_PLACES
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
+import com.ohmyguide.app.service.LocationForegroundService
+import com.ohmyguide.app.ui.theme.TransitAmber
+import com.ohmyguide.app.ui.theme.TransitGray
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -57,13 +68,15 @@ data class NaviUiState(
     val chatMessages: List<NaviChatMessage> = emptyList(),
     val arrived: Boolean = false,
     val progressPct: Float = 0f,
-    val userLat: Double = 37.5665,
-    val userLng: Double = 126.9780,
+    val userLat: Double = 35.0950,
+    val userLng: Double = 128.8560,
 )
 
 @HiltViewModel
 class NaviViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
+    private val naviRouteCache: NaviRouteCache,
+    private val directionsRepository: NaverDirectionsRepository,
 ) : ViewModel() {
 
     val placeId: String = savedStateHandle["placeId"] ?: "dm3"
@@ -72,9 +85,14 @@ class NaviViewModel @Inject constructor(
     val detail: PlaceDetail? = SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
 
+    private val _naviRoute = MutableStateFlow<NaviRouteData?>(
+        if (mode == "transit") naviRouteCache.peek() else null
+    )
+    val naviRoute: StateFlow<NaviRouteData?> = _naviRoute.asStateFlow()
+
     private val route = FALLBACK_ROUTES[placeId to mode]
     private val totalDistance = route?.distanceMeters ?: 1500
-    private val totalDuration = route?.durationMin ?: 5
+    private val totalDuration = _naviRoute.value?.totalDurationMin ?: route?.durationMin ?: 5
 
     private val destinationLat = PLACE_COORDINATES[placeId]?.first ?: 37.5700
     private val destinationLng = PLACE_COORDINATES[placeId]?.second ?: 126.9990
@@ -85,9 +103,26 @@ class NaviViewModel @Inject constructor(
     private var gpsJob: Job? = null
     private var nearbyPoiShown = false
 
+    companion object {
+        private const val DEFAULT_LAT = 35.0950
+        private const val DEFAULT_LNG = 128.8560
+        private val PLACE_COORDINATES = mapOf(
+            "dm3" to (35.0807 to 128.8785),
+            "dm4" to (35.1044 to 128.9459),
+            "dm5" to (35.1795 to 128.9383),
+            "dm6" to (35.2110 to 128.9722),
+            "dm7" to (35.0720 to 128.9650),
+        )
+        private const val ARRIVAL_THRESHOLD_METERS = 100.0
+    }
+
     init {
         initChat()
-        startGpsSimulation()
+        if (mode == "transit") {
+            startGpsSimulation()
+        } else {
+            fetchDirectionsRoute()
+        }
     }
 
     private fun initChat() {
@@ -136,10 +171,72 @@ class NaviViewModel @Inject constructor(
         }
     }
 
+    // ── Directions API (walk / car) ──
+
+    private fun fetchDirectionsRoute() {
+        viewModelScope.launch {
+            val location = LocationForegroundService.locationFlow.value
+            val rawLat = location?.latitude
+            val rawLng = location?.longitude
+            val inKorea = rawLat != null && rawLng != null
+                && rawLat in 33.0..39.0 && rawLng in 124.0..132.0
+            val startLat = if (inKorea) rawLat!! else DEFAULT_LAT
+            val startLng = if (inKorea) rawLng!! else DEFAULT_LNG
+
+            val result = when (mode) {
+                "car" -> directionsRepository.getDrivingRoute(
+                    startLat, startLng, destinationLat, destinationLng,
+                )
+                else -> directionsRepository.getWalkingRoute(
+                    startLat, startLng, destinationLat, destinationLng,
+                )
+            }
+
+            if (BuildConfig.DEBUG) {
+                when (result) {
+                    is ApiResult.Success -> Log.d("NaviVM", "Directions OK: ${result.data.size} coords")
+                    is ApiResult.Error -> Log.e("NaviVM", "Directions FAIL: code=${result.code} msg=${result.message}")
+                    is ApiResult.Loading -> {}
+                }
+            }
+
+            if (result is ApiResult.Success && result.data.size >= 2) {
+                val color = if (mode == "car") TransitAmber else TransitGray
+                _naviRoute.value = NaviRouteData(
+                    mode = mode,
+                    segments = listOf(
+                        RouteSegmentGeo(
+                            type = mode,
+                            coords = result.data,
+                            color = color,
+                            lineName = if (mode == "car") "Driving" else "Walking",
+                            fromName = "Current Location",
+                            toName = detail?.place?.name ?: "Destination",
+                        ),
+                    ),
+                    totalDurationMin = totalDuration,
+                )
+            }
+
+            startGpsSimulation()
+        }
+    }
+
     // ── GPS Simulation (5초 간격) ──
 
+    private fun allRouteCoords(): List<RouteCoord>? {
+        val nr = _naviRoute.value ?: return null
+        val all = nr.segments.flatMap { it.coords }
+        return if (all.size >= 2) all else null
+    }
+
     private fun startGpsSimulation() {
-        val routePoints = route?.points ?: return
+        val transitCoords = allRouteCoords()
+        val routePoints = if (transitCoords != null) {
+            transitCoords.map { com.ohmyguide.app.fixtures.RoutePoint(it.lat, it.lng) }
+        } else {
+            route?.points ?: return
+        }
         if (routePoints.size < 2) return
 
         gpsJob = viewModelScope.launch {

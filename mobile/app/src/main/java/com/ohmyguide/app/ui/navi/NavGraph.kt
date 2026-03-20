@@ -2,8 +2,10 @@ package com.ohmyguide.app.ui.navi
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.screen.auth.AuthScreen
 import com.ohmyguide.app.ui.screen.onboarding.SplashScreen
@@ -96,7 +98,13 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransportPickerScreen(navController, placeId)
         }
-        composable(Screen.TransitDetail.route) { backStackEntry ->
+        composable(
+            route = Screen.TransitDetail.route,
+            arguments = listOf(
+                navArgument("destLat") { type = NavType.StringType; defaultValue = "0.0" },
+                navArgument("destLng") { type = NavType.StringType; defaultValue = "0.0" },
+            ),
+        ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransitDetailScreen(navController, placeId)
         }
