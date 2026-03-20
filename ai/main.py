@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional
 
@@ -9,13 +10,20 @@ from vector_utils import (
     rank_places, build_cold_start_vector, DIM_ORDER,
     apply_vector_delta, apply_vector_choices,
 )
-from gms_client import rerank_places, vectorize_refine_text
+from gms_client import rerank_places, vectorize_refine_text, get_weather, get_time_context
 
 app = FastAPI(title="Oh! My Guide AI Server")
 
-# LLM 리랭킹 활성화 여부 (False = 코사인 유사도 Top5만 반환, reason=null)
-# 나중에 True로 변경하면 gpt-5-mini 리랭킹 + 추천 이유 생성 활성화
-LLM_RERANK_ENABLED = False
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 추천 이유 생성 여부 (리랭킹은 항상 실행, reason 텍스트만 이 플래그로 제어)
+REASON_ENABLED = False
 
 
 # ── 스키마 ────────────────────────────────────────────────────────────────────
@@ -71,8 +79,13 @@ class RecommendResponse(BaseModel):
 
 # ── 헬퍼 ─────────────────────────────────────────────────────────────────────
 
-def _build_user_context(user_profile: Optional[UserProfile], refine_text: Optional[str] = None) -> dict:
-    """리랭킹에 전달할 사용자 맥락 dict 생성."""
+def _build_user_context(
+    user_profile: Optional[UserProfile],
+    lat: float,
+    lng: float,
+    refine_text: Optional[str] = None,
+) -> dict:
+    """리랭킹에 전달할 사용자 맥락 dict 생성 (날씨 + 시간 포함)."""
     ctx = {}
     if user_profile:
         if user_profile.companion:
@@ -83,6 +96,10 @@ def _build_user_context(user_profile: Optional[UserProfile], refine_text: Option
             ctx["language"] = user_profile.language
     if refine_text:
         ctx["refine_text"] = refine_text
+    ctx["time"] = get_time_context()
+    weather = get_weather(lat, lng)
+    if weather:
+        ctx["weather"] = weather
     return ctx
 
 
@@ -132,12 +149,9 @@ def recommend(req: RecommendRequest):
     # 4. 코사인 유사도 → 상위 20개
     top20 = rank_places(places, user_vec, top_n=20)
 
-    # 5. LLM 리랭킹 → 상위 5개 + 추천 이유 (LLM_RERANK_ENABLED=True 시 활성화)
-    if LLM_RERANK_ENABLED:
-        user_context = _build_user_context(req.user_profile)
-        top5 = rerank_places(top20, user_context, top_n=5)
-    else:
-        top5 = [{**p, "reason": None} for p in top20[:5]]
+    # 5. LLM 리랭킹 → 상위 5개 (항상 실행, reason은 REASON_ENABLED로 제어)
+    user_context = _build_user_context(req.user_profile, req.latitude, req.longitude)
+    top5 = rerank_places(top20, user_context, top_n=5, generate_reason=REASON_ENABLED)
 
     return RecommendResponse(
         recommendations=[PlaceResult(**p) for p in top5],
@@ -183,12 +197,9 @@ def refine(req: RefineRequest):
     # 6. 코사인 유사도 → 상위 20개
     top20 = rank_places(places, user_vec, top_n=20)
 
-    # 7. LLM 리랭킹 → 상위 5개 + 추천 이유 (LLM_RERANK_ENABLED=True 시 활성화)
-    if LLM_RERANK_ENABLED:
-        user_context = _build_user_context(req.user_profile, req.refine_text)
-        top5 = rerank_places(top20, user_context, top_n=5)
-    else:
-        top5 = [{**p, "reason": None} for p in top20[:5]]
+    # 7. LLM 리랭킹 → 상위 5개 (항상 실행, reason은 REASON_ENABLED로 제어)
+    user_context = _build_user_context(req.user_profile, req.latitude, req.longitude, req.refine_text)
+    top5 = rerank_places(top20, user_context, top_n=5, generate_reason=REASON_ENABLED)
 
     return RecommendResponse(
         recommendations=[PlaceResult(**p) for p in top5],

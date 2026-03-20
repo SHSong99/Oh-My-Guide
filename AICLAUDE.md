@@ -540,3 +540,37 @@ py -3 generate_vectors.py        # 전체 벡터 재생성 → DB 저장 (토큰
 - [ ] Spring → AI Server API 호출 부분 확인 → 엔드포인트 맞추기
 - [ ] **설문 설계**: 동행 유형(커플/가족/친구/혼자) 수집 → 관련 분위기 차원 가중치 초기화에 활용
 - [ ] **실용 6개 보강**: detailIntro2(free_entry, parking, pet, baby) 데이터 확보 후 벡터 재생성 (`generate_vectors.py` 재실행)
+
+---
+
+## AI 서버 파일별 역할
+
+### 서버 코드
+| 파일 | 역할 |
+|------|------|
+| `main.py` | FastAPI 진입점. 엔드포인트 정의 (`/api/ai/recommend`, `/api/ai/refine`), 요청/응답 스키마, 추천 파이프라인 오케스트레이션 |
+| `database.py` | PostgreSQL 연결 (psycopg2). 사용자 벡터 CRUD, PostGIS 반경 내 장소+벡터 조회 |
+| `gms_client.py` | GMS(LLM 프록시) API 호출. 리랭킹(`rerank_places`), 텍스트→벡터 변환(`vectorize_refine_text`), 날씨 조회(`get_weather`), 시간 맥락(`get_time_context`) |
+| `vector_utils.py` | 24차원 벡터 연산. 코사인 유사도 랭킹(`rank_places`), cold-start 벡터 생성(`build_cold_start_vector`), Go/Skip/선택지 학습(`apply_vector_delta`, `apply_vector_choices`) |
+
+### 벡터 생성 스크립트 (1회성 / overview 추가 시 재실행)
+| 파일 | 역할 |
+|------|------|
+| `anchor_tagging.py` | Gemini 2.5 Pro로 앵커 장소 85건 정밀 태깅 → `anchor_tagged.csv` 생성 (30 Credit/건) |
+| `bulk_tagging.py` | gpt-4.1-nano Few-shot으로 overview 있는 장소 ~3,578건 대량 태깅 → `bulk_tagged.csv` 생성 (1 Credit/건) |
+| `generate_vectors.py` | LLM 태깅 CSV + KNN 회귀로 전체 50,472건 24차원 벡터 생성 → DB `attraction_vectors` 저장 (Credit 소모 없음) |
+
+### 데이터 파일
+| 파일 | 역할 |
+|------|------|
+| `anchor_tagged.csv` | Gemini 태깅 완료 85건 (분위기 10차원 점수) |
+| `bulk_tagged.csv` | gpt-4.1-nano 태깅 완료 3,578건 (분위기 10차원 점수) |
+| `ai_api.md` | AI Server API 명세 문서 |
+
+### 인프라
+| 파일 | 역할 |
+|------|------|
+| `requirements.txt` | Python 패키지 의존성 |
+| `Dockerfile` | AI 서버 Docker 이미지 빌드 |
+| `Jenkinsfile` | CI/CD 파이프라인 (빌드→배포) |
+| `.env` / `.env.example` | 환경변수 (DB 접속, GMS_KEY 등) |
