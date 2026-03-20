@@ -38,6 +38,10 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ohmyguide.app.R
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import com.ohmyguide.app.R
+import com.ohmyguide.app.ui.screen.auth.AuthState
 import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
@@ -50,7 +54,22 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 @Composable
 fun WelcomeScreen(
     onSignIn: () -> Unit,
+    authState: AuthState = AuthState.Idle,
+    onDismissError: () -> Unit = {},
 ) {
+    if (authState is AuthState.Error) {
+        AlertDialog(
+            onDismissRequest = onDismissError,
+            title = { Text("로그인 오류") },
+            text = { Text(authState.message) },
+            confirmButton = {
+                TextButton(onClick = onDismissError) {
+                    Text("확인")
+                }
+            },
+        )
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "float")
     val floatOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
