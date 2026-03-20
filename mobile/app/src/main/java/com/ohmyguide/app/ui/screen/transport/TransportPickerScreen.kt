@@ -39,6 +39,7 @@ import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.InfoPurple
 import com.ohmyguide.app.ui.theme.MenuStoryBg
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.PrimaryBg
 import com.ohmyguide.app.ui.theme.TextCaption
@@ -47,9 +48,10 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
 fun TransportPickerScreen(navController: NavController, placeId: String) {
+    val strings = LocalStrings.current
     val detail = SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
-    val placeName = detail?.place?.name ?: "Destination"
+    val placeName = detail?.place?.name ?: strings.destination
     val placeNameKr = detail?.place?.nameKr ?: ""
 
     var selectedMode by remember { mutableStateOf(TransportMode.Walk) }
@@ -128,7 +130,7 @@ fun TransportPickerScreen(navController: NavController, placeId: String) {
                         Icon(Icons.Filled.Lightbulb, contentDescription = null, modifier = Modifier.size(16.dp), tint = InfoPurple)
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Tap below to see available routes",
+                            text = strings.tapToSeeRoutes,
                             style = MaterialTheme.typography.labelMedium,
                             color = InfoPurple,
                         )
@@ -138,8 +140,8 @@ fun TransportPickerScreen(navController: NavController, placeId: String) {
         }
 
         OmgButton(
-            text = if (selectedMode == TransportMode.Transit) "View Transit Routes"
-            else "Start Navigation",
+            text = if (selectedMode == TransportMode.Transit) strings.viewTransitRoutes
+            else strings.startNavigation,
             onClick = {
                 if (selectedMode == TransportMode.Transit) {
                     navController.navigate(Screen.TransitDetail.createRoute(placeId))

@@ -54,6 +54,7 @@ import com.ohmyguide.app.ui.theme.InfoPurple
 import com.ohmyguide.app.ui.theme.InfoPurpleBg
 import com.ohmyguide.app.ui.theme.InfoRose
 import com.ohmyguide.app.ui.theme.InfoRoseBg
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Star
 import com.ohmyguide.app.ui.theme.TextCaption
@@ -68,6 +69,7 @@ sealed class PlaceUiState {
 
 @Composable
 fun PlaceScreen(navController: NavController, placeId: String) {
+    val strings = LocalStrings.current
     val detail = SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
         ?: return
@@ -138,7 +140,7 @@ fun PlaceScreen(navController: NavController, placeId: String) {
                 InfoCard(
                     icon = Icons.Filled.AccessTime,
                     iconTint = InfoPurple,
-                    label = "Hours",
+                    label = strings.hours,
                     value = detail.hours,
                     bgColor = InfoPurpleBg,
                     modifier = Modifier.weight(1f),
@@ -146,7 +148,7 @@ fun PlaceScreen(navController: NavController, placeId: String) {
                 InfoCard(
                     icon = Icons.Filled.AttachMoney,
                     iconTint = InfoGreen,
-                    label = "Fee",
+                    label = strings.fee,
                     value = detail.fee,
                     bgColor = InfoGreenBg,
                     modifier = Modifier.weight(1f),
@@ -160,7 +162,7 @@ fun PlaceScreen(navController: NavController, placeId: String) {
                 InfoCard(
                     icon = Icons.AutoMirrored.Filled.DirectionsWalk,
                     iconTint = InfoRose,
-                    label = "Distance",
+                    label = strings.distance,
                     value = detail.walkTime,
                     bgColor = InfoRoseBg,
                     modifier = Modifier.weight(1f),
@@ -168,8 +170,8 @@ fun PlaceScreen(navController: NavController, placeId: String) {
                 InfoCard(
                     icon = Icons.Filled.Map,
                     iconTint = InfoBlue,
-                    label = "Map",
-                    value = "Preview",
+                    label = strings.map,
+                    value = strings.preview,
                     bgColor = InfoBlueBg,
                     modifier = Modifier.weight(1f),
                 )
@@ -223,6 +225,7 @@ private fun HeroSection(detail: PlaceDetail) {
 
 @Composable
 private fun BottomButtons(onNo: () -> Unit, onGo: () -> Unit) {
+    val strings = LocalStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -240,13 +243,13 @@ private fun BottomButtons(onNo: () -> Unit, onGo: () -> Unit) {
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "NO",
+                text = strings.placeNo,
                 style = MaterialTheme.typography.titleMedium,
                 color = TextCaption,
             )
         }
         OmgButton(
-            text = "GO",
+            text = strings.placeGo,
             onClick = onGo,
             modifier = Modifier.weight(2f),
         )

@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.R
 import com.ohmyguide.app.ui.theme.BgWhite
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBgLight
@@ -50,6 +51,8 @@ fun SplashScreen(
         delay(2500L)
         onFinish()
     }
+
+    val strings = LocalStrings.current
 
     Column(
         modifier = Modifier
@@ -76,7 +79,7 @@ fun SplashScreen(
 
         // App name
         Text(
-            text = "Oh My Guide",
+            text = strings.appName,
             style = MaterialTheme.typography.headlineLarge,
             color = Primary,
         )
@@ -85,7 +88,7 @@ fun SplashScreen(
 
         // App description
         Text(
-            text = "Your Special Korea Tour Guide Service",
+            text = strings.splashSubtitle,
             style = MaterialTheme.typography.bodySmall,
             color = TextCaption,
         )
