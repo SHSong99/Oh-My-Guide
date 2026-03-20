@@ -566,7 +566,7 @@ DB_PASSWORD=<DB 비밀번호>
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-KAFKA_BOOTSTRAP_SERVERS=localhost:9092
+KAFKA_BOOTSTRAP_SERVERS=localhost:9094
 KAFKA_GROUP_ID=oh-my-guide
 
 GOOGLE_CLIENT_ID=<Google OAuth Client ID>
@@ -576,7 +576,11 @@ JWT_SECRET=<256비트 이상의 JWT 시크릿 키>
 JWT_EXPIRATION=86400000
 ```
 
-> **운영 환경과의 차이점**: 운영에서는 `DB_HOST=postgresql`, `REDIS_HOST=redis`, `KAFKA_BOOTSTRAP_SERVERS=kafka:9092` (컨테이너명 사용). 로컬에서는 모두 `localhost`로 설정합니다.
+> **운영 환경과의 차이점**:
+> - 운영: `DB_HOST=postgresql`, `REDIS_HOST=redis`, `KAFKA_BOOTSTRAP_SERVERS=kafka:9092` (컨테이너명, PLAINTEXT 리스너)
+> - 로컬: DB/Redis는 `localhost`, Kafka는 `localhost:9094` (EXTERNAL 리스너)
+>
+> Kafka `9092`(PLAINTEXT)는 Docker 내부 전용으로 `kafka:9092`를 반환하므로, 로컬에서는 반드시 `9094`(EXTERNAL) 사용
 
 ### 9.2 로컬 인프라 실행
 
@@ -587,9 +591,8 @@ JWT_EXPIRATION=86400000
 docker network create app-network
 
 # ── Application Server 실행 (PostgreSQL, Redis, Kafka) ───────────────────
-# 로컬 override 파일로 Redis(6379), Kafka(9092) 포트 외부 노출
+# Redis(6379), Kafka(9092/9094) 포트 기본 파일에 포함
 docker compose -f infra/application-server/docker-compose.infra.yml \
-               -f infra/application-server/docker-compose.infra.local.yml \
                up -d postgresql redis kafka
 
 # ── 모니터링 실행 (Prometheus, Grafana) ──────────────────────────────────
@@ -612,7 +615,8 @@ docker compose -f infra/data-server/docker-compose.hadoop.yml \
 |-----------|-------|---------|
 | PostgreSQL | 5432 | `localhost:5432` |
 | Redis      | 6379 | `localhost:6379` |
-| Kafka      | 9092 | `localhost:9092` |
+| Kafka (내부용) | 9092 | Docker 내부 전용 (`kafka:9092`) |
+| Kafka (외부용) | 9094 | `localhost:9094` ← Spring Boot 로컬 연결 시 사용 |
 | Prometheus | 9090 | `http://localhost:9090` |
 | Grafana    | 3000 | `http://localhost:3000` |
 | HDFS Web UI | 9870 | `http://localhost:9870` |
@@ -627,7 +631,6 @@ docker compose -f infra/data-server/docker-compose.hadoop.yml \
 ```bash
 # ── Application Server 컨테이너 & 볼륨 전체 삭제 ──────────────────────────
 docker compose -f infra/application-server/docker-compose.infra.yml \
-               -f infra/application-server/docker-compose.infra.local.yml \
                down -v
 
 # ── 모니터링 컨테이너 & 볼륨 전체 삭제 ──────────────────────────────────
@@ -645,7 +648,6 @@ docker network create app-network 2>/dev/null || true
 
 # ── Application Server 실행 (PostgreSQL, Redis, Kafka) ───────────────────
 docker compose -f infra/application-server/docker-compose.infra.yml \
-               -f infra/application-server/docker-compose.infra.local.yml \
                up -d postgresql redis kafka
 
 # ── 모니터링 실행 (Prometheus, Grafana) ──────────────────────────────────
