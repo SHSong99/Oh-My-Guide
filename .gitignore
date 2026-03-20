@@ -1,7 +1,17 @@
+# IDE and tool directories
+.agents
+.claude
+.idea
+
 # environment variables
 .env
 .env.*
 !.env.example
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
 
 # dependencies
 node_modules/
@@ -16,4 +26,3 @@ test/mapsapitest/src/**/*.d.ts
 test/mapsapitest/src/**/*.d.ts.map
 
 CLAUDE.md
-.claude

@@ -34,6 +34,13 @@ pipeline {
 
                     def sparkJobsChanged = changedFiles.split('\n').any { it.startsWith('infra/data-server/spark-jobs/') }
                     env.SPARK_JOBS_CHANGED = sparkJobsChanged ? 'true' : 'false'
+
+                    def infraChanged = changedFiles.split('\n').any {
+                        it.startsWith('infra/data-server/livy/') ||
+                        it == 'infra/data-server/docker-compose.hadoop.yml' ||
+                        it.startsWith('infra/data-server/hadoop-config/')
+                    }
+                    env.INFRA_CHANGED = infraChanged ? 'true' : 'false'
                 }
             }
         }
@@ -49,6 +56,35 @@ pipeline {
                             -e "ssh -o StrictHostKeyChecking=no" \
                             infra/data-server/spark-jobs/ \
                             $DATA_SERVER_HOST:$DATA_SERVER_DIR/spark-jobs/
+                    '''
+                }
+            }
+        }
+
+        stage('Deploy Infra') {
+            when {
+                environment name: 'INFRA_CHANGED', value: 'true'
+            }
+            steps {
+                sshagent(['data-server-ssh-key']) {
+                    sh '''
+                        rsync -avz --delete \
+                            -e "ssh -o StrictHostKeyChecking=no" \
+                            infra/data-server/livy/ \
+                            $DATA_SERVER_HOST:$DATA_SERVER_DIR/livy/
+
+                        rsync -avz \
+                            -e "ssh -o StrictHostKeyChecking=no" \
+                            infra/data-server/docker-compose.hadoop.yml \
+                            $DATA_SERVER_HOST:$DATA_SERVER_DIR/docker-compose.hadoop.yml
+
+                        rsync -avz \
+                            -e "ssh -o StrictHostKeyChecking=no" \
+                            infra/data-server/hadoop-config/ \
+                            $DATA_SERVER_HOST:$DATA_SERVER_DIR/hadoop-config/
+
+                        ssh -o StrictHostKeyChecking=no $DATA_SERVER_HOST \
+                            "cd $DATA_SERVER_DIR && docker compose -f docker-compose.hadoop.yml up -d --build"
                     '''
                 }
             }

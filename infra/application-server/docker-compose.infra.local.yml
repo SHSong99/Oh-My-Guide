@@ -1,0 +1,7 @@
+services:
+  redis:
+    ports:
+      - "6379:6379"
+  kafka:
+    ports:
+      - "9092:9092"
