@@ -114,8 +114,8 @@ dependencies {
     implementation(libs.credentials.play)
     implementation(libs.googleid)
 
-    // DataStore
-    implementation(libs.datastore.preferences)
+    // Encrypted Storage
+    implementation(libs.security.crypto)
 
     // Google Sign-In (Authorization API for access token)
     implementation(libs.play.services.auth)
