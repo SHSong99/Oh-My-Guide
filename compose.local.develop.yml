@@ -1,0 +1,254 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    ports:
+      - "5432:5432"
+    volumes:
+      - ohmyguide-postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ohmyguide
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: 1234
+    networks:
+      - app-network
+
+
+  spring-server:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - app-network
+
+  fastapi-server:
+    build:
+      context: ./ai
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./ai/.env
+    depends_on:
+      - postgres
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: redis
+    expose:
+      - 6379
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    ports:
+      - "6379:6379"
+
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: kafka
+    expose:
+      - 9092
+    environment:
+      - KAFKA_NODE_ID=1
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+    networks:
+      - app-network
+    ports:
+      - "9092:9092"
+      - "9094:9094" # 컨트롤러 포트 (외부 노출은 선택 사항)
+
+  # ─────────────────────────────────────────────
+  # HDFS NameNode
+  # ─────────────────────────────────────────────
+  namenode:
+    image: apache/hadoop:3
+    container_name: namenode
+    hostname: namenode
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+    command: >
+      sh -c "
+        mkdir -p /opt/hadoop/data/nameNode /opt/hadoop/data/tmp &&
+        chown -R hadoop:hadoop /opt/hadoop/data &&
+        if [ ! -d /opt/hadoop/data/nameNode/current ]; then
+          su hadoop -c 'hdfs namenode -format -nonInteractive';
+        fi &&
+        su hadoop -c 'hdfs namenode'
+      "
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+      - "8020:8020"
+    volumes:
+      - namenode-data:/opt/hadoop/data/nameNode
+      - ./infra/data-server/hadoop-config:/opt/hadoop/etc/hadoop
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9870 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 40s
+    networks:
+      - data-network
+
+  # ─────────────────────────────────────────────
+  # HDFS DataNode
+  # ─────────────────────────────────────────────
+  datanode:
+    image: apache/hadoop:3
+    container_name: datanode
+    hostname: datanode
+    user: root
+    environment:
+      - HADOOP_HOME=/opt/hadoop
+      - DATANODE_HOSTNAME=${DATANODE_HOSTNAME}
+    command: >
+      sh -c "
+        mkdir -p /opt/hadoop/data/dataNode &&
+        chown -R hadoop:hadoop /opt/hadoop/data &&
+        su hadoop -c 'hdfs datanode'
+      "
+    ports:
+      - "9864:9864"
+      - "9866:9866"
+      - "9867:9867"
+    volumes:
+      - datanode-data:/opt/hadoop/data/dataNode
+      - ./infra/data-server/hadoop-config:/opt/hadoop/etc/hadoop
+    depends_on:
+      namenode:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9864 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    networks:
+      - data-network
+
+  # ─────────────────────────────────────────────
+  # Spark Master
+  # ─────────────────────────────────────────────
+  spark-master:
+    image: apache/spark:3.5.3
+    container_name: spark-master
+    hostname: spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+    environment:
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_MASTER_PORT=7077
+      - SPARK_MASTER_WEBUI_PORT=18080
+      - SPARK_MASTER_REST_PORT=6066
+    ports:
+      - "18080:18080"
+      - "7077:7077"
+      - "6066:6066"
+    volumes:
+      - ./infra/data-server/spark-jobs:/opt/spark-jobs
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:18080 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - data-network
+
+  # ─────────────────────────────────────────────
+  # Spark Worker
+  # ─────────────────────────────────────────────
+  spark-worker:
+    image: apache/spark:3.5.3
+    container_name: spark-worker
+    hostname: spark-worker
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
+    environment:
+      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_CORES=2
+      - SPARK_WORKER_WEBUI_PORT=8081
+    ports:
+      - "8081:8081"
+    volumes:
+      - ./infra/data-server/spark-jobs:/opt/spark-jobs
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8081 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - data-network
+
+  # ─────────────────────────────────────────────
+  # Apache Livy
+  # ─────────────────────────────────────────────
+  livy:
+    build:
+      context: ./infra/data-server/livy
+    container_name: livy
+    hostname: livy
+    ports:
+      - "8998:8998"
+    environment:
+      - SPARK_HOME=/opt/spark
+      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+      - LIVY_SERVER_JAVA_OPTS=--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+    volumes:
+      - ./infra/data-server/spark-jobs:/opt/spark-jobs
+      - ./infra/data-server/hadoop-config:/opt/hadoop/etc/hadoop
+      - ./infra/data-server/livy/livy.conf:/opt/livy/conf/livy.conf
+    depends_on:
+      spark-master:
+        condition: service_healthy
+    networks:
+      - data-network
+
+volumes:
+  ohmyguide-postgres-data:
+  namenode-data:
+  datanode-data:
+  redis_data:
+  kafka_data:
+
+networks:
+  data-network:
+    driver: bridge
+  app-network:
+    driver: bridge
+
+
+
