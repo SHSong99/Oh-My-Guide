@@ -24,19 +24,29 @@ import kotlin.math.sqrt
 
 // ── Chat Messages ──
 
+data class PhraseItem(
+    val korean: String,
+    val romanization: String,
+    val english: String,
+)
+
+data class TransitStopInfo(
+    val stopName: String,
+    val busNumber: String,
+    val remainingStops: Int,
+    val exitStopName: String,
+)
+
 sealed class NaviChatMessage {
     data class BotText(val text: String) : NaviChatMessage()
     object BotTyping : NaviChatMessage()
     data class PlaceIntro(val detail: PlaceDetail, val distance: String, val eta: String) : NaviChatMessage()
-    data class ActionButtons(
-        val options: List<String> = listOf("Listen", "Photo", "Prices", "Phrases", "Skip"),
-        val answered: Boolean = false,
-        val selected: String? = null,
+    data class TransitInfo(val info: TransitStopInfo) : NaviChatMessage()
+    data class DestinationDetail(val detail: PlaceDetail) : NaviChatMessage()
+    data class NearbyPlaces(
+        val places: List<Place>,
     ) : NaviChatMessage()
-    data class NearbyPoi(
-        val name: String,
-        val answered: Boolean = false,
-    ) : NaviChatMessage()
+    data class Phrases(val items: List<PhraseItem>) : NaviChatMessage()
     object ArrivalConfirm : NaviChatMessage()
     data class NearbyRecommendations(val places: List<Place>) : NaviChatMessage()
 }
@@ -75,38 +85,55 @@ class NaviViewModel @Inject constructor(
     private var gpsJob: Job? = null
     private var nearbyPoiShown = false
 
-    companion object {
-        private val PLACE_COORDINATES = mapOf(
-            "dm3" to (37.5700 to 126.9990),
-            "dm4" to (37.5826 to 126.9831),
-            "dm5" to (37.5512 to 126.9882),
-            "dm6" to (37.5735 to 126.9920),
-            "dm7" to (37.5690 to 126.9780),
-        )
-        private const val ARRIVAL_THRESHOLD_METERS = 100.0
-    }
-
     init {
         initChat()
         startGpsSimulation()
     }
 
     private fun initChat() {
-        val msgs = mutableListOf<NaviChatMessage>()
-        val dist = "${totalDistance}m"
-        val eta = "$totalDuration min"
+        val placeName = detail?.place?.name ?: "your destination"
 
-        msgs += NaviChatMessage.PlaceIntro(
-            detail = detail ?: return,
-            distance = dist,
-            eta = eta,
-        )
-        msgs += NaviChatMessage.BotText(
-            "I'll guide you to ${detail.place.name}! Keep going straight ahead.",
-        )
-        msgs += NaviChatMessage.ActionButtons()
+        addMessage(NaviChatMessage.BotText(
+            "I'll guide you to $placeName! Keep going straight ahead.",
+        ))
 
-        _uiState.update { it.copy(chatMessages = msgs) }
+        viewModelScope.launch {
+            // Step 1: Transit info (if transit mode)
+            if (mode == "transit") {
+                delay(3000L)
+                addMessage(NaviChatMessage.BotTyping)
+                delay(800L)
+                removeTyping()
+                addMessage(NaviChatMessage.BotText("Here's your transit info:"))
+                addMessage(NaviChatMessage.TransitInfo(
+                    info = TRANSIT_STOPS[placeId] ?: TRANSIT_STOPS.values.first(),
+                ))
+            }
+
+            // Step 2: Destination detail card
+            delay(3000L)
+            addMessage(NaviChatMessage.BotTyping)
+            delay(800L)
+            removeTyping()
+            if (detail != null) {
+                addMessage(NaviChatMessage.BotText("About $placeName:"))
+                addMessage(NaviChatMessage.DestinationDetail(detail = detail))
+            }
+
+            // Step 3: Nearby places
+            delay(3000L)
+            addMessage(NaviChatMessage.BotTyping)
+            delay(800L)
+            removeTyping()
+            val nearbyPlaces = SAMPLE_PLACES
+                .filter { it.id != placeId }
+                .shuffled()
+                .take(4)
+            if (nearbyPlaces.isNotEmpty()) {
+                addMessage(NaviChatMessage.BotText("Here are some interesting places along your route:"))
+                addMessage(NaviChatMessage.NearbyPlaces(places = nearbyPlaces))
+            }
+        }
     }
 
     // ── GPS Simulation (5초 간격) ──
@@ -133,7 +160,7 @@ class NaviViewModel @Inject constructor(
 
                 // Nearby POI check (halfway point)
                 if (!nearbyPoiShown && progress > 0.5f) {
-                    showNearbyPoi()
+                    showNearbyPlaces()
                 }
 
                 // Arrival check
@@ -164,86 +191,85 @@ class NaviViewModel @Inject constructor(
 
     // ── Action Button Handlers ──
 
-    fun onActionSelect(action: String) {
-        markActionAnswered(action)
-
+    fun onPhrasesClick() {
         viewModelScope.launch {
             addMessage(NaviChatMessage.BotTyping)
-            delay(1000L)
+            delay(800L)
             removeTyping()
-
-            when (action) {
-                "Listen" -> addMessage(
-                    NaviChatMessage.BotText(
-                        "🎧 Audio Guide: ${detail?.place?.name ?: "This place"} has been a beloved landmark for decades. " +
-                            "The area is known for its rich history and vibrant atmosphere. " +
-                            "Take a moment to soak in the surroundings!"
-                    )
-                )
-                "Photo" -> addMessage(
-                    NaviChatMessage.BotText(
-                        "📸 Best photo spots nearby:\n" +
-                            "1. The main entrance — great for wide shots\n" +
-                            "2. The alley to the left — perfect for street vibes\n" +
-                            "3. Rooftop across the street — panoramic view"
-                    )
-                )
-                "Prices" -> addMessage(
-                    NaviChatMessage.BotText(
-                        "💰 Price Guide:\n" +
-                            "• Entrance: ${detail?.fee ?: "Free"}\n" +
-                            "• Avg meal nearby: ₩8,000-15,000\n" +
-                            "• Popular souvenir: ₩5,000-10,000"
-                    )
-                )
-                "Phrases" -> addMessage(
-                    NaviChatMessage.BotText(
-                        "🗣 Useful Korean phrases here:\n" +
-                            "• 이거 주세요 (i-geo ju-se-yo) — This one, please\n" +
-                            "• 얼마예요? (eol-ma-ye-yo) — How much?\n" +
-                            "• 화장실 어디예요? (hwa-jang-sil eo-di-ye-yo) — Where's the restroom?"
-                    )
-                )
-                "Skip" -> addMessage(
-                    NaviChatMessage.BotText("No worries! Let me know if you need anything on the way.")
-                )
-            }
+            addMessage(NaviChatMessage.BotText("Here are some useful Korean phrases:"))
+            addMessage(NaviChatMessage.Phrases(items = USEFUL_PHRASES))
         }
+    }
+
+    companion object {
+        private val PLACE_COORDINATES = mapOf(
+            "dm3" to (37.5700 to 126.9990),
+            "dm4" to (37.5826 to 126.9831),
+            "dm5" to (37.5512 to 126.9882),
+            "dm6" to (37.5735 to 126.9920),
+            "dm7" to (37.5690 to 126.9780),
+        )
+        private const val ARRIVAL_THRESHOLD_METERS = 100.0
+
+        private val USEFUL_PHRASES = listOf(
+            PhraseItem("이거 주세요", "i-geo ju-se-yo", "This one, please"),
+            PhraseItem("얼마예요?", "eol-ma-ye-yo?", "How much is it?"),
+            PhraseItem("화장실 어디예요?", "hwa-jang-sil eo-di-ye-yo?", "Where's the restroom?"),
+            PhraseItem("감사합니다", "gam-sa-ham-ni-da", "Thank you"),
+            PhraseItem("맛있어요!", "ma-si-sseo-yo!", "It's delicious!"),
+        )
+
+        private val TRANSIT_STOPS = mapOf(
+            "dm3" to TransitStopInfo(
+                stopName = "Jongno 5-ga Stn.",
+                busNumber = "Bus 201",
+                remainingStops = 3,
+                exitStopName = "Gwangjang Market",
+            ),
+            "dm4" to TransitStopInfo(
+                stopName = "Anguk Stn.",
+                busNumber = "Bus 172",
+                remainingStops = 2,
+                exitStopName = "Bukchon Hanok Village",
+            ),
+            "dm5" to TransitStopInfo(
+                stopName = "Myeongdong Stn.",
+                busNumber = "Bus 402",
+                remainingStops = 4,
+                exitStopName = "Namsan Tower Entrance",
+            ),
+            "dm6" to TransitStopInfo(
+                stopName = "Jongno 3-ga Stn.",
+                busNumber = "Bus 151",
+                remainingStops = 1,
+                exitStopName = "Ikseon-dong",
+            ),
+            "dm7" to TransitStopInfo(
+                stopName = "Gwanghwamun Stn.",
+                busNumber = "Bus 109",
+                remainingStops = 2,
+                exitStopName = "Cheonggyecheon Stream",
+            ),
+        )
     }
 
     // ── Nearby POI ──
 
-    private fun showNearbyPoi() {
+    private fun showNearbyPlaces() {
         nearbyPoiShown = true
-        val nearbyName = SAMPLE_PLACES
+        val nearbyPlaces = SAMPLE_PLACES
             .filter { it.id != placeId }
-            .randomOrNull()?.name ?: return
+            .shuffled()
+            .take(4)
+
+        if (nearbyPlaces.isEmpty()) return
 
         viewModelScope.launch {
             addMessage(NaviChatMessage.BotTyping)
             delay(800L)
             removeTyping()
-            addMessage(NaviChatMessage.BotText("There's $nearbyName nearby! Want to check it out?"))
-            addMessage(NaviChatMessage.NearbyPoi(name = nearbyName))
-        }
-    }
-
-    fun onNearbyPoiResponse(accepted: Boolean, name: String) {
-        markNearbyAnswered(name)
-        viewModelScope.launch {
-            if (accepted) {
-                addMessage(NaviChatMessage.BotTyping)
-                delay(800L)
-                removeTyping()
-                val poiDetail = SAMPLE_PLACE_DETAILS.values.firstOrNull { it.place.name == name }
-                addMessage(
-                    NaviChatMessage.BotText(
-                        "Great choice! ${poiDetail?.desc ?: "$name is a wonderful spot to explore."}"
-                    )
-                )
-            } else {
-                addMessage(NaviChatMessage.BotText("No problem, let's keep going!"))
-            }
+            addMessage(NaviChatMessage.BotText("Here are some interesting places along your route:"))
+            addMessage(NaviChatMessage.NearbyPlaces(places = nearbyPlaces))
         }
     }
 
@@ -274,30 +300,6 @@ class NaviViewModel @Inject constructor(
     private fun removeTyping() {
         _uiState.update { state ->
             state.copy(chatMessages = state.chatMessages.filterNot { it is NaviChatMessage.BotTyping })
-        }
-    }
-
-    private fun markActionAnswered(selected: String) {
-        _uiState.update { state ->
-            state.copy(
-                chatMessages = state.chatMessages.map {
-                    if (it is NaviChatMessage.ActionButtons && !it.answered) {
-                        it.copy(answered = true, selected = selected)
-                    } else it
-                },
-            )
-        }
-    }
-
-    private fun markNearbyAnswered(name: String) {
-        _uiState.update { state ->
-            state.copy(
-                chatMessages = state.chatMessages.map {
-                    if (it is NaviChatMessage.NearbyPoi && it.name == name && !it.answered) {
-                        it.copy(answered = true)
-                    } else it
-                },
-            )
         }
     }
 

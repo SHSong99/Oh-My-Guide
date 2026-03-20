@@ -56,6 +56,8 @@ import com.ohmyguide.app.fixtures.COMPANION_OPTIONS
 import com.ohmyguide.app.fixtures.COUNTRY_OPTIONS
 import com.ohmyguide.app.fixtures.GENDER_OPTIONS
 import com.ohmyguide.app.fixtures.LANGUAGE_OPTIONS
+import com.ohmyguide.app.ui.theme.AppLanguage
+import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.PrimaryButton
@@ -125,6 +127,8 @@ fun GpsPermissionScreen(
                 options = LANGUAGE_OPTIONS.map { it.label },
                 onSelect = { label ->
                     languageLabel = label
+                    val langCode = LANGUAGE_OPTIONS.find { it.label == label }?.id ?: "en"
+                    LanguageManager.setLanguage(context, AppLanguage.fromCode(langCode))
                     step = OnboardStep.GENDER
                 },
             )
