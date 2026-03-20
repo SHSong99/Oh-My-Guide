@@ -60,6 +60,7 @@ import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.BorderCategory
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBgChat
@@ -77,6 +78,7 @@ fun CategoryScreen(
     onConfirm: (List<String>) -> Unit,
 ) {
     val context = LocalContext.current
+    val strings = LocalStrings.current
     val selected = remember { mutableStateListOf<String>() }
     var step by remember { mutableStateOf(ChatStep.GPS) }
     var locationName by remember { mutableStateOf("") }
@@ -95,7 +97,7 @@ fun CategoryScreen(
                 val district = address.subLocality ?: address.locality ?: ""
                 val city = address.adminArea ?: ""
                 locationName = if (district.isNotEmpty() && city.isNotEmpty()) "$district, $city"
-                else city.ifEmpty { "Your Location" }
+                else city.ifEmpty { strings.yourLocation }
             }
         } catch (_: Exception) {
             // Geocoder 실패 시 무시, 타이머 폴백으로 처리
@@ -105,7 +107,7 @@ fun CategoryScreen(
     // 채팅 애니메이션 (한 번만 실행)
     LaunchedEffect(Unit) {
         delay(1800L)
-        if (locationName.isEmpty()) locationName = "Your Location"
+        if (locationName.isEmpty()) locationName = strings.yourLocation
         step = ChatStep.MSG1
         delay(600L)
         step = ChatStep.MSG2
@@ -147,7 +149,7 @@ fun CategoryScreen(
                 ) {
                     Icon(Icons.Filled.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp), tint = Primary)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Detecting your location...", style = MaterialTheme.typography.bodySmall, color = TextSecondary)
+                    Text(text = strings.detectingLocation, style = MaterialTheme.typography.bodySmall, color = TextSecondary)
                 }
             }
 
@@ -177,7 +179,7 @@ fun CategoryScreen(
                 visible = step >= ChatStep.MSG1,
                 enter = fadeIn() + slideInVertically { it / 2 },
             ) {
-                GuideBubble(text = "Hey! I'm Oh My Guide\nI'll find the perfect spots near you right now!")
+                GuideBubble(text = strings.categoryGreeting)
             }
 
             if (step == ChatStep.MSG1) {
@@ -189,7 +191,7 @@ fun CategoryScreen(
                 visible = step >= ChatStep.MSG2,
                 enter = fadeIn() + slideInVertically { it / 2 },
             ) {
-                GuideBubble(text = "Just tell me what you're into", showAvatar = false)
+                GuideBubble(text = strings.categoryPrompt, showAvatar = false)
             }
 
             if (step == ChatStep.MSG2) {
@@ -241,7 +243,7 @@ fun CategoryScreen(
             }
 
             if (step == ChatStep.DONE) {
-                GuideBubble(text = "Awesome picks! Let me find the best spots for you... 🎯")
+                GuideBubble(text = strings.categoryDone)
             }
         }
 
@@ -307,7 +309,7 @@ private fun CategoryInputBar(
                         Spacer(modifier = Modifier.width(4.dp))
                         Icon(
                             Icons.Filled.Close,
-                            contentDescription = "Remove",
+                            contentDescription = LocalStrings.current.remove,
                             modifier = Modifier.size(16.dp).clip(CircleShape).clickable { onRemove(id) },
                             tint = cat.color,
                         )
@@ -322,9 +324,9 @@ private fun CategoryInputBar(
         ) {
             Text(
                 text = when (selected.size) {
-                    0 -> "Choose what interests you!"
-                    1 -> "Great pick! Add more or send"
-                    else -> "${selected.size} categories selected"
+                    0 -> LocalStrings.current.chooseInterests
+                    1 -> LocalStrings.current.addMoreOrSend
+                    else -> "${selected.size} ${LocalStrings.current.categoriesSelected}"
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = TextCaption,
@@ -346,7 +348,7 @@ private fun CategoryInputBar(
             ) {
                 Icon(
                     Icons.Filled.Send,
-                    contentDescription = "Send",
+                    contentDescription = LocalStrings.current.send,
                     modifier = Modifier.size(18.dp),
                     tint = if (selected.isNotEmpty()) BgWhite else TextCaption,
                 )

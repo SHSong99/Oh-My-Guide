@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.ui.theme.BgWhite
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryGradientHorizontal
@@ -38,18 +39,18 @@ data class NavTab(
     val label: String,
 )
 
-val MAIN_TABS = listOf(
-    NavTab("main", "Home"),
-    NavTab("explore", "Explore"),
-    NavTab("phrases", "Phrases"),
-)
-
 @Composable
 fun BottomNavBar(
     activeTab: String,
     onTabChange: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalStrings.current
+    val tabs = listOf(
+        NavTab("main", strings.navHome),
+        NavTab("explore", strings.navExplore),
+        NavTab("phrases", strings.navPhrases),
+    )
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -59,7 +60,7 @@ fun BottomNavBar(
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MAIN_TABS.forEach { tab ->
+        tabs.forEach { tab ->
             val active = activeTab == tab.id
             Column(
                 modifier = Modifier

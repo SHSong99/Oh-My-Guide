@@ -38,6 +38,7 @@ import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
+import com.naver.maps.map.compose.MapEffect
 import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
@@ -55,6 +56,8 @@ import com.ohmyguide.app.ui.common.TypingIndicator
 import com.ohmyguide.app.ui.screen.story.StoryOverlay
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.DragHandle
+import com.ohmyguide.app.ui.theme.LanguageManager
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryDark
@@ -69,11 +72,12 @@ private val PLACE_COORDINATES = mapOf(
 )
 private val DEFAULT_USER_POSITION = LatLng(37.5665, 126.9780)
 
-private val MODE_LABELS = mapOf(
-    "walk" to "Walking to",
-    "transit" to "Transit to",
-    "taxi" to "Driving to",
-)
+private fun getModeLabel(mode: String, strings: com.ohmyguide.app.ui.theme.AppStrings): String = when (mode) {
+    "walk" -> strings.walkingTo
+    "transit" -> strings.transitTo
+    "taxi" -> strings.drivingTo
+    else -> strings.walkingTo
+}
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalNaverMapApi::class)
 @Composable
@@ -84,16 +88,17 @@ fun NaviScreen(
     onMinimize: () -> Unit = {},
     viewModel: NaviViewModel = hiltViewModel(),
 ) {
+    val strings = LocalStrings.current
     var showStory by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsState()
 
     val detail = viewModel.detail
-    val placeName = detail?.place?.name ?: "Destination"
+    val placeName = detail?.place?.name ?: strings.destination
     val placeNameKr = detail?.place?.nameKr ?: ""
     val route = FALLBACK_ROUTES[placeId to mode]
     val distance = route?.let { "${it.distanceMeters}m" } ?: "350m"
     val eta = route?.let { "${it.durationMin} min" } ?: detail?.walkTime ?: "5 min"
-    val modeLabel = MODE_LABELS[mode] ?: "Walking to"
+    val modeLabel = getModeLabel(mode, strings)
 
     val scaffoldState = rememberBottomSheetScaffoldState()
     val listState = rememberLazyListState()
@@ -262,6 +267,10 @@ private fun MapArea(
             properties = mapProperties,
             uiSettings = mapUiSettings,
         ) {
+            val mapLocale = LanguageManager.current.value.locale
+            MapEffect(mapLocale) { naverMap ->
+                naverMap.setLocale(mapLocale)
+            }
             if (routeCoords != null && routeCoords.size >= 2) {
                 PathOverlay(
                     coords = routeCoords,

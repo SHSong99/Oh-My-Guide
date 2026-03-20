@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ohmyguide.app.R
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.fixtures.KoreanPhrase
 import com.ohmyguide.app.fixtures.PhraseSection
 import com.ohmyguide.app.ui.theme.BgDivider
@@ -57,6 +58,7 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
 fun PhrasesHeader(savedCount: Int) {
+    val strings = LocalStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -67,12 +69,12 @@ fun PhrasesHeader(savedCount: Int) {
     ) {
         Column {
             Text(
-                text = "\uD55C\uAD6D\uC5B4 \uAD6C\uBB38",
+                text = strings.koreanPhrasesTitle,
                 style = MaterialTheme.typography.headlineSmall,
                 color = TextPrimary,
             )
             Text(
-                text = "Korean Phrases for Travelers",
+                text = strings.koreanPhrasesSubtitle,
                 style = MaterialTheme.typography.labelMedium,
                 color = TextCaption,
             )
@@ -88,7 +90,7 @@ fun PhrasesHeader(savedCount: Int) {
                 Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(12.dp), tint = SavedText)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "$savedCount saved",
+                    text = "$savedCount ${strings.saved}",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = SavedText,
                 )
@@ -136,7 +138,7 @@ fun MascotTip() {
                 .padding(horizontal = 12.dp, vertical = 8.dp),
         ) {
             Text(
-                text = "Tap the bookmark to save phrases for quick access offline!",
+                text = LocalStrings.current.bookmarkHint,
                 style = MaterialTheme.typography.labelMedium,
                 color = TextPrimary,
             )
@@ -198,7 +200,7 @@ fun PhraseSectionCard(
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "${section.phrases.size} phrases",
+                    text = "${section.phrases.size} ${LocalStrings.current.phrasesUnit}",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                     color = section.color,
                 )

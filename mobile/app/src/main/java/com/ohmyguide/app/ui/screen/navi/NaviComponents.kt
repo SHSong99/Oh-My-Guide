@@ -46,6 +46,7 @@ import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.BorderLight
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
 import com.ohmyguide.app.ui.theme.PrimaryGradient
@@ -99,7 +100,7 @@ fun NaviSheetHeader(
                 Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextCaption)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Stop",
+                    text = LocalStrings.current.stop,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = TextCaption,
                 )
@@ -246,7 +247,7 @@ fun NearbyPoiButtons(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(
-            text = "Yes, show me!",
+            text = LocalStrings.current.yesShowMe,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
             color = BgWhite,
             modifier = Modifier
@@ -256,7 +257,7 @@ fun NearbyPoiButtons(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         )
         Text(
-            text = "Skip",
+            text = LocalStrings.current.skip,
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
             color = TextSecondary,
             modifier = Modifier
@@ -287,7 +288,7 @@ fun ArrivalConfirmButton(onClick: () -> Unit) {
             Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextPrimary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "I've Arrived!",
+                text = LocalStrings.current.iveArrived,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = TextPrimary,
             )

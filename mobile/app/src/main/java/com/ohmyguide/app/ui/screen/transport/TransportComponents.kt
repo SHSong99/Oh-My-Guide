@@ -30,27 +30,29 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.ui.common.RadioIndicator
+import com.ohmyguide.app.ui.theme.AppStrings
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.InfoGreen
 import com.ohmyguide.app.ui.theme.InfoPurple
 import com.ohmyguide.app.ui.theme.InfoRose
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 
 internal enum class TransportMode(
-    val label: String,
+    val labelKey: (AppStrings) -> String,
     val icon: ImageVector,
-    val desc: String,
+    val descKey: (AppStrings) -> String,
     val time: String,
     val eta: String,
     val color: Color,
 ) {
-    Walk("Walk", Icons.AutoMirrored.Filled.DirectionsWalk, "Enjoy the scenery", "5 min", "ETA 9:46 AM", InfoGreen),
-    Transit("Transit", Icons.Filled.DirectionsBus, "Bus & Subway", "12 min", "ETA 9:53 AM", InfoPurple),
-    Taxi("Taxi", Icons.Filled.LocalTaxi, "Taxi / Car", "3 min", "ETA 9:44 AM", InfoRose),
+    Walk({ it.walk }, Icons.AutoMirrored.Filled.DirectionsWalk, { it.enjoyScenery }, "5 min", "ETA 9:46 AM", InfoGreen),
+    Transit({ it.transit }, Icons.Filled.DirectionsBus, { it.busAndSubway }, "12 min", "ETA 9:53 AM", InfoPurple),
+    Taxi({ it.taxi }, Icons.Filled.LocalTaxi, { it.taxiCar }, "3 min", "ETA 9:44 AM", InfoRose),
 }
 
 @Composable
@@ -61,6 +63,8 @@ internal fun TransportModeCard(
 ) {
     val borderColor = if (selected) Primary else Border
     val bgColor = if (selected) PrimaryBg else BgWhite
+
+    val strings = LocalStrings.current
 
     Row(
         modifier = Modifier
@@ -86,12 +90,12 @@ internal fun TransportModeCard(
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = mode.label,
+                text = mode.labelKey(strings),
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
             )
             Text(
-                text = mode.desc,
+                text = mode.descKey(strings),
                 style = MaterialTheme.typography.labelSmall,
                 color = TextCaption,
             )
