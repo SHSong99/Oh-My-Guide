@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.R
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.Secondary
@@ -97,7 +98,7 @@ fun LoadingScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         Text(
-            text = "Finding amazing spots...",
+            text = LocalStrings.current.findingSpots,
             style = MaterialTheme.typography.headlineSmall,
             color = TextPrimary,
         )
@@ -105,7 +106,7 @@ fun LoadingScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "Scanning nearby places\nbased on your interests",
+            text = LocalStrings.current.scanningNearby,
             style = MaterialTheme.typography.bodySmall,
             color = TextCaption,
             textAlign = TextAlign.Center,

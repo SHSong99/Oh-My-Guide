@@ -45,6 +45,7 @@ import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.ExploreDarkBg
 import com.ohmyguide.app.ui.theme.HotBadge
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
 import com.ohmyguide.app.ui.theme.TextCaption
@@ -53,6 +54,8 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
 fun HeroBanner() {
+    val strings = LocalStrings.current
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -81,7 +84,7 @@ fun HeroBanner() {
         ) {
             Image(
                 painter = painterResource(R.drawable.masot),
-                contentDescription = "Guide mascot",
+                contentDescription = null,
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
@@ -91,12 +94,12 @@ fun HeroBanner() {
             Spacer(modifier = Modifier.width(10.dp))
             Column {
                 Text(
-                    text = "K-Culture",
+                    text = strings.kCulture,
                     style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.ExtraBold),
                     color = BgWhite,
                 )
                 Text(
-                    text = "Explore",
+                    text = strings.explore,
                     style = MaterialTheme.typography.labelSmall,
                     color = BgWhite.copy(alpha = 0.6f),
                 )
@@ -115,10 +118,10 @@ fun HeroBanner() {
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Whatshot, contentDescription = "Trending", modifier = Modifier.size(12.dp), tint = BgWhite)
+                    Icon(Icons.Filled.Whatshot, contentDescription = null, modifier = Modifier.size(12.dp), tint = BgWhite)
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "TRENDING",
+                        text = strings.trending,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                         color = BgWhite,
                     )
@@ -126,13 +129,13 @@ fun HeroBanner() {
             }
             Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = "Dive into\nK-Culture",
+                text = strings.diveIntoKCulture,
                 style = MaterialTheme.typography.displayLarge,
                 color = BgWhite,
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = "Curated courses by locals & K-fans",
+                text = strings.curatedCourses,
                 style = MaterialTheme.typography.bodySmall,
                 color = BgWhite.copy(alpha = 0.7f),
             )
@@ -268,7 +271,7 @@ fun SectionHeader(
         if (count != null) {
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "$count courses",
+                text = "$count ${LocalStrings.current.courses.lowercase()}",
                 style = MaterialTheme.typography.labelSmall,
                 color = TextCaption,
             )
@@ -295,13 +298,13 @@ fun EmptyState() {
         }
         Spacer(modifier = Modifier.height(12.dp))
         Text(
-            text = "No courses found",
+            text = LocalStrings.current.noCoursesFound,
             style = MaterialTheme.typography.titleSmall,
             color = TextCaption,
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "Try a different region or category",
+            text = LocalStrings.current.tryDifferentRegion,
             style = MaterialTheme.typography.labelMedium,
             color = TextCaption.copy(alpha = 0.7f),
         )

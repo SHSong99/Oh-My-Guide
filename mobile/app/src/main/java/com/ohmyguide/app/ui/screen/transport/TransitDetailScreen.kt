@@ -21,8 +21,8 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.OmgButton
-import com.ohmyguide.app.ui.common.OmgTopBar
 import com.ohmyguide.app.ui.navi.Screen
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.InfoBlue
 import com.ohmyguide.app.ui.theme.InfoGreen
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
@@ -107,7 +107,7 @@ fun TransitDetailScreen(navController: NavController, placeId: String) {
         }
 
         OmgButton(
-            text = "Start Navigation",
+            text = LocalStrings.current.startNavigation,
             onClick = {
                 navController.navigate(Screen.Navi.createRoute(placeId, "transit"))
             },

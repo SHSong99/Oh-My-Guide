@@ -49,6 +49,7 @@ import com.ohmyguide.app.fixtures.RecommendationSection
 import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
 import com.ohmyguide.app.ui.theme.PrimaryBgLight
@@ -62,6 +63,7 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
 fun HomeHeader(onReset: () -> Unit = {}) {
+    val strings = LocalStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -94,12 +96,12 @@ fun HomeHeader(onReset: () -> Unit = {}) {
         Spacer(modifier = Modifier.width(12.dp))
         Column {
             Text(
-                text = "Oh My Guide",
+                text = strings.appName,
                 style = MaterialTheme.typography.titleLarge,
                 color = TextPrimary,
             )
             Text(
-                text = "Curating spots...",
+                text = strings.curatingSpots,
                 style = MaterialTheme.typography.labelMedium,
                 color = TextCaption,
             )
@@ -116,7 +118,7 @@ fun HomeHeader(onReset: () -> Unit = {}) {
             Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextCaption)
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Reset",
+                text = strings.reset,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = TextCaption,
             )
@@ -125,7 +127,7 @@ fun HomeHeader(onReset: () -> Unit = {}) {
 }
 
 @Composable
-fun LocationBar(spotCount: Int, locationName: String = "your area") {
+fun LocationBar(spotCount: Int, locationName: String = "") {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -137,13 +139,13 @@ fun LocationBar(spotCount: Int, locationName: String = "your area") {
             Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = Primary)
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Near $locationName",
+                text = "${LocalStrings.current.near} ${locationName.ifEmpty { LocalStrings.current.yourArea }}",
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
             )
         }
         Text(
-            text = "$spotCount spots",
+            text = "$spotCount ${LocalStrings.current.spots}",
             style = MaterialTheme.typography.labelSmall,
             color = TextCaption,
         )
@@ -246,7 +248,7 @@ fun FindOtherPlacesButton(onClick: () -> Unit) {
             Icon(Icons.Filled.Explore, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextPrimary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Find other places",
+                text = LocalStrings.current.findOtherPlaces,
                 style = MaterialTheme.typography.titleMedium,
                 color = TextPrimary,
             )
@@ -285,7 +287,7 @@ fun PlaceDetailSheet(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
-                text = "Back to list",
+                text = LocalStrings.current.backToList,
                 style = MaterialTheme.typography.labelMedium,
                 color = TextSecondary,
             )
@@ -402,7 +404,7 @@ fun PlaceDetailSheet(
                 Icon(Icons.Filled.Navigation, contentDescription = null, modifier = Modifier.size(20.dp), tint = BgWhite)
                 Spacer(modifier = Modifier.width(8.dp))
                 Text(
-                    text = "Go here",
+                    text = LocalStrings.current.goHere,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                     color = BgWhite,
                 )

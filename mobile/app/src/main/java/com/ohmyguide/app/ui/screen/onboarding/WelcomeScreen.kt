@@ -38,8 +38,13 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ohmyguide.app.R
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import com.ohmyguide.app.R
+import com.ohmyguide.app.ui.screen.auth.AuthState
 import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.BgWhite
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBgLight
@@ -50,7 +55,22 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 @Composable
 fun WelcomeScreen(
     onSignIn: () -> Unit,
+    authState: AuthState = AuthState.Idle,
+    onDismissError: () -> Unit = {},
 ) {
+    if (authState is AuthState.Error) {
+        AlertDialog(
+            onDismissRequest = onDismissError,
+            title = { Text("로그인 오류") },
+            text = { Text(authState.message) },
+            confirmButton = {
+                TextButton(onClick = onDismissError) {
+                    Text("확인")
+                }
+            },
+        )
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "float")
     val floatOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -61,6 +81,8 @@ fun WelcomeScreen(
         ),
         label = "floatY",
     )
+
+    val strings = LocalStrings.current
 
     Column(
         modifier = Modifier
@@ -93,7 +115,7 @@ fun WelcomeScreen(
 
             // Title
             Text(
-                text = "Annyeong! \uD83D\uDC4B",
+                text = strings.welcomeGreeting,
                 style = MaterialTheme.typography.displayLarge,
                 color = TextPrimary,
                 textAlign = TextAlign.Center,
@@ -101,7 +123,7 @@ fun WelcomeScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "I'm your Korea guide",
+                text = strings.welcomeIntro,
                 style = MaterialTheme.typography.headlineMedium,
                 color = Primary,
                 textAlign = TextAlign.Center,
@@ -112,7 +134,7 @@ fun WelcomeScreen(
 
             // Description
             Text(
-                text = "Find amazing places,\nnavigate like a local,\nand get personalized guides.",
+                text = strings.welcomeDesc,
                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
                 color = TextSecondary,
                 textAlign = TextAlign.Center,
@@ -154,7 +176,7 @@ fun WelcomeScreen(
                 }
                 Spacer(modifier = Modifier.size(12.dp))
                 Text(
-                    text = "Sign in with Google",
+                    text = strings.signInGoogle,
                     style = MaterialTheme.typography.titleLarge,
                     color = BgWhite,
                 )
@@ -163,7 +185,7 @@ fun WelcomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Text(
-                text = "One-tap sign in to get your personalized guide",
+                text = strings.signInHint,
                 style = MaterialTheme.typography.labelMedium,
                 color = TextCaption,
                 textAlign = TextAlign.Center,
