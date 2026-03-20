@@ -15,6 +15,7 @@ services:
     ports:
       - "18080:18080"
       - "7077:7077"
+      - "6066:6066"
 
   spark-worker:
     ports:
