@@ -339,6 +339,12 @@ private fun RecommendationsSheet(
                         modifier = msgModifier.padding(vertical = 4.dp),
                     )
                 }
+                is ChatMessage.UserInput -> {
+                    ChatTextInput(
+                        onSubmit = msg.onSubmit,
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                    )
+                }
                 else -> {}
             }
         }

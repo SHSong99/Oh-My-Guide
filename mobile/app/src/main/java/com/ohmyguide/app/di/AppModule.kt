@@ -4,6 +4,7 @@ import com.ohmyguide.app.data.api.BusanBimsApi
 import com.ohmyguide.app.data.api.NaverDrivingApi
 import com.ohmyguide.app.data.api.NaverWalkingApi
 import com.ohmyguide.app.data.api.OdsayApi
+import com.ohmyguide.app.data.api.TmapApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,7 +46,7 @@ object AppModule {
     @Singleton
     fun provideNaverDrivingApi(client: OkHttpClient): NaverDrivingApi {
         return Retrofit.Builder()
-            .baseUrl("https://naveropenapi.apigw.ntruss.com/map-direction/v1/")
+            .baseUrl("https://maps.apigw.ntruss.com/map-direction/v1/")
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -56,11 +57,22 @@ object AppModule {
     @Singleton
     fun provideNaverWalkingApi(client: OkHttpClient): NaverWalkingApi {
         return Retrofit.Builder()
-            .baseUrl("https://naveropenapi.apigw.ntruss.com/map-direction-15/v1/")
+            .baseUrl("https://maps.apigw.ntruss.com/map-direction-15/v1/")
             .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(NaverWalkingApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTmapApi(client: OkHttpClient): TmapApi {
+        return Retrofit.Builder()
+            .baseUrl("https://apis.openapi.sk.com/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(TmapApi::class.java)
     }
 
     @Provides

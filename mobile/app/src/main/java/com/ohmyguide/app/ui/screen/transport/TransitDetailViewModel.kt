@@ -27,6 +27,7 @@ import com.ohmyguide.app.ui.theme.SubwayLine4
 import com.ohmyguide.app.ui.theme.TransitAmber
 import com.ohmyguide.app.ui.theme.TransitGray
 import com.ohmyguide.app.ui.theme.TransitWalk
+import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.util.KoreanRomanizer
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -183,15 +184,16 @@ class TransitDetailViewModel @Inject constructor(
     }
 
     private fun OdsayPath.toTransitRoute(index: Int): TransitRoute {
+        val s = LanguageManager.current.value.strings
         val now = LocalTime.now()
         val arrival = now.plusMinutes(info.totalTime.toLong())
         val timeRange = "${now.format(TIME_FMT)} - ${arrival.format(TIME_FMT)}"
         val payment = "\u20A9${WON_FMT.format(info.payment)}"
 
         val totalTimeStr = if (info.totalTime >= 60) {
-            "${info.totalTime / 60}h ${info.totalTime % 60}min"
+            "${info.totalTime / 60}${s.hourSuffix} ${info.totalTime % 60}${s.minSuffix}"
         } else {
-            "${info.totalTime} min"
+            "${info.totalTime} ${s.minSuffix}"
         }
 
         val badge = when (pathType) {
@@ -215,7 +217,7 @@ class TransitDetailViewModel @Inject constructor(
             badgeColor = badgeColor,
             totalTime = totalTimeStr,
             totalMinutes = info.totalTime,
-            eta = "ETA ${arrival.format(TIME_FMT)}",
+            eta = "${s.etaPrefix} ${arrival.format(TIME_FMT)}",
             timeRange = timeRange,
             payment = payment,
             segments = subPath.map { it.toTransitSegment() },
@@ -223,22 +225,23 @@ class TransitDetailViewModel @Inject constructor(
     }
 
     private fun OdsaySubPath.toTransitSegment(): TransitSegment {
+        val s = LanguageManager.current.value.strings
         val type = when (trafficType) {
             1 -> "subway"
             2 -> "bus"
             else -> "walk"
         }
         val lineName = when (trafficType) {
-            1 -> lane?.firstOrNull()?.name ?: "Subway"
-            2 -> "Bus ${lane?.firstOrNull()?.busNo ?: ""}"
-            else -> "Walk"
+            1 -> lane?.firstOrNull()?.name ?: s.subway
+            2 -> "${s.busLabel} ${lane?.firstOrNull()?.busNo ?: ""}"
+            else -> s.walk
         }
         val color = when (trafficType) {
             1 -> subwayLineColor(lane?.firstOrNull()?.subwayCode)
             2 -> busTypeColor(lane?.firstOrNull()?.busType)
             else -> TransitWalk
         }
-        val durationStr = if (trafficType == 3) "~$sectionTime min walk" else "$sectionTime min"
+        val durationStr = if (trafficType == 3) "~$sectionTime ${s.minWalkSuffix}" else "$sectionTime ${s.minSuffix}"
         val fromKr = startName ?: ""
         val toKr = endName ?: ""
 

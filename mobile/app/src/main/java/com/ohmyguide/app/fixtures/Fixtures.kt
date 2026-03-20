@@ -53,6 +53,7 @@ data class Place(
     val emoji: String = "",
     val lat: Double = 0.0,
     val lng: Double = 0.0,
+    val imageUrl: String? = null,
 )
 
 data class PlaceDetail(

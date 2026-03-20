@@ -1,6 +1,7 @@
 package com.ohmyguide.app.ui.navi
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -24,7 +25,11 @@ import com.ohmyguide.app.ui.screen.transport.TransitDetailScreen
 import com.ohmyguide.app.ui.screen.transport.TransportPickerScreen
 
 @Composable
-fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String, mode: String) -> Unit = { _, _ -> }) {
+fun NavGraph(
+    navController: NavHostController,
+    onNaviMinimize: (placeId: String, mode: String) -> Unit = { _, _ -> },
+    onNaviStart: () -> Unit = {},
+) {
     NavHost(
         navController = navController,
         startDestination = Screen.Splash.route
@@ -111,15 +116,18 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
         composable(Screen.Navi.route) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             val mode = backStackEntry.arguments?.getString("mode") ?: "walk"
+
+            LaunchedEffect(placeId, mode) {
+                onNaviStart()
+            }
+
             NaviScreen(
                 navController = navController,
                 placeId = placeId,
                 mode = mode,
                 onMinimize = {
                     onNaviMinimize(placeId, mode)
-                    navController.navigate(Screen.Place.createRoute(placeId)) {
-                        popUpTo(Screen.Home.route)
-                    }
+                    navController.popBackStack()
                 },
             )
         }

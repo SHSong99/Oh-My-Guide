@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -49,10 +50,13 @@ import com.naver.maps.map.compose.PathOverlay
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
+import com.naver.maps.map.overlay.OverlayImage
+import com.ohmyguide.app.R
 import com.ohmyguide.app.domain.model.NaviRouteData
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.navi.Screen
+import com.ohmyguide.app.ui.common.ConfirmDialog
 import com.ohmyguide.app.ui.common.TypingIndicator
 import com.ohmyguide.app.ui.screen.story.StoryOverlay
 import com.ohmyguide.app.ui.theme.BgWhite
@@ -91,7 +95,10 @@ fun NaviScreen(
 ) {
     val strings = LocalStrings.current
     var storyPlaceId by remember { mutableStateOf<String?>(null) }
+    var showStopDialog by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsState()
+
+    BackHandler { showStopDialog = true }
 
     val detail = viewModel.detail
     val placeName = detail?.place?.name ?: strings.destination
@@ -143,9 +150,7 @@ fun NaviScreen(
                     eta = eta,
                     modeLabel = modeLabel,
                     progressPct = state.progressPct,
-                    onStop = {
-                        navController.popBackStack(Screen.Home.route, inclusive = false)
-                    },
+                    onStop = { showStopDialog = true },
                 )
 
                 // Chat messages
@@ -249,6 +254,20 @@ fun NaviScreen(
         if (storyPlaceId != null) {
             StoryOverlay(placeId = storyPlaceId!!, onDismiss = { storyPlaceId = null })
         }
+
+        if (showStopDialog) {
+            ConfirmDialog(
+                title = strings.endNaviTitle,
+                message = strings.endNaviMessage,
+                confirmText = strings.confirm,
+                dismissText = strings.cancel,
+                onConfirm = {
+                    showStopDialog = false
+                    navController.popBackStack()
+                },
+                onDismiss = { showStopDialog = false },
+            )
+        }
     }
 }
 
@@ -322,9 +341,10 @@ private fun MapArea(
                                 key = "transfer_$index",
                                 position = LatLng(pt.lat, pt.lng),
                             ),
+                            icon = OverlayImage.fromResource(R.drawable.ic_marker_waypoint),
                             captionText = segment.lineName,
-                            width = 20.dp,
-                            height = 20.dp,
+                            width = 28.dp,
+                            height = 28.dp,
                         )
                     }
                 }
@@ -345,7 +365,10 @@ private fun MapArea(
             // 목적지 마커
             Marker(
                 state = rememberMarkerState(position = destinationPosition),
+                icon = OverlayImage.fromResource(R.drawable.ic_marker_destination),
                 captionText = placeName,
+                width = 40.dp,
+                height = 48.dp,
             )
         }
 

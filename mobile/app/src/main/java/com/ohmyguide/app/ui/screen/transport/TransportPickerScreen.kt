@@ -15,7 +15,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,6 +45,7 @@ import com.ohmyguide.app.ui.theme.InfoPurple
 import com.ohmyguide.app.ui.theme.MenuStoryBg
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
+import com.ohmyguide.app.ui.theme.BusDefault
 import com.ohmyguide.app.ui.theme.PrimaryBg
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
@@ -56,6 +59,7 @@ fun TransportPickerScreen(
 ) {
     val strings = LocalStrings.current
     val timeInfo by viewModel.timeInfo.collectAsState()
+    val transitPreview by viewModel.transitPreview.collectAsState()
     val detail = SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
     val placeName = detail?.place?.name ?: strings.destination
@@ -133,6 +137,47 @@ fun TransportPickerScreen(
             }
 
             if (selectedMode == TransportMode.Transit) {
+                val preview = transitPreview
+                if (preview != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(BusDefault.copy(alpha = 0.08f))
+                            .padding(12.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.DirectionsBus,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = BusDefault,
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "${strings.busLabel} ${preview.busNo}",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = BusDefault,
+                                )
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.Schedule,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = TextSecondary,
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${preview.arrivalMin} ${strings.minSuffix} · ${preview.remainStops} ${strings.stopsAway}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = TextSecondary,
+                                )
+                            }
+                        }
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()

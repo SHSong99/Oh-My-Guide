@@ -70,7 +70,7 @@ fun TransitDetailScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = "Searching routes...",
+                            text = LocalStrings.current.searchingRoutes,
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextCaption,
                         )
@@ -84,13 +84,13 @@ fun TransitDetailScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text(
-                            text = "No transit routes found",
+                            text = LocalStrings.current.noTransitRoutes,
                             style = MaterialTheme.typography.bodyLarge,
                             color = TextCaption,
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = "Try walking or car instead",
+                            text = LocalStrings.current.tryWalkOrCar,
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextCaption,
                         )

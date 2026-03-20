@@ -50,6 +50,11 @@ android {
             "NAVER_MAP_CLIENT_SECRET",
             "\"${localProperties.getProperty("NAVER_MAP_CLIENT_SECRET", "")}\""
         )
+        buildConfigField(
+            "String",
+            "TMAP_APP_KEY",
+            "\"${localProperties.getProperty("TMAP_APP_KEY", "")}\""
+        )
     }
 
     buildTypes {
@@ -112,6 +117,9 @@ dependencies {
 
     // Location
     implementation(libs.play.services.location)
+
+    // Image Loading
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

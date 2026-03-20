@@ -274,7 +274,7 @@ fun TransitInfoCard(info: TransitStopInfo) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Get off at ${info.exitStopName}",
+            text = "${LocalStrings.current.getOffAt} ${info.exitStopName}",
             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
             color = Primary,
         )
@@ -441,7 +441,7 @@ fun NaviQuickActions(
             Icon(Icons.Filled.Headphones, contentDescription = null, modifier = Modifier.size(18.dp), tint = BgWhite)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Listen to Story",
+                text = LocalStrings.current.listenToStory,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = BgWhite,
             )
@@ -459,7 +459,7 @@ fun NaviQuickActions(
             Icon(Icons.Filled.Translate, contentDescription = null, modifier = Modifier.size(18.dp), tint = TextPrimary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Phrases",
+                text = LocalStrings.current.navPhrases,
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = TextPrimary,
             )
@@ -563,7 +563,7 @@ private fun NearbyPlaceCard(
     Column(
         modifier = Modifier
             .width(160.dp)
-            .shadow(4.dp, RoundedCornerShape(16.dp), ambientColor = Primary.copy(alpha = 0.08f))
+            .shadow(2.dp, RoundedCornerShape(16.dp), ambientColor = Primary.copy(alpha = 0.08f))
             .clip(RoundedCornerShape(16.dp))
             .background(BgWhite)
             .clickable(onClick = onClick),
