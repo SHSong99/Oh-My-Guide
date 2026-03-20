@@ -95,10 +95,7 @@ dependencies {
 
     // Coroutines
     implementation(libs.coroutines.android)
-<<<<<<< HEAD
-=======
     implementation(libs.coroutines.play.services)
->>>>>>> 0c9c7fa7734d8cba56bc3910ea0ace39d21a00f7
 
     // ViewModel
     implementation(libs.lifecycle.viewmodel.compose)
@@ -113,8 +110,6 @@ dependencies {
     // Location
     implementation(libs.play.services.location)
 
-<<<<<<< HEAD
-=======
     // Credential Manager (Google Sign-In)
     implementation(libs.credentials)
     implementation(libs.credentials.play)
@@ -126,7 +121,6 @@ dependencies {
     // Google Sign-In (Authorization API for access token)
     implementation(libs.play.services.auth)
 
->>>>>>> 0c9c7fa7734d8cba56bc3910ea0ace39d21a00f7
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
