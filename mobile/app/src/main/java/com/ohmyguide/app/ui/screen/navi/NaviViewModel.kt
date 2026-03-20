@@ -7,6 +7,7 @@ import android.util.Log
 import com.ohmyguide.app.BuildConfig
 import com.ohmyguide.app.data.model.ApiResult
 import com.ohmyguide.app.data.repository.NaverDirectionsRepository
+import com.ohmyguide.app.data.repository.TmapRepository
 import com.ohmyguide.app.domain.model.NaviRouteCache
 import com.ohmyguide.app.domain.model.NaviRouteData
 import com.ohmyguide.app.domain.model.RouteCoord
@@ -17,6 +18,7 @@ import com.ohmyguide.app.fixtures.PlaceDetail
 import com.ohmyguide.app.fixtures.SAMPLE_PLACES
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.service.LocationForegroundService
+import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.TransitAmber
 import com.ohmyguide.app.ui.theme.TransitGray
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -77,6 +79,7 @@ class NaviViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val naviRouteCache: NaviRouteCache,
     private val directionsRepository: NaverDirectionsRepository,
+    private val tmapRepository: TmapRepository,
 ) : ViewModel() {
 
     val placeId: String = savedStateHandle["placeId"] ?: "dm3"
@@ -114,6 +117,47 @@ class NaviViewModel @Inject constructor(
             "dm7" to (35.0720 to 128.9650),
         )
         private const val ARRIVAL_THRESHOLD_METERS = 100.0
+
+        private val USEFUL_PHRASES = listOf(
+            PhraseItem("이거 주세요", "i-geo ju-se-yo", "This one, please"),
+            PhraseItem("얼마예요?", "eol-ma-ye-yo?", "How much is it?"),
+            PhraseItem("화장실 어디예요?", "hwa-jang-sil eo-di-ye-yo?", "Where's the restroom?"),
+            PhraseItem("감사합니다", "gam-sa-ham-ni-da", "Thank you"),
+            PhraseItem("맛있어요!", "ma-si-sseo-yo!", "It's delicious!"),
+        )
+
+        private val TRANSIT_STOPS = mapOf(
+            "dm3" to TransitStopInfo(
+                stopName = "Jongno 5-ga Stn.",
+                busNumber = "Bus 201",
+                remainingStops = 3,
+                exitStopName = "Gwangjang Market",
+            ),
+            "dm4" to TransitStopInfo(
+                stopName = "Anguk Stn.",
+                busNumber = "Bus 172",
+                remainingStops = 2,
+                exitStopName = "Bukchon Hanok Village",
+            ),
+            "dm5" to TransitStopInfo(
+                stopName = "Myeongdong Stn.",
+                busNumber = "Bus 402",
+                remainingStops = 4,
+                exitStopName = "Namsan Tower Entrance",
+            ),
+            "dm6" to TransitStopInfo(
+                stopName = "Jongno 3-ga Stn.",
+                busNumber = "Bus 151",
+                remainingStops = 1,
+                exitStopName = "Ikseon-dong",
+            ),
+            "dm7" to TransitStopInfo(
+                stopName = "Gwanghwamun Stn.",
+                busNumber = "Bus 109",
+                remainingStops = 2,
+                exitStopName = "Cheonggyecheon Stream",
+            ),
+        )
     }
 
     init {
@@ -187,21 +231,22 @@ class NaviViewModel @Inject constructor(
                 "car" -> directionsRepository.getDrivingRoute(
                     startLat, startLng, destinationLat, destinationLng,
                 )
-                else -> directionsRepository.getWalkingRoute(
+                else -> tmapRepository.getWalkingRoute(
                     startLat, startLng, destinationLat, destinationLng,
                 )
             }
 
             if (BuildConfig.DEBUG) {
                 when (result) {
-                    is ApiResult.Success -> Log.d("NaviVM", "Directions OK: ${result.data.size} coords")
-                    is ApiResult.Error -> Log.e("NaviVM", "Directions FAIL: code=${result.code} msg=${result.message}")
+                    is ApiResult.Success -> Log.d("NaviVM", "[$mode] Directions OK: ${result.data.size} coords")
+                    is ApiResult.Error -> Log.e("NaviVM", "[$mode] Directions FAIL: code=${result.code} msg=${result.message}")
                     is ApiResult.Loading -> {}
                 }
             }
 
             if (result is ApiResult.Success && result.data.size >= 2) {
                 val color = if (mode == "car") TransitAmber else TransitGray
+                val s = LanguageManager.current.value.strings
                 _naviRoute.value = NaviRouteData(
                     mode = mode,
                     segments = listOf(
@@ -209,9 +254,9 @@ class NaviViewModel @Inject constructor(
                             type = mode,
                             coords = result.data,
                             color = color,
-                            lineName = if (mode == "car") "Driving" else "Walking",
-                            fromName = "Current Location",
-                            toName = detail?.place?.name ?: "Destination",
+                            lineName = if (mode == "car") s.taxi else s.walk,
+                            fromName = s.currentLocation,
+                            toName = detail?.place?.name ?: s.destination,
                         ),
                     ),
                     totalDurationMin = totalDuration,
@@ -255,6 +300,13 @@ class NaviViewModel @Inject constructor(
                     )
                 }
 
+                // Update notification with remaining time
+                val remainingMin = ((1f - progress) * totalDuration).toInt()
+                val placeName = detail?.place?.name ?: "destination"
+                LocationForegroundService.updateNaviStatus(
+                    "$placeName · ${remainingMin}min"
+                )
+
                 // Nearby POI check (halfway point)
                 if (!nearbyPoiShown && progress > 0.5f) {
                     showNearbyPlaces()
@@ -276,6 +328,7 @@ class NaviViewModel @Inject constructor(
     }
 
     private fun onArrival() {
+        LocationForegroundService.updateNaviStatus(null)
         _uiState.update { it.copy(arrived = true, progressPct = 1f) }
         viewModelScope.launch {
             addMessage(NaviChatMessage.BotTyping)
@@ -298,57 +351,6 @@ class NaviViewModel @Inject constructor(
         }
     }
 
-    companion object {
-        private val PLACE_COORDINATES = mapOf(
-            "dm3" to (37.5700 to 126.9990),
-            "dm4" to (37.5826 to 126.9831),
-            "dm5" to (37.5512 to 126.9882),
-            "dm6" to (37.5735 to 126.9920),
-            "dm7" to (37.5690 to 126.9780),
-        )
-        private const val ARRIVAL_THRESHOLD_METERS = 100.0
-
-        private val USEFUL_PHRASES = listOf(
-            PhraseItem("이거 주세요", "i-geo ju-se-yo", "This one, please"),
-            PhraseItem("얼마예요?", "eol-ma-ye-yo?", "How much is it?"),
-            PhraseItem("화장실 어디예요?", "hwa-jang-sil eo-di-ye-yo?", "Where's the restroom?"),
-            PhraseItem("감사합니다", "gam-sa-ham-ni-da", "Thank you"),
-            PhraseItem("맛있어요!", "ma-si-sseo-yo!", "It's delicious!"),
-        )
-
-        private val TRANSIT_STOPS = mapOf(
-            "dm3" to TransitStopInfo(
-                stopName = "Jongno 5-ga Stn.",
-                busNumber = "Bus 201",
-                remainingStops = 3,
-                exitStopName = "Gwangjang Market",
-            ),
-            "dm4" to TransitStopInfo(
-                stopName = "Anguk Stn.",
-                busNumber = "Bus 172",
-                remainingStops = 2,
-                exitStopName = "Bukchon Hanok Village",
-            ),
-            "dm5" to TransitStopInfo(
-                stopName = "Myeongdong Stn.",
-                busNumber = "Bus 402",
-                remainingStops = 4,
-                exitStopName = "Namsan Tower Entrance",
-            ),
-            "dm6" to TransitStopInfo(
-                stopName = "Jongno 3-ga Stn.",
-                busNumber = "Bus 151",
-                remainingStops = 1,
-                exitStopName = "Ikseon-dong",
-            ),
-            "dm7" to TransitStopInfo(
-                stopName = "Gwanghwamun Stn.",
-                busNumber = "Bus 109",
-                remainingStops = 2,
-                exitStopName = "Cheonggyecheon Stream",
-            ),
-        )
-    }
 
     // ── Nearby POI ──
 
@@ -419,5 +421,6 @@ class NaviViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         gpsJob?.cancel()
+        LocationForegroundService.updateNaviStatus(null)
     }
 }

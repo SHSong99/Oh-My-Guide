@@ -1,6 +1,8 @@
 package com.ohmyguide.app.ui.screen.transport
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,24 +20,29 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DirectionsBus
-import androidx.compose.material.icons.filled.Train
+import androidx.compose.material.icons.filled.DirectionsSubway
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.InfoGreen
 import com.ohmyguide.app.ui.theme.Primary
+import com.ohmyguide.app.ui.theme.PrimaryBg
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
@@ -74,11 +81,8 @@ data class TransitRoute(
 
 // ── Filter Tab ──
 
-enum class TransitFilter(val label: String) {
-    All("All"),
-    Bus("Bus"),
-    Subway("Subway"),
-    BusSubway("Bus+Subway"),
+enum class TransitFilter {
+    All, Bus, Subway, BusSubway,
 }
 
 @Composable
@@ -87,6 +91,7 @@ fun TransitFilterTabs(
     selected: TransitFilter,
     onSelect: (TransitFilter) -> Unit,
 ) {
+    val strings = LocalStrings.current
     val counts = mapOf(
         TransitFilter.All to routes.size,
         TransitFilter.Bus to routes.count { it.pathType == 2 },
@@ -103,8 +108,14 @@ fun TransitFilterTabs(
         TransitFilter.entries.forEach { filter ->
             val isSelected = selected == filter
             val count = counts[filter] ?: 0
+            val label = when (filter) {
+                TransitFilter.All -> strings.filterAll
+                TransitFilter.Bus -> strings.busLabel
+                TransitFilter.Subway -> strings.subway
+                TransitFilter.BusSubway -> strings.busSubwayLabel
+            }
             Text(
-                text = "${filter.label} $count",
+                text = "$label $count",
                 style = MaterialTheme.typography.labelMedium.copy(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                 ),
@@ -130,12 +141,26 @@ fun RouteCard(
     expanded: Boolean,
     onClick: () -> Unit,
 ) {
+    val strings = LocalStrings.current
+    val animSpec = tween<Color>(300)
+    val bgColor by animateColorAsState(
+        targetValue = if (expanded) PrimaryBg else BgWhite,
+        animationSpec = animSpec,
+        label = "routeBg",
+    )
+    val borderColor by animateColorAsState(
+        targetValue = if (expanded) Primary else Border,
+        animationSpec = animSpec,
+        label = "routeBorder",
+    )
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .shadow(if (expanded) 6.dp else 0.dp, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))
-            .background(BgWhite)
-            .border(1.dp, Border, RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .border(if (expanded) 2.dp else 1.dp, borderColor, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick),
     ) {
         Column(
@@ -145,13 +170,14 @@ fun RouteCard(
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(
                     text = route.totalTime,
                     style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary,
+                    color = if (expanded) Primary else TextPrimary,
                 )
+                Spacer(modifier = Modifier.width(8.dp))
                 Row(
                     modifier = Modifier
                         .clip(RoundedCornerShape(4.dp))
@@ -161,23 +187,53 @@ fun RouteCard(
                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                 ) {
                     val badgeIcon = when (route.pathType) {
-                        1 -> Icons.Filled.Train
+                        1 -> Icons.Filled.DirectionsSubway
                         2 -> Icons.Filled.DirectionsBus
                         else -> null
                     }
                     if (route.pathType == 3) {
                         Icon(Icons.Filled.DirectionsBus, contentDescription = null, modifier = Modifier.size(10.dp), tint = BgWhite)
-                        Icon(Icons.Filled.Train, contentDescription = null, modifier = Modifier.size(10.dp), tint = BgWhite)
+                        Icon(Icons.Filled.DirectionsSubway, contentDescription = null, modifier = Modifier.size(10.dp), tint = BgWhite)
                     } else if (badgeIcon != null) {
                         Icon(badgeIcon, contentDescription = null, modifier = Modifier.size(10.dp), tint = BgWhite)
                     }
+                    val badgeText = when (route.pathType) {
+                        1 -> strings.subway.uppercase()
+                        2 -> strings.busLabel.uppercase()
+                        3 -> strings.busSubwayLabel.uppercase()
+                        else -> strings.transit.uppercase()
+                    }
                     Text(
-                        text = route.badge,
+                        text = badgeText,
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
                             fontSize = 9.sp,
                         ),
                         color = BgWhite,
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                if (expanded) {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(Primary),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = BgWhite,
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .border(1.5.dp, Border, CircleShape),
                     )
                 }
             }
@@ -210,7 +266,7 @@ fun RouteCard(
                 ) {
                     val icon = when (segment.type) {
                         "bus" -> Icons.Filled.DirectionsBus
-                        "subway" -> Icons.Filled.Train
+                        "subway" -> Icons.Filled.DirectionsSubway
                         else -> Icons.AutoMirrored.Filled.DirectionsWalk
                     }
                     val tint = if (segment.type == "walk") TextCaption else BgWhite
@@ -247,6 +303,7 @@ fun RouteCard(
 
 @Composable
 private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
+    val strings = LocalStrings.current
     Row(modifier = Modifier.fillMaxWidth()) {
         // Timeline dot + line
         Column(
@@ -255,7 +312,7 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
         ) {
             val icon = when (segment.type) {
                 "bus" -> Icons.Filled.DirectionsBus
-                "subway" -> Icons.Filled.Train
+                "subway" -> Icons.Filled.DirectionsSubway
                 else -> Icons.AutoMirrored.Filled.DirectionsWalk
             }
             Box(
@@ -297,7 +354,7 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
                 )
                 if (segment.stops > 0) {
                     Text(
-                        text = "${segment.stops} stops",
+                        text = "${segment.stops} ${strings.stopsUnit}",
                         style = MaterialTheme.typography.labelSmall,
                         color = TextCaption,
                     )
@@ -318,7 +375,7 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
                             .background(InfoGreen),
                     )
                     Text(
-                        text = "${segment.realtimeMin} min (${segment.realtimeStations} stops away)",
+                        text = "${segment.realtimeMin} ${strings.minSuffix} (${segment.realtimeStations} ${strings.stopsAway})",
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.SemiBold,
                         ),

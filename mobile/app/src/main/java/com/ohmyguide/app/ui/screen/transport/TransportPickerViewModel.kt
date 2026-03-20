@@ -4,7 +4,9 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ohmyguide.app.data.model.ApiResult
+import com.ohmyguide.app.data.model.OdsayPath
 import com.ohmyguide.app.data.repository.OdsayRepository
+import com.ohmyguide.app.domain.usecase.GetBusArrivalUseCase
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.service.LocationForegroundService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.ohmyguide.app.ui.theme.LanguageManager
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import javax.inject.Inject
@@ -31,16 +34,28 @@ data class TransportTimeInfo(
     val carEta: String = "",
 )
 
+data class TransitPreview(
+    val busNo: String,
+    val stationName: String,
+    val arrivalMin: Int,
+    val remainStops: Int,
+    val totalTime: String,
+)
+
 @HiltViewModel
 class TransportPickerViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val odsayRepository: OdsayRepository,
+    private val getBusArrivalUseCase: GetBusArrivalUseCase,
 ) : ViewModel() {
 
     private val placeId: String = savedStateHandle["placeId"] ?: ""
 
     private val _timeInfo = MutableStateFlow(TransportTimeInfo())
     val timeInfo: StateFlow<TransportTimeInfo> = _timeInfo.asStateFlow()
+
+    private val _transitPreview = MutableStateFlow<TransitPreview?>(null)
+    val transitPreview: StateFlow<TransitPreview?> = _transitPreview.asStateFlow()
 
     init {
         fetchTimes()
@@ -64,14 +79,15 @@ class TransportPickerViewModel @Inject constructor(
         val walkMin = (distMeters / 80.0).roundToInt() // ~80m/min walking
         val carMin = maxOf(1, (distMeters / 500.0).roundToInt()) // ~30km/h city driving
         val now = LocalTime.now()
+        val s = LanguageManager.current.value.strings
         val fmt = DateTimeFormatter.ofPattern("h:mm a")
 
         _timeInfo.update {
             it.copy(
-                walkTime = "$walkMin min",
-                walkEta = "ETA ${now.plusMinutes(walkMin.toLong()).format(fmt)}",
-                carTime = "$carMin min",
-                carEta = "ETA ${now.plusMinutes(carMin.toLong()).format(fmt)}",
+                walkTime = "$walkMin ${s.minSuffix}",
+                walkEta = "${s.etaPrefix} ${now.plusMinutes(walkMin.toLong()).format(fmt)}",
+                carTime = "$carMin ${s.minSuffix}",
+                carEta = "${s.etaPrefix} ${now.plusMinutes(carMin.toLong()).format(fmt)}",
             )
         }
 
@@ -83,18 +99,39 @@ class TransportPickerViewModel @Inject constructor(
                         val transitMin = fastest.info.totalTime
                         _timeInfo.update {
                             it.copy(
-                                transitTime = "$transitMin min",
-                                transitEta = "ETA ${now.plusMinutes(transitMin.toLong()).format(fmt)}",
+                                transitTime = "$transitMin ${s.minSuffix}",
+                                transitEta = "${s.etaPrefix} ${now.plusMinutes(transitMin.toLong()).format(fmt)}",
                             )
                         }
+                        fetchRealtimePreview(fastest)
                     } else {
-                        _timeInfo.update { it.copy(transitTime = "N/A", transitEta = "") }
+                        _timeInfo.update { it.copy(transitTime = s.notAvailable, transitEta = "") }
                     }
                 }
                 is ApiResult.Error -> {
-                    _timeInfo.update { it.copy(transitTime = "N/A", transitEta = "") }
+                    _timeInfo.update { it.copy(transitTime = s.notAvailable, transitEta = "") }
                 }
                 is ApiResult.Loading -> {}
+            }
+        }
+    }
+
+    private fun fetchRealtimePreview(fastest: OdsayPath) {
+        val busSubPath = fastest.subPath.firstOrNull { it.trafficType == 2 } ?: return
+        val busNo = busSubPath.lane?.firstOrNull()?.busNo?.trim() ?: return
+
+        viewModelScope.launch {
+            when (val r = getBusArrivalUseCase.execute(busSubPath)) {
+                is ApiResult.Success -> {
+                    _transitPreview.value = TransitPreview(
+                        busNo = r.data.busNo,
+                        stationName = r.data.stationName,
+                        arrivalMin = r.data.min1,
+                        remainStops = r.data.station1,
+                        totalTime = _timeInfo.value.transitTime,
+                    )
+                }
+                else -> {}
             }
         }
     }
