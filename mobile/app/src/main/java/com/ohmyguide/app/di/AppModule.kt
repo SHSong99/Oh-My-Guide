@@ -1,12 +1,5 @@
 package com.ohmyguide.app.di
 
-import dagger.Module
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
-
-@Module
-@InstallIn(SingletonComponent::class)
-object AppModule
 import android.content.Context
 import com.ohmyguide.app.BuildConfig
 import com.ohmyguide.app.data.api.ApiService

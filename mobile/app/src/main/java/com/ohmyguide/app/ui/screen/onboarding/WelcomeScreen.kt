@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.sp
 import com.ohmyguide.app.R
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
-import com.ohmyguide.app.R
 import com.ohmyguide.app.ui.screen.auth.AuthState
 import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.BgWhite

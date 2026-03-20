@@ -9,9 +9,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.screen.auth.AuthScreen
-import com.ohmyguide.app.ui.screen.onboarding.SplashScreen
 import com.ohmyguide.app.ui.screen.auth.AuthState
 import com.ohmyguide.app.ui.screen.auth.AuthViewModel
 import com.ohmyguide.app.ui.screen.onboarding.SplashDestination
@@ -38,11 +36,6 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
         startDestination = Screen.Splash.route
     ) {
         composable(Screen.Splash.route) {
-<<<<<<< HEAD
-            SplashScreen(
-                onFinish = {
-                    navController.navigate(Screen.Welcome.route) {
-=======
             val splashViewModel: SplashViewModel = hiltViewModel()
             val destination by splashViewModel.destination.collectAsState()
 
@@ -53,21 +46,12 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
                         else -> Screen.Welcome.route
                     }
                     navController.navigate(target) {
->>>>>>> 0c9c7fa7734d8cba56bc3910ea0ace39d21a00f7
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
             )
         }
         composable(Screen.Welcome.route) {
-<<<<<<< HEAD
-            WelcomeScreen(
-                onSignIn = {
-                    navController.navigate(Screen.GpsPermission.route) {
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
-                    }
-                },
-=======
             val authViewModel: AuthViewModel = hiltViewModel()
             val authState by authViewModel.authState.collectAsState()
             val context = LocalContext.current
@@ -86,7 +70,6 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
                 onSignIn = { authViewModel.signInWithGoogle(activityContext) },
                 authState = authState,
                 onDismissError = { authViewModel.resetState() },
->>>>>>> 0c9c7fa7734d8cba56bc3910ea0ace39d21a00f7
             )
         }
         composable(Screen.Login.route) { AuthScreen(navController) }
