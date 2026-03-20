@@ -22,7 +22,23 @@
       "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=28080' 2>&1)",
       "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill')",
       "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8090')",
-      "WebFetch(domain:apis.data.go.kr)"
+      "WebFetch(domain:apis.data.go.kr)",
+      "Bash(find /c/Users/SSAFY/Desktop/OMG/S14P21E103/backend -name *.yml -o -name *.yaml -o -name *.properties)",
+      "Bash(find C:UsersSSAFYDesktopOMGS14P21E103backend -type f -name application*.yml -o -name application*.yaml -o -name application*.properties)",
+      "Bash(xargs grep:*)",
+      "Bash(PGPASSWORD=1234 psql -h localhost -p 5432 -U admin -d ohmyguide -t -c \"SELECT count\\(*\\) FROM attractions WHERE \\(addr1 LIKE '경기도%' OR addr1 LIKE '서울특별시%' OR addr1 LIKE '인천광역시%'\\) AND content_type_id = 12 AND overview IS NULL;\")",
+      "Bash(\"/c/Program Files/PostgreSQL/17/bin/psql.exe\" --version 2>&1)",
+      "Bash(python3 -c \"import psycopg2\")",
+      "Bash(python3 -c \"import pg8000\")",
+      "Bash(python3 -c \"import urllib.request; print\\(''urllib ok''\\)\")",
+      "Bash(pg_dump -h localhost -p 5432 -U admin -d ohmyguide -F c -f C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.backup 2>&1)",
+      "Bash(where pg_dump)",
+      "Read(//c/Program Files/PostgreSQL/**)",
+      "Read(//c/Program Files \\(x86\\)/**)",
+      "Bash(PGPASSWORD=1234 \"/c/Program Files/PostgreSQL/17/bin/pg_dump.exe\" -h localhost -p 5432 -U admin -d ohmyguide -F c -f \"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.backup\" 2>&1)",
+      "Bash(docker exec:*)",
+      "Bash(\"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.backup\")",
+      "Bash(\"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.sql\")"
     ]
   }
 }
