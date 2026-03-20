@@ -47,11 +47,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.R
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.ohmyguide.app.ui.navi.Screen
+import com.ohmyguide.app.ui.theme.AppLanguage
 import com.ohmyguide.app.ui.theme.BgDivider
 import com.ohmyguide.app.ui.theme.BgScreen
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.BorderLight
 import com.ohmyguide.app.ui.theme.Error
+import com.ohmyguide.app.ui.theme.LanguageManager
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.MenuBookmark
 import com.ohmyguide.app.ui.theme.MenuBookmarkBg
 import com.ohmyguide.app.ui.theme.MenuLang
@@ -78,14 +83,25 @@ private data class MenuItem(
     val count: Int? = null,
 )
 
-private val MENU_ITEMS = listOf(
-    MenuItem(Icons.Filled.LocationOn, Primary, PrimaryBg, "Visit History", "Places you've been", count = 0),
-    MenuItem(Icons.Filled.Bookmark, MenuBookmark, MenuBookmarkBg, "Bookmarks", "Saved places & phrases", count = 0),
-    MenuItem(Icons.Filled.Headphones, MenuStory, MenuStoryBg, "Story Archive", "Stories you've listened", count = 0),
-    MenuItem(Icons.Filled.Language, MenuLang, MenuLangBg, "Language", "English"),
-    MenuItem(Icons.Filled.Notifications, MenuNoti, MenuNotiBg, "Notifications", "On"),
-    MenuItem(Icons.Filled.Palette, MenuTheme, MenuThemeBg, "Theme", "Light"),
-)
+@Composable
+private fun menuItems(): List<MenuItem> {
+    val strings = LocalStrings.current
+    val currentLangLabel = when (LanguageManager.current.value) {
+        AppLanguage.EN -> "English"
+        AppLanguage.JA -> "\u65E5\u672C\u8A9E"
+        AppLanguage.ZH_TW -> "\u7E41\u9AD4\u4E2D\u6587"
+        AppLanguage.ZH_CN -> "\u7B80\u4F53\u4E2D\u6587"
+        AppLanguage.KO -> "\uD55C\uAD6D\uC5B4"
+    }
+    return listOf(
+        MenuItem(Icons.Filled.LocationOn, Primary, PrimaryBg, strings.visitHistory, strings.placesVisitedDesc, count = 0),
+        MenuItem(Icons.Filled.Bookmark, MenuBookmark, MenuBookmarkBg, strings.bookmarks, strings.savedPlacesDesc, count = 0),
+        MenuItem(Icons.Filled.Headphones, MenuStory, MenuStoryBg, strings.storyArchive, strings.storiesListenedDesc, count = 0),
+        MenuItem(Icons.Filled.Language, MenuLang, MenuLangBg, strings.language, currentLangLabel),
+        MenuItem(Icons.Filled.Notifications, MenuNoti, MenuNotiBg, strings.notifications, strings.on),
+        MenuItem(Icons.Filled.Palette, MenuTheme, MenuThemeBg, strings.theme, strings.light),
+    )
+}
 
 sealed class MyPageUiState {
     object Loading : MyPageUiState()
@@ -95,6 +111,8 @@ sealed class MyPageUiState {
 
 @Composable
 fun MyPageScreen(navController: NavController) {
+    val viewModel: MyPageViewModel = hiltViewModel()
+    val strings = LocalStrings.current
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -107,7 +125,7 @@ fun MyPageScreen(navController: NavController) {
                 .padding(horizontal = 20.dp, vertical = 16.dp),
         ) {
             Text(
-                text = "My Page",
+                text = strings.myPage,
                 style = MaterialTheme.typography.headlineSmall,
                 color = TextPrimary,
             )
@@ -129,7 +147,13 @@ fun MyPageScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
             MenuCard()
             Spacer(modifier = Modifier.height(16.dp))
-            SignOutButton(onClick = { })
+            SignOutButton(onClick = {
+                viewModel.logout {
+                    navController.navigate(Screen.Welcome.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            })
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
@@ -137,6 +161,7 @@ fun MyPageScreen(navController: NavController) {
 
 @Composable
 private fun ProfileCard() {
+    val strings = LocalStrings.current
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -159,7 +184,7 @@ private fun ProfileCard() {
         Spacer(modifier = Modifier.width(16.dp))
         Column {
             Text(
-                text = "Traveler",
+                text = strings.traveler,
                 style = MaterialTheme.typography.headlineSmall,
                 color = TextPrimary,
             )
@@ -171,8 +196,8 @@ private fun ProfileCard() {
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                InterestTag(icon = Icons.Filled.Restaurant, color = Primary, label = "Food")
-                InterestTag(icon = Icons.Filled.AccountBalance, color = Primary, label = "Culture")
+                InterestTag(icon = Icons.Filled.Restaurant, color = Primary, label = strings.food)
+                InterestTag(icon = Icons.Filled.AccountBalance, color = Primary, label = strings.culture)
             }
         }
     }
@@ -206,7 +231,7 @@ private fun MenuCard() {
             .background(BgWhite)
             .border(1.dp, BorderLight, RoundedCornerShape(20.dp)),
     ) {
-        MENU_ITEMS.forEachIndexed { index, item ->
+        menuItems().forEachIndexed { index, item ->
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -246,7 +271,7 @@ private fun MenuCard() {
                 }
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, modifier = Modifier.size(20.dp), tint = TextCaption)
             }
-            if (index < MENU_ITEMS.lastIndex) {
+            if (index < menuItems().size - 1) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -275,7 +300,7 @@ private fun SignOutButton(onClick: () -> Unit) {
             Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null, modifier = Modifier.size(18.dp), tint = Error)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Sign Out",
+                text = LocalStrings.current.signOut,
                 style = MaterialTheme.typography.titleSmall,
                 color = Error,
             )

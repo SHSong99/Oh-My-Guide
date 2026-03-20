@@ -114,6 +114,7 @@ def get_places_in_radius(
             a.longitude::float      AS longitude,
             a.content_type_id,
             a.first_image1,
+            a.overview,
             ST_Distance(
                 ST_MakePoint(a.longitude::float, a.latitude::float)::geography,
                 ST_MakePoint(%s, %s)::geography
@@ -153,6 +154,7 @@ def get_places_in_radius(
             "longitude":       row["longitude"],
             "content_type_id": row["content_type_id"],
             "first_image1":    row["first_image1"],
+            "overview":        row["overview"],
             "distance_km":     round(float(row["distance_km"]), 3),
             "attr_vector":     parse_vector(vec_dict),  # numpy 배열
         })

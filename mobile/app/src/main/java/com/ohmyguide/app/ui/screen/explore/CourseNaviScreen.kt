@@ -50,6 +50,7 @@ import androidx.navigation.compose.rememberNavController
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
+import com.naver.maps.map.compose.MapEffect
 import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
@@ -64,6 +65,8 @@ import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.DragHandle
+import com.ohmyguide.app.ui.theme.LanguageManager
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
@@ -153,6 +156,10 @@ fun CourseNaviScreen(
                     properties = mapProperties,
                     uiSettings = mapUiSettings,
                 ) {
+                    val mapLocale = LanguageManager.current.value.locale
+                    MapEffect(mapLocale) { naverMap ->
+                        naverMap.setLocale(mapLocale)
+                    }
                     course.spots.forEachIndexed { index, spot ->
                         val coord = SPOT_COORDINATES.getOrElse(index) {
                             LatLng(37.556 + index * 0.002, 126.927 + index * 0.003)
@@ -189,7 +196,7 @@ fun CourseNaviScreen(
                             color = Primary,
                         )
                         Text(
-                            text = " · ${course.spotCount} spots",
+                            text = " · ${course.spotCount} ${LocalStrings.current.spots}",
                             style = MaterialTheme.typography.labelMedium,
                             color = TextCaption,
                         )
@@ -312,7 +319,7 @@ private fun CourseNaviSheetContent(
             ) {
                 Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = Primary)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "Right here", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
+                Text(text = LocalStrings.current.rightHere, style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold), color = TextPrimary)
             }
         }
 
@@ -328,7 +335,7 @@ private fun CourseNaviSheetContent(
 
         // Course progress section
         Text(
-            text = "COURSE PROGRESS",
+            text = LocalStrings.current.courseProgress,
             style = MaterialTheme.typography.labelLarge.copy(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp,

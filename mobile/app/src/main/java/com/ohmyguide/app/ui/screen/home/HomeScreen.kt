@@ -41,6 +41,7 @@ import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
+import com.naver.maps.map.compose.MapEffect
 import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
@@ -56,6 +57,8 @@ import com.ohmyguide.app.ui.common.UserBubble
 import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.DragHandle
+import com.ohmyguide.app.ui.theme.LanguageManager
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 
 private val PLACE_MARKERS = mapOf(
@@ -80,6 +83,7 @@ fun HomeScreen(
     val locationData by LocationForegroundService.locationFlow.collectAsState()
     val locationSource = rememberFusedLocationSource()
     var locationName by remember { mutableStateOf("") }
+    val strings = LocalStrings.current
 
     // GPS 좌표 → 영어 주소 변환
     LaunchedEffect(locationData) {
@@ -93,10 +97,10 @@ fun HomeScreen(
                 val district = address.subLocality ?: address.locality ?: ""
                 val city = address.adminArea ?: ""
                 locationName = if (district.isNotEmpty() && city.isNotEmpty()) "$district, $city"
-                else city.ifEmpty { "your area" }
+                else city.ifEmpty { strings.yourArea }
             }
         } catch (_: Exception) {
-            locationName = "your area"
+            locationName = strings.yourArea
         }
     }
 
@@ -228,6 +232,10 @@ fun HomeScreen(
                         properties = mapProperties,
                         uiSettings = mapUiSettings,
                     ) {
+                        val mapLocale = LanguageManager.current.value.locale
+                        MapEffect(mapLocale) { naverMap ->
+                            naverMap.setLocale(mapLocale)
+                        }
                         PLACE_MARKERS.forEach { (_, pair) ->
                             val (name, position) = pair
                             Marker(

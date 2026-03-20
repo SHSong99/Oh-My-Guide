@@ -50,6 +50,7 @@ import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
@@ -89,7 +90,7 @@ fun CourseDetailScreen(
 
             // Course route
             Text(
-                text = "COURSE ROUTE",
+                text = LocalStrings.current.courseRoute,
                 style = MaterialTheme.typography.labelLarge.copy(
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
@@ -119,7 +120,7 @@ fun CourseDetailScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             PrimaryButton(
-                text = "Start Course Navigation",
+                text = LocalStrings.current.startCourseNavi,
                 onClick = {
                     navController.navigate(Screen.CourseNavi.createRoute(course.id))
                 },
@@ -203,7 +204,7 @@ private fun CourseInfo(course: Course) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(14.dp), tint = Primary)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "${course.spotCount} spots", style = MaterialTheme.typography.labelMedium, color = TextPrimary)
+                Text(text = "${course.spotCount} ${LocalStrings.current.spots}", style = MaterialTheme.typography.labelMedium, color = TextPrimary)
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.AccessTime, contentDescription = null, modifier = Modifier.size(14.dp), tint = Primary)
