@@ -76,9 +76,6 @@ services:
       start_period: 30s
     networks:
       - data-network
-    ports:
-      - "9864:9864"   # DataNode Web UI
-      - "9866:9866"   # DataNode IPC
 
   # ─────────────────────────────────────────────
   # Spark Master

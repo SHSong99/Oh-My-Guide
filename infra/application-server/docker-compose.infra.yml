@@ -1,8 +1,6 @@
 services:
   postgresql:
     image: postgis/postgis:16-3.4
-    ports:
-      - "5432:5432"
     container_name: postgresql
     env_file: .env
     volumes:
