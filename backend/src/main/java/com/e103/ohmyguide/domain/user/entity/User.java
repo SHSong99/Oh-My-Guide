@@ -3,9 +3,7 @@ package com.e103.ohmyguide.domain.user.entity;
 import com.e103.ohmyguide.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 @Entity
 @Getter

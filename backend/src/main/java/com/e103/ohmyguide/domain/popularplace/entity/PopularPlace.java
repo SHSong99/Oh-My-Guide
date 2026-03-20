@@ -2,6 +2,7 @@ package com.e103.ohmyguide.domain.popularplace.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -41,4 +42,17 @@ public class PopularPlace {
 
     @Column(name = "place_rank")           // "rank"는 PostgreSQL 예약어라서 "place_rank"로!
     private Integer placeRank;             // 군집 내 순위 (1위, 2위, ...)
+
+    @Builder
+    private PopularPlace(String nationality, String ageGroup, String gender, String travelPurpose, String lifestyle, Long placeId, Long visitCount, Long totalScore, Integer placeRank) {
+        this.nationality = nationality;
+        this.ageGroup = ageGroup;
+        this.gender = gender;
+        this.travelPurpose = travelPurpose;
+        this.lifestyle = lifestyle;
+        this.placeId = placeId;
+        this.visitCount = visitCount;
+        this.totalScore = totalScore;
+        this.placeRank = placeRank;
+    }
 }
