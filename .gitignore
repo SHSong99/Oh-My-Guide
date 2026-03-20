@@ -1,3 +1,8 @@
+# IDE and tool directories
+.agents
+.claude
+.idea
+
 # environment variables
 .env
 .env.*
@@ -14,3 +19,6 @@ test/mapsapitest/src/**/*.js
 test/mapsapitest/src/**/*.js.map
 test/mapsapitest/src/**/*.d.ts
 test/mapsapitest/src/**/*.d.ts.map
+
+# Claude Code
+.claude/

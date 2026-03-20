@@ -25,4 +25,10 @@ public interface AttractionRepository extends JpaRepository<Attraction, Long> {
 
     @Query("SELECT a FROM Attraction a WHERE (a.addr1 LIKE '경기도%' OR a.addr1 LIKE '서울특별시%' OR a.addr1 LIKE '인천%') AND a.contentType.contentTypeId = 38 AND a.contentId IS NOT NULL AND (a.firstImage1 = '' OR a.overview = '')")
     List<Attraction> findShoppingAttractionsWithMissingData();
+
+    @Query("SELECT a FROM Attraction a WHERE (a.addr1 LIKE '경기도%' OR a.addr1 LIKE '서울특별시%' OR a.addr1 LIKE '인천광역시%') AND a.contentType.contentTypeId = 12 AND a.contentId IS NOT NULL AND a.overview IS NULL")
+    List<Attraction> findTourAttractionsWithNullOverview();
+
+    @Query("SELECT a FROM Attraction a WHERE (a.addr1 LIKE '경기도%' OR a.addr1 LIKE '서울특별시%' OR a.addr1 LIKE '인천광역시%') AND a.contentType.contentTypeId = 14 AND a.contentId IS NOT NULL AND a.overview IS NULL")
+    List<Attraction> findCultureAttractionsWithNullOverview();
 }

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "android-clean-architecture": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "908c1ce8aff32a560bc3b2315c9124cc530683deac578877de69a91febbdf36a"
+    },
+    "compose-multiplatform-patterns": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "1c9bf56198af1b1a358ccdfb11baf4bba17036333c2da91556c47efec1ae92f5"
+    },
+    "kotlin-coroutines-flows": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "b6bb6a1966e6dfe830112d741c96101f4cf3f69796b8c1c72aec9dae823290cc"
+    },
+    "kotlin-patterns": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "5fc6cf22b6e4028c7fa0b4e0814b1c9bce4c0d1c2defb17511efd170da7bc064"
+    },
+    "kotlin-testing": {
+      "source": "affaan-m/everything-claude-code",
+      "sourceType": "github",
+      "computedHash": "3d29dbc8e966349c4b51208cdd7af85d0492286d9cc8ae1666e3c6f1433a37d1"
+    }
+  }
+}
