@@ -228,7 +228,9 @@ data class CountryOption(val id: String, val flag: String, val name: String)
 val LANGUAGE_OPTIONS = listOf(
     LanguageOption("en", "English"),
     LanguageOption("ja", "\u65E5\u672C\u8A9E"),
-    LanguageOption("zh", "\u4E2D\u6587"),
+    LanguageOption("zh-TW", "\u7E41\u9AD4\u4E2D\u6587"),
+    LanguageOption("zh-CN", "\u7B80\u4F53\u4E2D\u6587"),
+    LanguageOption("ko", "\uD55C\uAD6D\uC5B4"),
 )
 
 val GENDER_OPTIONS = listOf("Female", "Male")

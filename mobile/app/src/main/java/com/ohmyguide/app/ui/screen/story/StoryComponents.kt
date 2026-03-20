@@ -36,6 +36,7 @@ import com.ohmyguide.app.ui.theme.DarkPageCounter
 import com.ohmyguide.app.ui.theme.DarkSurface
 import com.ohmyguide.app.ui.theme.DarkText
 import com.ohmyguide.app.ui.theme.DarkWaveInactive
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.PrimaryLight
@@ -60,7 +61,7 @@ fun StoryTopBar(currentPage: Int, totalPages: Int, onBack: () -> Unit) {
             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = Modifier.size(16.dp), tint = DarkText)
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "Map",
+                text = LocalStrings.current.map,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                 color = DarkText,
             )
@@ -121,7 +122,7 @@ fun AudioPlayerBar(isPlaying: Boolean, onToggle: () -> Unit) {
         Spacer(modifier = Modifier.width(14.dp))
         Column {
             Text(
-                text = if (isPlaying) "Now playing\u2026" else "Paused",
+                text = if (isPlaying) LocalStrings.current.nowPlaying else LocalStrings.current.paused,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = Primary,
             )
@@ -187,7 +188,7 @@ fun StoryBottomNav(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = if (isLastPage) "Back to Guide" else "Next",
+                    text = if (isLastPage) LocalStrings.current.backToGuide else LocalStrings.current.next,
                     style = MaterialTheme.typography.titleMedium,
                     color = BgWhite,
                 )

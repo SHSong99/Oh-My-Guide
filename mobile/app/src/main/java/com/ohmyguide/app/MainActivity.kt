@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -17,6 +19,8 @@ import com.ohmyguide.app.ui.common.FloatingNavButton
 import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.navi.NavGraph
 import com.ohmyguide.app.ui.navi.Screen
+import com.ohmyguide.app.ui.theme.LanguageManager
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -24,35 +28,40 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        LanguageManager.init(this)
         enableEdgeToEdge()
         setContent {
-            OhMyGuideTheme {
-                val navController = rememberNavController()
-                val navMinimizedState = remember { NavMinimizedState() }
+            val language by LanguageManager.current
 
-                Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
-                    NavGraph(
-                        navController = navController,
-                        onNaviMinimize = { placeId, mode ->
-                            navMinimizedState.minimize(placeId, mode)
-                        },
-                    )
+            CompositionLocalProvider(LocalStrings provides language.strings) {
+                OhMyGuideTheme {
+                    val navController = rememberNavController()
+                    val navMinimizedState = remember { NavMinimizedState() }
 
-                    if (navMinimizedState.isMinimized) {
-                        FloatingNavButton(
-                            onRestore = {
-                                val placeId = navMinimizedState.placeId ?: return@FloatingNavButton
-                                val mode = navMinimizedState.mode
-                                navMinimizedState.restore()
-                                navController.navigate(Screen.Navi.createRoute(placeId, mode))
+                    Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
+                        NavGraph(
+                            navController = navController,
+                            onNaviMinimize = { placeId, mode ->
+                                navMinimizedState.minimize(placeId, mode)
                             },
-                            onStop = {
-                                navMinimizedState.stop()
-                            },
-                            modifier = Modifier
-                                .align(Alignment.BottomEnd)
-                                .padding(end = 20.dp, bottom = 80.dp),
                         )
+
+                        if (navMinimizedState.isMinimized) {
+                            FloatingNavButton(
+                                onRestore = {
+                                    val placeId = navMinimizedState.placeId ?: return@FloatingNavButton
+                                    val mode = navMinimizedState.mode
+                                    navMinimizedState.restore()
+                                    navController.navigate(Screen.Navi.createRoute(placeId, mode))
+                                },
+                                onStop = {
+                                    navMinimizedState.stop()
+                                },
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .padding(end = 20.dp, bottom = 80.dp),
+                            )
+                        }
                     }
                 }
             }

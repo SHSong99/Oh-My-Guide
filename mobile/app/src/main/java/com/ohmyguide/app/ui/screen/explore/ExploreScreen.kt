@@ -31,6 +31,7 @@ import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.ContentBgTop
 import com.ohmyguide.app.ui.theme.ExploreDarkBg
 import com.ohmyguide.app.ui.theme.HotBadge
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
@@ -91,11 +92,13 @@ fun ExploreScreen(navController: NavController) {
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    val strings = LocalStrings.current
+
                     if (featuredCourse != null && selectedCategory == null) {
                         SectionHeader(
                             icon = Icons.Filled.Whatshot,
                             iconTint = HotBadge,
-                            title = "Hot This Week",
+                            title = strings.hotThisWeek,
                             iconBg = HotBadge.copy(alpha = 0.2f),
                         )
                         Spacer(modifier = Modifier.height(12.dp))
@@ -110,8 +113,8 @@ fun ExploreScreen(navController: NavController) {
 
                     val displayCourses = if (selectedCategory != null) filteredCourses else otherCourses
                     val sectionTitle = if (selectedCategory != null) {
-                        EXPLORE_CATEGORY_GROUPS.find { it.key == selectedCategory }?.label ?: "Courses"
-                    } else "All Courses"
+                        EXPLORE_CATEGORY_GROUPS.find { it.key == selectedCategory }?.label ?: strings.courses
+                    } else strings.allCourses
 
                     SectionHeader(
                         icon = Icons.AutoMirrored.Filled.TrendingUp,
