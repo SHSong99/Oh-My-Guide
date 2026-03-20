@@ -1,5 +1,4 @@
-
- # Oh My Guide - Android 프로젝트 가이드
+# Oh My Guide - Android 프로젝트 가이드
 
 ## 프로젝트 개요
 

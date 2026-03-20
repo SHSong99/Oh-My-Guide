@@ -35,6 +35,21 @@ android {
             "NAVER_MAP_CLIENT_ID",
             "\"${localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")}\""
         )
+        buildConfigField(
+            "String",
+            "ODSAY_API_KEY",
+            "\"${localProperties.getProperty("ODSAY_API_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "BUSAN_BIMS_SERVICE_KEY",
+            "\"${localProperties.getProperty("BUSAN_BIMS_SERVICE_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "NAVER_MAP_CLIENT_SECRET",
+            "\"${localProperties.getProperty("NAVER_MAP_CLIENT_SECRET", "")}\""
+        )
     }
 
     buildTypes {
