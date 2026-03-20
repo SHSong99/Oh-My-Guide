@@ -4,6 +4,7 @@ import com.e103.ohmyguide.domain.auth.oauth2.AuthProvider;
 import com.e103.ohmyguide.global.entity.BaseEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
@@ -43,14 +44,6 @@ public class User extends BaseEntity {
     private AuthProvider provider;
 
     private String providerId;
-
-    @Builder(builderClassName = "DefaultUserBuilder")
-    private User(String email, String nickname, String profileImageUrl, Boolean onboardingCompleted) {
-        this.email = email;
-        this.nickname = nickname;
-        this.profileImageUrl = profileImageUrl;
-        this.onboardingCompleted = onboardingCompleted != null ? onboardingCompleted : false;
-    }
 
     @Builder(builderMethodName = "oauth2Builder", builderClassName = "OAuth2UserBuilder")
     private User(String email, String name, String imageUrl, AuthProvider provider, String providerId) {

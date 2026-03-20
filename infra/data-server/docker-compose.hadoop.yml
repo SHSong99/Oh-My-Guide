@@ -51,12 +51,17 @@ services:
     user: root
     environment:
       - HADOOP_HOME=/opt/hadoop
+      - DATANODE_HOSTNAME=${DATANODE_HOSTNAME}
     command: >
       sh -c "
         mkdir -p /opt/hadoop/data/dataNode &&
         chown -R hadoop:hadoop /opt/hadoop/data &&
         su hadoop -c 'hdfs datanode'
       "
+    ports:
+      - "9864:9864"   # DataNode HTTP (Web UI / 데이터 전송)
+      - "9866:9866"   # DataNode 데이터 전송
+      - "9867:9867"   # DataNode IPC
     volumes:
       - datanode-data:/opt/hadoop/data/dataNode
       - ./hadoop-config:/opt/hadoop/etc/hadoop
@@ -71,6 +76,9 @@ services:
       start_period: 30s
     networks:
       - data-network
+    ports:
+      - "9864:9864"   # DataNode Web UI
+      - "9866:9866"   # DataNode IPC
 
   # ─────────────────────────────────────────────
   # Spark Master
@@ -80,7 +88,7 @@ services:
   # REST API 포트:  http://<host>:6066  (Spring Boot에서 Job 제출용)
   # ─────────────────────────────────────────────
   spark-master:
-    image: apache/spark:latest
+    image: apache/spark:3.5.3
     container_name: spark-master
     hostname: spark-master
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
@@ -91,10 +99,10 @@ services:
       - SPARK_MASTER_REST_PORT=6066
     ports:
       - "18080:18080"   # Web UI
-      - "7077:7077"   # Spark 클러스터 통신
-      - "6066:6066"   # REST API (Spring Boot Job 제출용)
+      - "7077:7077"     # Spark 클러스터 통신
+      - "6066:6066"     # REST API
     volumes:
-      - ./spark-jobs:/opt/spark-jobs  # Job 파일 마운트 (git pull만 해도 자동 반영)
+      - ./spark-jobs:/opt/spark-jobs
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:18080 || exit 1"]
       interval: 15s
@@ -109,7 +117,7 @@ services:
   # 역할: 실제 Job 실행 노드
   # ─────────────────────────────────────────────
   spark-worker:
-    image: apache/spark:latest
+    image: apache/spark:3.5.3
     container_name: spark-worker
     hostname: spark-worker
     command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077
@@ -120,7 +128,7 @@ services:
     ports:
       - "8081:8081"   # Worker Web UI
     volumes:
-      - ./spark-jobs:/opt/spark-jobs  # Job 파일 마운트 (Master와 동일 경로)
+      - ./spark-jobs:/opt/spark-jobs
     depends_on:
       spark-master:
         condition: service_healthy
@@ -129,6 +137,33 @@ services:
       interval: 15s
       timeout: 5s
       retries: 5
+    networks:
+      - data-network
+
+  # ─────────────────────────────────────────────
+  # Apache Livy
+  # 역할: Spark REST API 서버
+  # Spring Boot에서 HTTP로 Spark Job 제출
+  # REST API: http://<host>:8998/batches
+  # ─────────────────────────────────────────────
+  livy:
+    build:
+      context: ./livy
+    container_name: livy
+    hostname: livy
+    ports:
+      - "8998:8998"
+    environment:
+      - SPARK_HOME=/opt/spark
+      - HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+      - LIVY_SERVER_JAVA_OPTS=--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+    volumes:
+      - ./spark-jobs:/opt/spark-jobs
+      - ./hadoop-config:/opt/hadoop/etc/hadoop
+      - ./livy/livy.conf:/opt/livy/conf/livy.conf
+    depends_on:
+      spark-master:
+        condition: service_healthy
     networks:
       - data-network
 

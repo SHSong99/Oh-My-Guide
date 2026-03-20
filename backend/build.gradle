@@ -35,6 +35,11 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.kafka:spring-kafka'
+    implementation('org.apache.hadoop:hadoop-client:3.3.6') {
+        exclude group: 'org.slf4j'
+        exclude group: 'log4j'
+        exclude group: 'javax.servlet'
+    }
     compileOnly 'org.projectlombok:lombok'
     runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'

@@ -13,7 +13,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -44,8 +44,8 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID}
-            client-secret: ${GOOGLE_CLIENT_SECRET}
+            client-id: ${GOOGLE_CLIENT_ID:abcdefd}
+            client-secret: ${GOOGLE_CLIENT_SECRET:qwdwdqdqwdqwdqwd}
             redirect-uri: http://localhost:8080/oauth2/callback/google
             scope:
               - email
@@ -55,11 +55,23 @@ spring:
 app:
   auth:
     tokenSecret: ${TOKEN_SECRET}
-    tokenExpirationMsec: ${TOKEN_EXPIRE}
+    tokenExpirationMsec: ${TOKEN_EXPIRE:3000000}
   cors:
-    allowedOrigins: ${CORS_URL}
+    allowedOrigins: ${CORS_URL:http://localhost:3000}
   oauth2:
     authorizedRedirectUris: http://localhost:8080/oauth2/redirect,myandroidapp://oauth2/redirect
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+
+  metrics:
+    tags:
+      # 모든 메트릭에 application 레이블 추가 (Grafana 대시보드 필터링용)
+      application: ${spring.application.name}
+      namespace: ${NAMESPACE:local}
 
 server:
 port: 8080
@@ -67,3 +79,17 @@ port: 8080
 tour-api:
   service-key: ${TOUR_API_KEY}
   base-url: https://apis.data.go.kr/B551011/KorService2
+
+hdfs:
+  uri: hdfs://${HDFS_HOST:localhost}:${HDFS_PORT:9000}
+  user: ${HDFS_USER:root}
+
+spark:
+  master:
+    rest-url: ${SPARK_REST_URL:http://localhost:6066}
+  job:
+    app-resource: /opt/spark-jobs/analyze_logs.py
+    jars: /opt/spark-jobs/postgresql-42.7.4.jar
+  schedule:
+    enabled: ${SPARK_SCHEDULE_ENABLED:false}
+    cron: ${SPARK_SCHEDULE_CRON:0 0 4 * * *}

@@ -1,6 +1,7 @@
 package com.e103.ohmyguide.domain.chatmessage.repository;
 
 import com.e103.ohmyguide.IntegrationTestSupport;
+import com.e103.ohmyguide.domain.auth.oauth2.AuthProvider;
 import com.e103.ohmyguide.domain.chatmessage.entity.ChatMessage;
 import com.e103.ohmyguide.domain.chatmessage.entity.ChatRole;
 import com.e103.ohmyguide.domain.user.entity.User;
@@ -22,14 +23,21 @@ class ChatMessageRepositoryTest extends IntegrationTestSupport {
     @Autowired
     private UserRepository userRepository;
 
+    private User buildUser(String email) {
+        return User.oauth2Builder()
+                .email(email)
+                .name("테스터")
+                .imageUrl("https://image.url")
+                .provider(AuthProvider.google)
+                .providerId("google-id-123")
+                .build();
+    }
+
     @DisplayName("로그인 사용자의 ChatMessage 를 저장하고 조회한다.")
     @Test
     void saveAndFindWithUser() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         ChatMessage message = ChatMessage.builder()
                 .user(user)
@@ -72,10 +80,7 @@ class ChatMessageRepositoryTest extends IntegrationTestSupport {
     @Test
     void saveConversationAndFindAll() {
         // given
-        User user = userRepository.save(User.builder()
-                .email("test@test.com")
-                .nickname("테스터")
-                .build());
+        User user = userRepository.save(buildUser("test@test.com"));
 
         chatMessageRepository.save(ChatMessage.builder()
                 .user(user).role(ChatRole.USER).content("서울 관광지 추천해줘").build());

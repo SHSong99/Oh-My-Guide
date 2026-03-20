@@ -8,6 +8,11 @@
 .env.*
 !.env.example
 
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
 # dependencies
 node_modules/
 
@@ -19,6 +24,8 @@ test/mapsapitest/src/**/*.js
 test/mapsapitest/src/**/*.js.map
 test/mapsapitest/src/**/*.d.ts
 test/mapsapitest/src/**/*.d.ts.map
+
+CLAUDE.md
 
 # Claude Code
 .claude/

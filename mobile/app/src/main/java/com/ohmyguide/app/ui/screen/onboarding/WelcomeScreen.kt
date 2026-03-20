@@ -37,6 +37,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ohmyguide.app.R
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import com.ohmyguide.app.R

@@ -1,0 +1,10 @@
+# docker-compose.monitoring.local.yml
+services:
+  prometheus:
+    volumes:
+      - ./prometheus/prometheus.local.yml:/etc/prometheus/prometheus.yml
+
+  grafana:
+    environment:
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_SERVER_SERVE_FROM_SUB_PATH=false
