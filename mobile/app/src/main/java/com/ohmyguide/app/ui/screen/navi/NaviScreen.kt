@@ -2,8 +2,10 @@ package com.ohmyguide.app.ui.screen.navi
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -48,10 +50,8 @@ import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
-import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.navi.Screen
-import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.TypingIndicator
 import com.ohmyguide.app.ui.screen.story.StoryOverlay
 import com.ohmyguide.app.ui.theme.BgWhite
@@ -89,7 +89,7 @@ fun NaviScreen(
     viewModel: NaviViewModel = hiltViewModel(),
 ) {
     val strings = LocalStrings.current
-    var showStory by remember { mutableStateOf(false) }
+    var storyPlaceId by remember { mutableStateOf<String?>(null) }
     val state by viewModel.uiState.collectAsState()
 
     val detail = viewModel.detail
@@ -156,59 +156,81 @@ fun NaviScreen(
                         start = 16.dp, end = 16.dp,
                         top = 12.dp, bottom = 80.dp,
                     ),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
+                    // Kkaebi header
+                    item {
+                        KkaebiHeader()
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
                     items(state.chatMessages.size) { index ->
                         val msg = state.chatMessages[index]
-                        when (msg) {
-                            is NaviChatMessage.BotText -> {
-                                GuideBubble(
-                                    text = msg.text,
-                                    showAvatar = index == 0 ||
-                                        state.chatMessages.getOrNull(index - 1)
-                                            .let { it !is NaviChatMessage.BotText },
-                                )
-                            }
-                            is NaviChatMessage.BotTyping -> {
-                                TypingIndicator(showAvatar = false)
-                            }
-                            is NaviChatMessage.PlaceIntro -> {
-                                PoiHeroCard(
-                                    emoji = msg.detail.place.emoji.ifEmpty { "📍" },
-                                    name = msg.detail.place.name,
-                                    nameKr = msg.detail.place.nameKr,
-                                )
-                            }
-                            is NaviChatMessage.ActionButtons -> {
-                                NaviActionButtons(
-                                    options = msg.options,
-                                    answered = msg.answered,
-                                    selected = msg.selected,
-                                    onSelect = { viewModel.onActionSelect(it) },
-                                    onStory = { showStory = true },
-                                )
-                            }
-                            is NaviChatMessage.NearbyPoi -> {
-                                NearbyPoiButtons(
-                                    name = msg.name,
-                                    answered = msg.answered,
-                                    onAccept = { viewModel.onNearbyPoiResponse(true, msg.name) },
-                                    onSkip = { viewModel.onNearbyPoiResponse(false, msg.name) },
-                                )
-                            }
-                            is NaviChatMessage.ArrivalConfirm -> {
-                                ArrivalConfirmButton(
-                                    onClick = { viewModel.onArrivalConfirm() },
-                                )
-                            }
-                            is NaviChatMessage.NearbyRecommendations -> {
-                                NearbyPlaceCards(
-                                    places = msg.places,
-                                    onPlaceClick = { id ->
-                                        navController.navigate("place/$id")
-                                    },
-                                )
+                        // Show Kkaebi label when a new "turn" starts
+                        val prevMsg = state.chatMessages.getOrNull(index - 1)
+                        val isNewTurn = prevMsg != null && prevMsg !is NaviChatMessage.BotText
+                            && prevMsg !is NaviChatMessage.BotTyping
+                            && msg is NaviChatMessage.BotText
+
+                        if (isNewTurn) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                            KkaebiLabel()
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+
+                        AnimatedMessageItem {
+                            when (msg) {
+                                is NaviChatMessage.BotText -> {
+                                    NaviBotBubble(text = msg.text)
+                                }
+                                is NaviChatMessage.BotTyping -> {
+                                    TypingIndicator(showAvatar = false)
+                                }
+                                is NaviChatMessage.PlaceIntro -> { /* removed */ }
+                                is NaviChatMessage.TransitInfo -> {
+                                    TransitInfoCard(info = msg.info)
+                                }
+                                is NaviChatMessage.DestinationDetail -> {
+                                    DestinationDetailCard(
+                                        detail = msg.detail,
+                                        onClick = { storyPlaceId = msg.detail.place.id },
+                                    )
+                                }
+                                is NaviChatMessage.NearbyPlaces -> {
+                                    NearbyPlaceCarousel(
+                                        places = msg.places,
+                                        onPlaceClick = { id -> storyPlaceId = id },
+                                    )
+                                }
+                                is NaviChatMessage.Phrases -> {
+                                    PhrasesDashboard(
+                                        items = msg.items,
+                                    )
+                                }
+                                is NaviChatMessage.ArrivalConfirm -> {
+                                    ArrivalConfirmButton(
+                                        onClick = { viewModel.onArrivalConfirm() },
+                                    )
+                                }
+                                is NaviChatMessage.NearbyRecommendations -> {
+                                    NearbyPlaceCards(
+                                        places = msg.places,
+                                        onPlaceClick = { id ->
+                                            navController.navigate("place/$id")
+                                        },
+                                    )
+                                }
                             }
                         }
+                    }
+
+                    // Fixed action buttons at the bottom of chat
+                    item {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        NaviQuickActions(
+                            onStory = { storyPlaceId = placeId },
+                            onPhrases = { viewModel.onPhrasesClick() },
+                        )
                     }
                 }
             },
@@ -221,8 +243,8 @@ fun NaviScreen(
             )
         }
 
-        if (showStory) {
-            StoryOverlay(placeId = placeId, onDismiss = { showStory = false })
+        if (storyPlaceId != null) {
+            StoryOverlay(placeId = storyPlaceId!!, onDismiss = { storyPlaceId = null })
         }
     }
 }
