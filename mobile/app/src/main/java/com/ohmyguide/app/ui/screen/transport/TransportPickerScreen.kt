@@ -15,11 +15,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,6 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
@@ -41,14 +45,21 @@ import com.ohmyguide.app.ui.theme.InfoPurple
 import com.ohmyguide.app.ui.theme.MenuStoryBg
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
+import com.ohmyguide.app.ui.theme.BusDefault
 import com.ohmyguide.app.ui.theme.PrimaryBg
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
-fun TransportPickerScreen(navController: NavController, placeId: String) {
+fun TransportPickerScreen(
+    navController: NavController,
+    placeId: String,
+    viewModel: TransportPickerViewModel = hiltViewModel(),
+) {
     val strings = LocalStrings.current
+    val timeInfo by viewModel.timeInfo.collectAsState()
+    val transitPreview by viewModel.transitPreview.collectAsState()
     val detail = SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
     val placeName = detail?.place?.name ?: strings.destination
@@ -111,14 +122,62 @@ fun TransportPickerScreen(navController: NavController, placeId: String) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             TransportMode.entries.forEach { mode ->
+                val (time, eta) = when (mode) {
+                    TransportMode.Walk -> timeInfo.walkTime to timeInfo.walkEta
+                    TransportMode.Transit -> timeInfo.transitTime to timeInfo.transitEta
+                    TransportMode.Car -> timeInfo.carTime to timeInfo.carEta
+                }
                 TransportModeCard(
                     mode = mode,
                     selected = selectedMode == mode,
+                    time = time,
+                    eta = eta,
                     onClick = { selectedMode = mode },
                 )
             }
 
             if (selectedMode == TransportMode.Transit) {
+                val preview = transitPreview
+                if (preview != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(BusDefault.copy(alpha = 0.08f))
+                            .padding(12.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.DirectionsBus,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                    tint = BusDefault,
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = "${strings.busLabel} ${preview.busNo}",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = BusDefault,
+                                )
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    Icons.Filled.Schedule,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp),
+                                    tint = TextSecondary,
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "${preview.arrivalMin} ${strings.minSuffix} · ${preview.remainStops} ${strings.stopsAway}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = TextSecondary,
+                                )
+                            }
+                        }
+                    }
+                }
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -144,7 +203,13 @@ fun TransportPickerScreen(navController: NavController, placeId: String) {
             else strings.startNavigation,
             onClick = {
                 if (selectedMode == TransportMode.Transit) {
-                    navController.navigate(Screen.TransitDetail.createRoute(placeId))
+                    navController.navigate(
+                        Screen.TransitDetail.createRoute(
+                            placeId,
+                            detail?.place?.lat ?: 0.0,
+                            detail?.place?.lng ?: 0.0,
+                        )
+                    )
                 } else {
                     navController.navigate(
                         Screen.Navi.createRoute(placeId, selectedMode.name.lowercase())

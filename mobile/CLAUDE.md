@@ -1,4 +1,4 @@
- # Oh My Guide - Android 프로젝트 가이드
+# Oh My Guide - Android 프로젝트 가이드
 
 ## 프로젝트 개요
 
@@ -155,6 +155,55 @@ API 호출만. 비즈니스 로직 금지.
 
 ### 14. service/ 폴더
 핸드폰 자체 기능 (GPS, 알림, 센서 등). 서버 API가 아닌 시스템 서비스는 여기에 배치. `data/repository/`에 넣지 않는다.
+
+
+
+### 15. 화면 전환
+- 모든 NavHost composable에 enterTransition, exitTransition 적용 (slideInHorizontally, fadeIn 등)
+- 뒤로가기는 반드시 `popBackStack()` 기반. 특정 route로 하드코딩 이동 금지
+- 바텀시트, 다이얼로그에 열림/닫힘 애니메이션 적용
+
+### 16. 뒤로가기 처리
+- 물리 백버튼과 UI 백버튼 동작 항상 일치
+- `BackHandler` 활용하여 예상치 못한 화면 이탈 방지
+- 내비게이션 중 백버튼은 내비 종료 확인 다이얼로그 표시
+
+### 17. 모션 및 피드백
+- 버튼 탭 시 ripple effect 확인
+- 로딩 상태에 Shimmer 또는 CircularProgressIndicator 필수
+- 상태 변경(선택, 토글)에 전환 애니메이션 적용
+- 불필요한 확인 팝업 최소화. 즉각적 액션 우선
+
+### 18. Floating FAB (내비 최소화)
+- FAB 탭 시 확인 팝업 없이 즉시 내비 화면 복원
+- 새 길찾기 시작 시 기존 내비 상태 완전 초기화 (navMinimized, placeId, transportMode, transitRouteId, 폴리라인, 마커)
+- FAB는 드래그 가능하되, 화면 모서리 스냅
+
+### 19. 다국어
+- UI 텍스트에 영어 문자열 직접 사용 금지. 반드시 `LocalStrings` 경유
+- ViewModel에서 UI 노출 문자열(에러, 토스트, 스낵바)도 `LanguageManager.current.value.strings` 사용
+- 챗봇 템플릿 문자열(가이드 메시지, 안내 문구 등)도 백엔드 API 연동 전까지는 `LocalStrings` 키로 관리. 영어만 하드코딩하지 않는다
+- 영어 기본, 한국어 필수 지원. 일본어/중국어는 추후
+
+### 20. 아이코노그래피 (아이콘 활용)
+- 텍스트만으로 구성된 버튼, 라벨, 메뉴, 카드에는 적절한 Material Icon을 함께 배치
+- 카테고리 구분(음식, 관광, 쇼핑 등)에는 반드시 아이콘으로 시각적 구분 제공
+- 교통수단 선택(도보, 차, 버스, 지하철)에 각각 고유 아이콘 표시
+- 가이드 카드(회화, TTS, AI 요약, 하차 안내 등)에 카드 성격을 나타내는 아이콘 배치
+- 빈 상태, 에러 화면에도 상황에 맞는 일러스트 또는 아이콘 포함
+- 아이콘 라이브러리: Material Icons (`androidx.compose.material.icons`) 우선 사용
+- 커스텀 아이콘이 필요하면 `res/drawable`에 SVG로 추가
+
+### 21. 빈 상태 및 에러 처리
+- 데이터 없음, 로딩 실패, 네트워크 에러 각각에 대한 빈 상태 화면 필수
+- API 에러 시 사용자에게 재시도 버튼 제공
+
+---
+
+## 커밋 규칙
+
+- 기능 단위로 커밋. 하나의 커밋에 여러 기능을 섞지 않는다.
+- 빌드 에러 수정 같은 부수 fix도 가능하면 해당 기능 커밋에 포함시킨다.
 
 ---
 

@@ -47,8 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.R
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.AppLanguage
 import com.ohmyguide.app.ui.theme.BgDivider
 import com.ohmyguide.app.ui.theme.BgScreen
@@ -111,8 +109,8 @@ sealed class MyPageUiState {
 
 @Composable
 fun MyPageScreen(navController: NavController) {
-    val viewModel: MyPageViewModel = hiltViewModel()
     val strings = LocalStrings.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -147,13 +145,7 @@ fun MyPageScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(16.dp))
             MenuCard()
             Spacer(modifier = Modifier.height(16.dp))
-            SignOutButton(onClick = {
-                viewModel.logout {
-                    navController.navigate(Screen.Welcome.route) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            })
+            SignOutButton(onClick = { })
             Spacer(modifier = Modifier.height(16.dp))
         }
     }

@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.DirectionsWalk
@@ -194,14 +195,23 @@ private fun HeroSection(detail: PlaceDetail) {
             .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp))
             .background(BgSub),
     ) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = detail.place.emoji.ifEmpty { "\uD83D\uDCCD" },
-                fontSize = 48.sp,
+        if (detail.place.imageUrl != null) {
+            coil.compose.AsyncImage(
+                model = detail.place.imageUrl,
+                contentDescription = detail.place.name,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop,
             )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = detail.place.emoji.ifEmpty { "\uD83D\uDCCD" },
+                    fontSize = 48.sp,
+                )
+            }
         }
         Box(
             modifier = Modifier

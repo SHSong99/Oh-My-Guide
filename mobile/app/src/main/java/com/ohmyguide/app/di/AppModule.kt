@@ -4,6 +4,11 @@ import android.content.Context
 import com.ohmyguide.app.BuildConfig
 import com.ohmyguide.app.data.api.ApiService
 import com.ohmyguide.app.data.api.AuthInterceptor
+import com.ohmyguide.app.data.api.BusanBimsApi
+import com.ohmyguide.app.data.api.NaverDrivingApi
+import com.ohmyguide.app.data.api.NaverWalkingApi
+import com.ohmyguide.app.data.api.OdsayApi
+import com.ohmyguide.app.data.api.TmapApi
 import com.ohmyguide.app.data.local.TokenDataStore
 import dagger.Module
 import dagger.Provides
@@ -14,6 +19,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -28,7 +34,8 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+    @Named("authenticated")
+    fun provideAuthenticatedClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
             .addInterceptor(
@@ -44,7 +51,20 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+    @Named("plain")
+    fun providePlainClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .addInterceptor(
+                HttpLoggingInterceptor().apply {
+                    level = HttpLoggingInterceptor.Level.BODY
+                }
+            )
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(@Named("authenticated") okHttpClient: OkHttpClient): Retrofit {
         val baseUrl = BuildConfig.BASE_URL.let { if (it.endsWith("/")) it else "$it/" }
         return Retrofit.Builder()
             .baseUrl(baseUrl)
@@ -57,5 +77,59 @@ object AppModule {
     @Singleton
     fun provideApiService(retrofit: Retrofit): ApiService {
         return retrofit.create(ApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOdsayApi(@Named("plain") client: OkHttpClient): OdsayApi {
+        return Retrofit.Builder()
+            .baseUrl("https://api.odsay.com/v1/api/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(OdsayApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNaverDrivingApi(@Named("plain") client: OkHttpClient): NaverDrivingApi {
+        return Retrofit.Builder()
+            .baseUrl("https://maps.apigw.ntruss.com/map-direction/v1/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NaverDrivingApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNaverWalkingApi(@Named("plain") client: OkHttpClient): NaverWalkingApi {
+        return Retrofit.Builder()
+            .baseUrl("https://maps.apigw.ntruss.com/map-direction-15/v1/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NaverWalkingApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideTmapApi(@Named("plain") client: OkHttpClient): TmapApi {
+        return Retrofit.Builder()
+            .baseUrl("https://apis.openapi.sk.com/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(TmapApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideBusanBimsApi(@Named("plain") client: OkHttpClient): BusanBimsApi {
+        return Retrofit.Builder()
+            .baseUrl("http://apis.data.go.kr/6260000/BusanBIMS/")
+            .client(client)
+            .build()
+            .create(BusanBimsApi::class.java)
     }
 }

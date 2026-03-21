@@ -7,8 +7,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.screen.auth.AuthScreen
 import com.ohmyguide.app.ui.screen.auth.AuthState
 import com.ohmyguide.app.ui.screen.auth.AuthViewModel
@@ -30,7 +33,11 @@ import com.ohmyguide.app.ui.screen.transport.TransitDetailScreen
 import com.ohmyguide.app.ui.screen.transport.TransportPickerScreen
 
 @Composable
-fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String, mode: String) -> Unit = { _, _ -> }) {
+fun NavGraph(
+    navController: NavHostController,
+    onNaviMinimize: (placeId: String, mode: String) -> Unit = { _, _ -> },
+    onNaviStart: () -> Unit = {},
+) {
     NavHost(
         navController = navController,
         startDestination = Screen.Splash.route
@@ -128,22 +135,31 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransportPickerScreen(navController, placeId)
         }
-        composable(Screen.TransitDetail.route) { backStackEntry ->
+        composable(
+            route = Screen.TransitDetail.route,
+            arguments = listOf(
+                navArgument("destLat") { type = NavType.StringType; defaultValue = "0.0" },
+                navArgument("destLng") { type = NavType.StringType; defaultValue = "0.0" },
+            ),
+        ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransitDetailScreen(navController, placeId)
         }
         composable(Screen.Navi.route) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             val mode = backStackEntry.arguments?.getString("mode") ?: "walk"
+
+            LaunchedEffect(placeId, mode) {
+                onNaviStart()
+            }
+
             NaviScreen(
                 navController = navController,
                 placeId = placeId,
                 mode = mode,
                 onMinimize = {
                     onNaviMinimize(placeId, mode)
-                    navController.navigate(Screen.Place.createRoute(placeId)) {
-                        popUpTo(Screen.Home.route)
-                    }
+                    navController.popBackStack()
                 },
             )
         }

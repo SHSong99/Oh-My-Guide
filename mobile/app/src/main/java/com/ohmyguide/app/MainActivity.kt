@@ -44,6 +44,9 @@ class MainActivity : ComponentActivity() {
                             onNaviMinimize = { placeId, mode ->
                                 navMinimizedState.minimize(placeId, mode)
                             },
+                            onNaviStart = {
+                                navMinimizedState.stop()
+                            },
                         )
 
                         if (navMinimizedState.isMinimized) {
@@ -53,9 +56,6 @@ class MainActivity : ComponentActivity() {
                                     val mode = navMinimizedState.mode
                                     navMinimizedState.restore()
                                     navController.navigate(Screen.Navi.createRoute(placeId, mode))
-                                },
-                                onStop = {
-                                    navMinimizedState.stop()
                                 },
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)

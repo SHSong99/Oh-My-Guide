@@ -35,7 +35,6 @@ android {
             "NAVER_MAP_CLIENT_ID",
             "\"${localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")}\""
         )
-
         buildConfigField(
             "String",
             "BASE_URL",
@@ -45,6 +44,26 @@ android {
             "String",
             "GOOGLE_WEB_CLIENT_ID",
             "\"${localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "ODSAY_API_KEY",
+            "\"${localProperties.getProperty("ODSAY_API_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "BUSAN_BIMS_SERVICE_KEY",
+            "\"${localProperties.getProperty("BUSAN_BIMS_SERVICE_KEY", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "NAVER_MAP_CLIENT_SECRET",
+            "\"${localProperties.getProperty("NAVER_MAP_CLIENT_SECRET", "")}\""
+        )
+        buildConfigField(
+            "String",
+            "TMAP_APP_KEY",
+            "\"${localProperties.getProperty("TMAP_APP_KEY", "")}\""
         )
     }
 
@@ -120,6 +139,9 @@ dependencies {
 
     // Google Sign-In (Authorization API for access token)
     implementation(libs.play.services.auth)
+
+    // Image Loading
+    implementation(libs.coil.compose)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

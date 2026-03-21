@@ -42,6 +42,9 @@ sealed class ChatMessage {
         val selectedOption: String? = null,
     ) : ChatMessage()
     object FindOtherPlacesBtn : ChatMessage()
+    data class UserInput(
+        val onSubmit: (String) -> Unit,
+    ) : ChatMessage()
 }
 
 // ── Sheet Mode ──
@@ -182,10 +185,24 @@ class HomeViewModel @Inject constructor(
     }
 
     fun onSelectOption(option: String) {
+        if (option == "__OTHER__") {
+            markOptionAnswered(option)
+            addMessage(ChatMessage.UserInput(onSubmit = { customText ->
+                removeUserInput()
+                onSelectOption(customText)
+            }))
+            return
+        }
         when (flowStep) {
             FlowStep.AWAITING_FOCUS -> onFocusSelected(option)
             FlowStep.AWAITING_VIBE -> onVibeSelected(option)
             FlowStep.IDLE -> {}
+        }
+    }
+
+    private fun removeUserInput() {
+        _uiState.update { state ->
+            state.copy(chatMessages = state.chatMessages.filterNot { it is ChatMessage.UserInput })
         }
     }
 
