@@ -74,7 +74,6 @@ class HomeViewModel @Inject constructor() : ViewModel() {
 
     private fun initChat() {
         val initial = mutableListOf<ChatMessage>()
-        initial += ChatMessage.BotText("Based on your choices, I've found perfect matches for you.")
         HOME_RECOMMENDATIONS.forEach { section ->
             initial += ChatMessage.BotRecommendation(section)
         }

@@ -35,7 +35,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import coil.compose.AsyncImage
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -148,12 +150,20 @@ private fun CourseHero(course: Course) {
             .aspectRatio(16f / 10f)
             .background(BgSub),
     ) {
-        // Emoji placeholder for hero image
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(text = course.emoji, fontSize = 64.sp)
+        if (course.imageUrl != null) {
+            AsyncImage(
+                model = course.imageUrl,
+                contentDescription = course.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(text = course.emoji, fontSize = 64.sp)
+            }
         }
         // Gradient overlay
         Box(
@@ -312,7 +322,7 @@ private fun SpotCard(
                 .clip(RoundedCornerShape(16.dp))
                 .background(BgWhite),
         ) {
-            // Spot image placeholder
+            // Spot image
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -320,7 +330,16 @@ private fun SpotCard(
                     .background(BgSub),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = "📍", fontSize = 28.sp)
+                if (spot.imageUrl != null) {
+                    AsyncImage(
+                        model = spot.imageUrl,
+                        contentDescription = spot.name,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else {
+                    Text(text = "📍", fontSize = 28.sp)
+                }
                 // Name overlay
                 Column(
                     modifier = Modifier

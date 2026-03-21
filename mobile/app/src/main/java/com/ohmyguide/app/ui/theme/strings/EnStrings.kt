@@ -138,6 +138,7 @@ object EnStrings : AppStrings {
     override val placeNo = "NO"
     override val placeGo = "GO"
 
+    override val transitRoutes = "Transit Routes"
     override val searchingRoutes = "Searching routes..."
     override val noTransitRoutes = "No transit routes found"
     override val tryWalkOrCar = "Try walking or car instead"

@@ -18,7 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.activity.compose.BackHandler
@@ -74,6 +74,9 @@ private val PLACE_COORDINATES = mapOf(
     "dm5" to LatLng(35.1795, 128.9383),
     "dm6" to LatLng(35.2110, 128.9722),
     "dm7" to LatLng(35.0720, 128.9650),
+    "p3" to LatLng(35.0850, 128.9200),
+    "p4" to LatLng(35.0530, 128.9580),
+    "p5" to LatLng(35.0470, 128.9660),
 )
 private val DEFAULT_USER_POSITION = LatLng(35.0950, 128.8560)
 
@@ -332,9 +335,9 @@ private fun MapArea(
                     }
                 }
 
-                // Transfer markers at segment boundaries
+                // Transfer markers at segment boundaries (skip first — near start)
                 naviRoute.segments.forEachIndexed { index, segment ->
-                    if (index > 0 && segment.coords.isNotEmpty()) {
+                    if (index > 1 && segment.coords.isNotEmpty()) {
                         val pt = segment.coords.first()
                         Marker(
                             state = rememberMarkerState(
@@ -343,8 +346,8 @@ private fun MapArea(
                             ),
                             icon = OverlayImage.fromResource(R.drawable.ic_marker_waypoint),
                             captionText = segment.lineName,
-                            width = 28.dp,
-                            height = 28.dp,
+                            width = 24.dp,
+                            height = 36.dp,
                         )
                     }
                 }
@@ -362,13 +365,21 @@ private fun MapArea(
                 )
             }
 
+            // 출발지 마커
+            Marker(
+                state = rememberMarkerState(key = "start", position = userPosition),
+                icon = OverlayImage.fromResource(R.drawable.ic_marker_startpoint),
+                width = 30.dp,
+                height = 45.dp,
+            )
+
             // 목적지 마커
             Marker(
                 state = rememberMarkerState(position = destinationPosition),
                 icon = OverlayImage.fromResource(R.drawable.ic_marker_destination),
                 captionText = placeName,
-                width = 40.dp,
-                height = 48.dp,
+                width = 36.dp,
+                height = 54.dp,
             )
         }
 
@@ -382,7 +393,7 @@ private fun MapArea(
                 .clickable(onClick = onMinimize),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(Icons.Filled.Close, contentDescription = "Minimize", modifier = Modifier.size(18.dp), tint = TextPrimary)
+            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Minimize", modifier = Modifier.size(20.dp), tint = TextPrimary)
         }
     }
 }

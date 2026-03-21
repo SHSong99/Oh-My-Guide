@@ -9,7 +9,7 @@ interface BusanBimsApi {
 
     @GET("stopArrByBstopid")
     suspend fun getArrivalByStopId(
-        @Query("serviceKey", encoded = true) serviceKey: String,
+        @Query("serviceKey") serviceKey: String,
         @Query("bstopid") bstopId: String,
     ): Response<ResponseBody>
 }

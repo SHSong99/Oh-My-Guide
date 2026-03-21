@@ -1,5 +1,10 @@
 package com.ohmyguide.app.ui.screen.home
 
+import android.graphics.Bitmap
+import android.graphics.BitmapShader
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Shader
 import android.location.Geocoder
 import java.util.Locale
 import androidx.compose.foundation.background
@@ -23,11 +28,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,7 +56,12 @@ import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
+import com.naver.maps.map.overlay.OverlayImage
+import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.service.LocationForegroundService
+import coil.imageLoader
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import com.ohmyguide.app.ui.common.BottomNavBar
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.TypingIndicator
@@ -60,14 +72,6 @@ import com.ohmyguide.app.ui.theme.DragHandle
 import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
-
-private val PLACE_MARKERS = mapOf(
-    "dm3" to ("Gwangjang Market" to LatLng(37.5700, 126.9990)),
-    "dm4" to ("Bukchon Hanok Village" to LatLng(37.5826, 126.9831)),
-    "dm5" to ("Namsan Tower" to LatLng(37.5512, 126.9882)),
-    "dm6" to ("Ikseon-dong" to LatLng(37.5735, 126.9920)),
-    "dm7" to ("Cheonggyecheon Stream" to LatLng(37.5690, 126.9780)),
-)
 
 private val DEFAULT_POSITION = LatLng(37.5700, 126.9920)
 
@@ -140,15 +144,55 @@ fun HomeScreen(
         bottomSheetState = sheetState,
     )
 
+    // Collect all recommended places for map markers
+    val markerPlaces = remember(state.chatMessages) {
+        state.chatMessages
+            .filterIsInstance<ChatMessage.BotRecommendation>()
+            .flatMap { it.section.places }
+            .filter { it.lat != 0.0 && it.lng != 0.0 }
+            .distinctBy { it.id }
+    }
+
+    // Load place images as circular marker icons (normal + selected)
+    val density = LocalDensity.current
+    val markerSizeDp = 44.dp
+    val selectedMarkerSizeDp = 56.dp
+    val markerSizePx = with(density) { markerSizeDp.toPx().toInt() }
+    val selectedMarkerSizePx = with(density) { selectedMarkerSizeDp.toPx().toInt() }
+    val borderPx = with(density) { 3.dp.toPx() }
+    val selectedBorderPx = with(density) { 4.dp.toPx() }
+    val markerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
+    val selectedMarkerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
+
+    LaunchedEffect(markerPlaces) {
+        markerPlaces.forEach { place ->
+            if (place.imageUrl != null && place.id !in markerIcons) {
+                val request = ImageRequest.Builder(context)
+                    .data(place.imageUrl)
+                    .size(selectedMarkerSizePx)
+                    .allowHardware(false)
+                    .build()
+                val result = context.imageLoader.execute(request)
+                if (result is SuccessResult) {
+                    val srcBitmap = (result.drawable as android.graphics.drawable.BitmapDrawable).bitmap
+                    // Normal marker (white border)
+                    markerIcons[place.id] = buildCircleMarker(srcBitmap, markerSizePx, borderPx, android.graphics.Color.WHITE)
+                    // Selected marker (blue border, larger)
+                    selectedMarkerIcons[place.id] = buildCircleMarker(srcBitmap, selectedMarkerSizePx, selectedBorderPx, 0xFF5478FF.toInt())
+                }
+            }
+        }
+    }
+
     // When place selected → expand sheet & move camera
     LaunchedEffect(state.selectedDetail) {
         val detail = state.selectedDetail
         if (detail != null) {
             sheetState.expand()
-            val coord = PLACE_MARKERS[detail.place.id]?.second
-            if (coord != null) {
+            val place = detail.place
+            if (place.lat != 0.0 && place.lng != 0.0) {
                 cameraPositionState.animate(
-                    CameraUpdate.scrollAndZoomTo(coord, 16.0),
+                    CameraUpdate.scrollAndZoomTo(LatLng(place.lat, place.lng), 16.0),
                 )
             }
         }
@@ -236,12 +280,27 @@ fun HomeScreen(
                         MapEffect(mapLocale) { naverMap ->
                             naverMap.setLocale(mapLocale)
                         }
-                        PLACE_MARKERS.forEach { (_, pair) ->
-                            val (name, position) = pair
-                            Marker(
-                                state = rememberMarkerState(position = position),
-                                captionText = name,
-                            )
+                        val selectedId = state.selectedDetail?.place?.id
+                        markerPlaces.forEach { place ->
+                            val isSelected = place.id == selectedId
+                            val icon = if (isSelected) selectedMarkerIcons[place.id] else markerIcons[place.id]
+                            if (icon != null) {
+                                Marker(
+                                    state = rememberMarkerState(
+                                        key = place.id,
+                                        position = LatLng(place.lat, place.lng),
+                                    ),
+                                    captionText = place.name,
+                                    icon = icon,
+                                    width = if (isSelected) selectedMarkerSizeDp else markerSizeDp,
+                                    height = if (isSelected) selectedMarkerSizeDp else markerSizeDp,
+                                    zIndex = if (isSelected) 1 else 0,
+                                    onClick = {
+                                        viewModel.selectPlace(place.id)
+                                        true
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -349,6 +408,22 @@ private fun RecommendationsSheet(
             }
         }
     }
+}
+
+private fun buildCircleMarker(srcBitmap: Bitmap, sizePx: Int, borderWidth: Float, borderColor: Int): OverlayImage {
+    val scaled = Bitmap.createScaledBitmap(srcBitmap, sizePx, sizePx, true)
+    val output = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+    val canvas = Canvas(output)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+    val r = sizePx / 2f
+    paint.shader = BitmapShader(scaled, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
+    canvas.drawCircle(r, r, r - borderWidth, paint)
+    paint.shader = null
+    paint.style = Paint.Style.STROKE
+    paint.strokeWidth = borderWidth
+    paint.color = borderColor
+    canvas.drawCircle(r, r, r - borderWidth / 2, paint)
+    return OverlayImage.fromBitmap(output)
 }
 
 @Preview(showBackground = true, showSystemUi = true)
