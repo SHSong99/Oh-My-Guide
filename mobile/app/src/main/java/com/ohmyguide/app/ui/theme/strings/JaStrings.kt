@@ -138,6 +138,7 @@ object JaStrings : AppStrings {
     override val placeNo = "いいえ"
     override val placeGo = "行く"
 
+    override val transitRoutes = "乗り換え案内"
     override val searchingRoutes = "ルート検索中..."
     override val noTransitRoutes = "交通ルートが見つかりません"
     override val tryWalkOrCar = "徒歩や車を試してみてください"

@@ -1,5 +1,6 @@
 package com.ohmyguide.app.ui.screen.transport
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,17 +23,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.ui.common.OmgButton
+import com.ohmyguide.app.ui.common.OmgTopBar
 import com.ohmyguide.app.ui.navi.Screen
+import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.TextCaption
+import com.ohmyguide.app.ui.theme.TextSecondary
 
 @Composable
 fun TransitDetailScreen(
@@ -56,7 +62,20 @@ fun TransitDetailScreen(
         TransitFilter.BusSubway -> state.routes.filter { it.pathType == 3 }
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    val placeName = SAMPLE_PLACE_DETAILS[placeId]?.place?.name ?: placeId
+    val strings = LocalStrings.current
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgWhite),
+    ) {
+        // Header
+        OmgTopBar(
+            title = strings.transitRoutes,
+            onBack = { navController.popBackStack() },
+        )
+
         when {
             state.isLoading -> {
                 Box(

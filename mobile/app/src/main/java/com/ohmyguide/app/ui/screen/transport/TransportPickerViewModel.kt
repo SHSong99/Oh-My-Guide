@@ -80,7 +80,7 @@ class TransportPickerViewModel @Inject constructor(
         val carMin = maxOf(1, (distMeters / 500.0).roundToInt()) // ~30km/h city driving
         val now = LocalTime.now()
         val s = LanguageManager.current.value.strings
-        val fmt = DateTimeFormatter.ofPattern("h:mm a")
+        val fmt = DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH)
 
         _timeInfo.update {
             it.copy(

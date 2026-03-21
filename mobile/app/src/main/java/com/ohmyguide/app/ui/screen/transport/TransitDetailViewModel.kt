@@ -69,13 +69,29 @@ class TransitDetailViewModel @Inject constructor(
     companion object {
         private const val DEFAULT_LAT = 35.0950
         private const val DEFAULT_LNG = 128.8560
-        private val TIME_FMT = DateTimeFormatter.ofPattern("h:mm a")
+        private val TIME_FMT = DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
         private val WON_FMT = NumberFormat.getNumberInstance(Locale.KOREA)
 
         fun busTypeColor(type: Int?): Color = when (type) {
             3 -> BusTown
             4, 5, 6, 14, 15 -> BusExpress
             else -> BusDefault
+        }
+
+        fun subwayLineName(rawName: String, code: Int?): String {
+            // Code-based mapping
+            when (code) {
+                1, 31 -> return "Line 1"
+                2, 32 -> return "Line 2"
+                3, 33 -> return "Line 3"
+                4, 34 -> return "Line 4"
+                35 -> return "BGK Line"
+                36 -> return "Donghae Line"
+            }
+            // Name-based fallback (e.g. "부산 1호선" → "Line 1")
+            val lineNum = Regex("(\\d+)호선").find(rawName)?.groupValues?.get(1)
+            if (lineNum != null) return "Line $lineNum"
+            return KoreanRomanizer.romanize(rawName)
         }
 
         fun subwayLineColor(code: Int?): Color = when (code) {
@@ -232,8 +248,15 @@ class TransitDetailViewModel @Inject constructor(
             else -> "walk"
         }
         val lineName = when (trafficType) {
-            1 -> lane?.firstOrNull()?.name ?: s.subway
-            2 -> "${s.busLabel} ${lane?.firstOrNull()?.busNo ?: ""}"
+            1 -> {
+                val rawName = lane?.firstOrNull()?.name ?: s.subway
+                val lineCode = lane?.firstOrNull()?.subwayCode
+                subwayLineName(rawName, lineCode)
+            }
+            2 -> {
+                val busNo = lane?.firstOrNull()?.busNo ?: ""
+                "${s.busLabel} ${KoreanRomanizer.romanize(busNo)}"
+            }
             else -> s.walk
         }
         val color = when (trafficType) {

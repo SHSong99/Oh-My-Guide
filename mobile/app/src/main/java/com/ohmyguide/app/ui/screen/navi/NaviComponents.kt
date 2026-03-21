@@ -63,6 +63,7 @@ import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.BorderLight
+import com.ohmyguide.app.ui.theme.Error
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
@@ -108,17 +109,17 @@ fun NaviSheetHeader(
             Row(
                 modifier = Modifier
                     .clip(RoundedCornerShape(100.dp))
-                    .background(BgSub)
+                    .background(Error.copy(alpha = 0.1f))
                     .clickable(onClick = onStop)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextCaption)
+                Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(14.dp), tint = Error)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = LocalStrings.current.stop,
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = TextCaption,
+                    color = Error,
                 )
             }
         }

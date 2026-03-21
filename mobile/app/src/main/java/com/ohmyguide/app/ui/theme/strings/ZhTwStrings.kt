@@ -138,6 +138,7 @@ object ZhTwStrings : AppStrings {
     override val placeNo = "否"
     override val placeGo = "前往"
 
+    override val transitRoutes = "公車路線"
     override val searchingRoutes = "正在搜尋路線..."
     override val noTransitRoutes = "找不到大眾運輸路線"
     override val tryWalkOrCar = "可以試試步行或搭車"

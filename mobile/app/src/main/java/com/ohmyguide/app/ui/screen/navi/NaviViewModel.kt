@@ -115,6 +115,9 @@ class NaviViewModel @Inject constructor(
             "dm5" to (35.1795 to 128.9383),
             "dm6" to (35.2110 to 128.9722),
             "dm7" to (35.0720 to 128.9650),
+            "p3" to (35.0850 to 128.9200),
+            "p4" to (35.0530 to 128.9580),
+            "p5" to (35.0470 to 128.9660),
         )
         private const val ARRIVAL_THRESHOLD_METERS = 100.0
 

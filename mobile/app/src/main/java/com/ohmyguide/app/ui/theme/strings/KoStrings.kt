@@ -138,6 +138,7 @@ object KoStrings : AppStrings {
     override val placeNo = "아니요"
     override val placeGo = "가기"
 
+    override val transitRoutes = "대중교통 경로"
     override val searchingRoutes = "경로 검색 중..."
     override val noTransitRoutes = "대중교통 경로를 찾을 수 없어요"
     override val tryWalkOrCar = "도보나 차량을 이용해보세요"

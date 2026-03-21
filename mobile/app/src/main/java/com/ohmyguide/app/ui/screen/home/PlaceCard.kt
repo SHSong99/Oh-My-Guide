@@ -25,10 +25,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.SAMPLE_PLACES
 import com.ohmyguide.app.ui.theme.BgSub
@@ -62,10 +64,19 @@ fun PlaceCard(
                 .background(BgSub),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = place.emoji.ifEmpty { "\uD83D\uDCCD" },
-                fontSize = 32.sp,
-            )
+            if (place.imageUrl != null) {
+                AsyncImage(
+                    model = place.imageUrl,
+                    contentDescription = place.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.matchParentSize(),
+                )
+            } else {
+                Text(
+                    text = place.emoji.ifEmpty { "\uD83D\uDCCD" },
+                    fontSize = 32.sp,
+                )
+            }
             // Rating badge
             Box(
                 modifier = Modifier
