@@ -13,7 +13,7 @@ services:
     networks:
       - app-network
     ports:
-      - "5432:5432"
+      - "${POSTGRES_BIND_IP:-0.0.0.0}:5432:5432"
 
   redis:
     image: redis:alpine
