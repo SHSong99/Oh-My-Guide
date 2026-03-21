@@ -13,7 +13,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: validate
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
@@ -84,12 +84,14 @@ hdfs:
   uri: hdfs://${HDFS_HOST:localhost}:${HDFS_PORT:9000}
   user: ${HDFS_USER:root}
 
+livy:
+  url: ${LIVY_URL:http://localhost:8998}
+
 spark:
-  master:
-    rest-url: ${SPARK_REST_URL:http://localhost:6066}
   job:
-    app-resource: /opt/spark-jobs/analyze_logs.py
-    jars: /opt/spark-jobs/postgresql-42.7.4.jar
+    app-resource: file:///opt/spark-jobs/analyze_logs.py
+    db-host: ${SPARK_DB_HOST:}
+    jars: file:///opt/spark-jobs/postgresql-42.7.4.jar
   schedule:
     enabled: ${SPARK_SCHEDULE_ENABLED:false}
     cron: ${SPARK_SCHEDULE_CRON:0 0 4 * * *}
