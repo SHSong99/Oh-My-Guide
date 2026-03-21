@@ -16,14 +16,17 @@ public class SparkJobService {
     @Value("${spark.schedule.enabled:false}")       // 스케줄 활성화 여부 (기본: 꺼짐)
     private boolean scheduleEnabled;
 
-    @Value("${spark.master.rest-url}")              // Spark Master REST API 주소
-    private String sparkRestUrl;
+    @Value("${livy.url}")                           // Livy REST API 주소
+    private String livyUrl;
 
     @Value("${spark.job.app-resource}")             // analyze_logs.py 경로
     private String appResource;
 
     @Value("${spark.job.jars}")                     // PostgreSQL JDBC 드라이버 경로
     private String jars;
+
+    @Value("${spark.job.db-host:}")                 // Spark용 DB 호스트 (SPARK_DB_HOST 환경변수)
+    private String sparkDbHost;
 
     @Value("${spring.datasource.url}")              // DB 접속 URL
     private String dbUrl;
@@ -47,34 +50,26 @@ public class SparkJobService {
         log.info("=== Scheduled Spark analysis finished: {} ===", result.get("status"));
     }
 
-    // Spark REST API에 분석 작업 제출
+    // Livy REST API에 분석 작업 제출
     public Map<String, Object> submitAnalysisJob() {
-        String submitUrl = sparkRestUrl + "/v1/submissions/create";
+        String submitUrl = livyUrl + "/batches";
 
-        // DB 접속 URL에서 host, port, dbname을 추출
-        String dbHost = extractDbHost(dbUrl);
+        // SPARK_DB_HOST가 설정된 경우 우선 사용 (Data 서버에서 App 서버 DB에 접근하는 경우)
+        // 미설정 시 Spring Boot JDBC URL에서 추출
+        String dbHost = (sparkDbHost != null && !sparkDbHost.isBlank())
+                ? sparkDbHost
+                : resolveSparkDbHost(extractDbHost(dbUrl));
         String dbPort = extractDbPort(dbUrl);
         String dbName = extractDbName(dbUrl);
 
-        // Spark REST API 요청 본문
+        // Livy 배치 요청 본문
+        // args: Python 스크립트에 순서대로 전달 (sys.argv[1]~[5])
         Map<String, Object> requestBody = Map.of(
-                "appResource", appResource,
-                "sparkProperties", Map.of(
-                        "spark.master", "spark://spark-master:7077",
-                        "spark.app.name", "TravelLogAnalysis",
+                "file", appResource,
+                "args", new String[]{dbHost, dbPort, dbName, dbUsername, dbPassword},
+                "conf", Map.of(
                         "spark.jars", jars
-                ),
-                "clientSparkVersion", "3.5.0",
-                "mainClass", "org.apache.spark.deploy.PythonRunner",
-                "environmentVariables", Map.of(         // Spark에 DB 정보를 환경변수로 전달
-                        "DB_HOST", dbHost,
-                        "DB_PORT", dbPort,
-                        "DB_NAME", dbName,
-                        "DB_USER", dbUsername,
-                        "DB_PASSWORD", dbPassword
-                ),
-                "action", "CreateSubmissionRequest",
-                "appArgs", new String[]{appResource}
+                )
         );
 
         try {
@@ -86,7 +81,7 @@ public class SparkJobService {
             log.info("Spark job submitted successfully: {}", response.getBody());
             return Map.of(
                     "status", "submitted",
-                    "sparkResponse", response.getBody() != null ? response.getBody() : Map.of()
+                    "livyResponse", response.getBody() != null ? response.getBody() : Map.of()
             );
         } catch (Exception e) {
             log.error("Failed to submit Spark job", e);
@@ -95,6 +90,15 @@ public class SparkJobService {
                     "error", e.getMessage()
             );
         }
+    }
+
+    // 로컬 개발 시 localhost → host.docker.internal 변환
+    // (Spark 컨테이너 내부에서 localhost는 컨테이너 자신을 가리키므로)
+    private String resolveSparkDbHost(String host) {
+        if ("localhost".equals(host) || "127.0.0.1".equals(host)) {
+            return "host.docker.internal";
+        }
+        return host;
     }
 
     // jdbc:postgresql://localhost:5432/ohmyguide 에서 localhost 추출
