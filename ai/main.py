@@ -58,6 +58,18 @@ class RefineRequest(BaseModel):
     user_profile: Optional[UserProfile] = Field(default=None, description="사용자 맥락 (리랭킹에 활용)")
 
 
+class RefreshRequest(BaseModel):
+    """재추천 요청 (GO 없이 재추천 버튼 클릭 시)."""
+    user_id: int
+    latitude: float
+    longitude: float
+    radius_km: float              = Field(default=10.0, ge=0.1, le=50.0)
+    category: Optional[str]       = Field(default=None, description="카테고리 자연어 입력 (예: 'nature', '맛집')")
+    mood: Optional[str]           = Field(default=None, description="분위기 자연어 입력 (예: 'calm and healing')")
+    free_text: Optional[str]      = Field(default=None, description="기타 자유 텍스트")
+    excluded_attr_ids: list[int]  = Field(default=[], description="이미 추천된 장소 attr_id 목록")
+
+
 class PlaceResult(BaseModel):
     attr_id: int
     content_id: Optional[int]
@@ -75,6 +87,29 @@ class PlaceResult(BaseModel):
 class RecommendResponse(BaseModel):
     recommendations: list[PlaceResult]
     cold_start: bool = Field(description="True = 사용자 벡터 없어서 cold-start 처리됨")
+
+
+# content_type_id → 모바일 PlaceCard용 태그
+_CONTENT_TYPE_TAG = {
+    12: "Nature", 14: "Culture", 15: "Festival",
+    28: "Activity", 32: "Lodging", 38: "Shopping", 39: "Food",
+}
+
+
+class PlaceCardResult(BaseModel):
+    """모바일 PlaceCard에 필요한 필드만 담은 응답."""
+    attr_id: int
+    name: str                     = Field(description="장소명 (title)")
+    name_kr: str                  = Field(description="한국어 장소명")
+    image_url: Optional[str]      = Field(default=None, description="대표 이미지 URL")
+    distance: str                 = Field(description="거리 문자열 (예: '1.2km', '350m')")
+    tag: str                      = Field(description="카테고리 태그 (예: 'Food', 'Nature')")
+    latitude: float
+    longitude: float
+
+
+class RefreshResponse(BaseModel):
+    recommendations: list[PlaceCardResult]
 
 
 # ── 헬퍼 ─────────────────────────────────────────────────────────────────────
@@ -205,3 +240,188 @@ def refine(req: RefineRequest):
         recommendations=[PlaceResult(**p) for p in top5],
         cold_start=False,
     )
+
+
+# ── 거리 포맷 헬퍼 ────────────────────────────────────────────────────────────
+
+def _format_distance(km: float) -> str:
+    """km → 사람이 읽기 좋은 거리 문자열."""
+    if km < 1.0:
+        return f"{int(km * 1000)}m"
+    return f"{km:.1f}km"
+
+
+# ── 모바일 카테고리 id → content_type_ids 매핑 ────────────────────────────────
+
+_MOBILE_CATEGORY_MAP = {
+    "attraction": [12],
+    "culture": [14],
+    "festival": [15],
+    "course": [12, 14],
+    "leports": [28],
+    "cafe": [39],
+    "shopping": [38],
+    "food": [39],
+}
+
+
+def _parse_mobile_categories(category_str: str | None) -> list[int]:
+    """쉼표 구분 모바일 카테고리 → content_type_ids. 없으면 전체."""
+    if not category_str:
+        return [12, 14, 15, 28, 32, 38, 39]
+    ids = set()
+    for cat in category_str.split(","):
+        cat = cat.strip().lower()
+        if cat in _MOBILE_CATEGORY_MAP:
+            ids.update(_MOBILE_CATEGORY_MAP[cat])
+    return list(ids) if ids else [12, 14, 15, 28, 32, 38, 39]
+
+
+@app.get("/api/userRecommend", response_model=RefreshResponse)
+def get_user_recommend(
+    category: str | None = None,
+    currentLat: float = 37.5665,
+    currentLng: float = 126.978,
+    userId: int = 1,
+    radiusKm: float = 10.0,
+):
+    """초기 추천: 카테고리 선택 후 첫 추천 장소 5개."""
+    # 1. 사용자 벡터 조회
+    user_vec, cold_start = get_user_vector(userId)
+    if user_vec is None:
+        user_vec = np.zeros(len(DIM_ORDER), dtype=np.float32)
+
+    # 2. 카테고리 매핑
+    content_type_ids = _parse_mobile_categories(category)
+
+    # 3. cold-start 처리
+    if cold_start:
+        user_vec = build_cold_start_vector(content_type_ids=content_type_ids)
+        try:
+            save_user_vector(userId, user_vec)
+        except Exception:
+            pass
+
+    # 4. 반경 내 장소 조회
+    places = get_places_in_radius(
+        lat=currentLat,
+        lng=currentLng,
+        radius_km=radiusKm,
+        content_type_ids=content_type_ids,
+    )
+
+    if not places:
+        return RefreshResponse(recommendations=[])
+
+    # 5. 코사인 유사도 → 상위 20개
+    top20 = rank_places(places, user_vec, top_n=20)
+
+    # 6. LLM 리랭킹 → 상위 5개
+    user_context = {"time": get_time_context()}
+    weather = get_weather(currentLat, currentLng)
+    if weather:
+        user_context["weather"] = weather
+    top5 = rerank_places(top20, user_context, top_n=5, generate_reason=False)
+
+    # 7. PlaceCard 형식으로 변환
+    results = []
+    for p in top5:
+        results.append(PlaceCardResult(
+            attr_id=p["attr_id"],
+            name=p.get("title") or "",
+            name_kr=p.get("title") or "",
+            image_url=p.get("first_image1"),
+            distance=_format_distance(p["distance_km"]),
+            tag=_CONTENT_TYPE_TAG.get(p.get("content_type_id"), "Place"),
+            latitude=p["latitude"],
+            longitude=p["longitude"],
+        ))
+
+    return RefreshResponse(recommendations=results)
+
+
+# ── 자연어 → content_type_ids 매핑 ────────────────────────────────────────────
+
+_CATEGORY_KEYWORDS = {
+    12: ["nature", "자연", "산", "바다", "공원", "경치", "관광"],
+    14: ["culture", "문화", "박물관", "미술관", "전시", "공연"],
+    15: ["festival", "축제", "행사", "이벤트"],
+    28: ["activity", "액티비티", "레포츠", "스포츠", "체험"],
+    32: ["lodging", "숙박", "호텔", "게스트하우스", "펜션"],
+    38: ["shopping", "쇼핑", "시장", "마트", "몰"],
+    39: ["food", "음식", "맛집", "카페", "cafe", "restaurant", "먹거리"],
+}
+
+
+def _parse_category_text(text: str | None) -> list[int]:
+    """자연어 카테고리 → content_type_ids 목록. 매칭 없으면 전체 카테고리."""
+    if not text:
+        return list(_CATEGORY_KEYWORDS.keys())
+    lower = text.lower()
+    matched = [ct_id for ct_id, keywords in _CATEGORY_KEYWORDS.items()
+               if any(kw in lower for kw in keywords)]
+    return matched if matched else list(_CATEGORY_KEYWORDS.keys())
+
+
+@app.post("/api/userRecommend/recommend/refresh", response_model=RefreshResponse)
+def refresh_recommend(req: RefreshRequest):
+    """GO 없이 재추천: 카테고리/분위기/텍스트를 자연어로 받아 5개 추천."""
+    # 1. 사용자 벡터 조회
+    user_vec, _ = get_user_vector(req.user_id)
+    if user_vec is None:
+        user_vec = np.zeros(len(DIM_ORDER), dtype=np.float32)
+
+    # 2. 자연어 입력을 하나로 합쳐서 LLM 벡터화 → 사용자 벡터 업데이트
+    text_parts = [t for t in [req.category, req.mood, req.free_text] if t]
+    combined_text = " / ".join(text_parts) if text_parts else None
+
+    if combined_text:
+        delta = vectorize_refine_text(combined_text, DIM_ORDER)
+        user_vec = apply_vector_delta(user_vec, delta, lr=0.25)
+        try:
+            save_user_vector(req.user_id, user_vec)
+        except Exception:
+            pass
+
+    # 3. 카테고리 자연어 → content_type_ids 매핑
+    content_type_ids = _parse_category_text(req.category)
+
+    # 4. 반경 내 장소 조회 (이미 본 장소 제외)
+    places = get_places_in_radius(
+        lat=req.latitude,
+        lng=req.longitude,
+        radius_km=req.radius_km,
+        content_type_ids=content_type_ids,
+        excluded_attr_ids=req.excluded_attr_ids or None,
+    )
+
+    if not places:
+        return RefreshResponse(recommendations=[])
+
+    # 5. 코사인 유사도 → 상위 20개
+    top20 = rank_places(places, user_vec, top_n=20)
+
+    # 6. LLM 리랭킹 → 상위 5개
+    user_context = {"time": get_time_context()}
+    if combined_text:
+        user_context["refine_text"] = combined_text
+    weather = get_weather(req.latitude, req.longitude)
+    if weather:
+        user_context["weather"] = weather
+    top5 = rerank_places(top20, user_context, top_n=5, generate_reason=False)
+
+    # 7. PlaceCard 형식으로 변환
+    results = []
+    for p in top5:
+        results.append(PlaceCardResult(
+            attr_id=p["attr_id"],
+            name=p.get("title") or "",
+            name_kr=p.get("title") or "",
+            image_url=p.get("first_image1"),
+            distance=_format_distance(p["distance_km"]),
+            tag=_CONTENT_TYPE_TAG.get(p.get("content_type_id"), "Place"),
+            latitude=p["latitude"],
+            longitude=p["longitude"],
+        ))
+
+    return RefreshResponse(recommendations=results)

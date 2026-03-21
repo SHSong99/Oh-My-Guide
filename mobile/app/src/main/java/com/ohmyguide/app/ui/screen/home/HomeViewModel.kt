@@ -2,12 +2,24 @@ package com.ohmyguide.app.ui.screen.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ohmyguide.app.data.model.PlaceCardDto
+import com.ohmyguide.app.data.model.RefreshRecommendRequest
+import com.ohmyguide.app.data.repository.RecommendRepository
 import com.ohmyguide.app.fixtures.HOME_RECOMMENDATIONS
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
 import com.ohmyguide.app.fixtures.RecommendationSection
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.fixtures.SAMPLE_PLACES
+import com.ohmyguide.app.service.LocationForegroundService
+import com.ohmyguide.app.ui.theme.CatAttraction
+import com.ohmyguide.app.ui.theme.CatCulture
+import com.ohmyguide.app.ui.theme.CatFood
+import com.ohmyguide.app.ui.theme.CatLeports
+import com.ohmyguide.app.ui.theme.CatShopping
+import com.ohmyguide.app.ui.theme.CatFestival
+import com.ohmyguide.app.ui.theme.CatCafe
+import androidx.compose.ui.graphics.Color
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -57,26 +69,53 @@ data class HomeUiState(
 )
 
 @HiltViewModel
-class HomeViewModel @Inject constructor() : ViewModel() {
+class HomeViewModel @Inject constructor(
+    private val recommendRepository: RecommendRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
     private var flowStep = FlowStep.IDLE
     private var selectedFocus: String? = null
+    private var initialLoaded = false
 
-    init {
-        initChat()
-    }
+    fun loadInitialRecommendation(category: String) {
+        if (initialLoaded) return
+        initialLoaded = true
 
-    private fun initChat() {
-        val initial = mutableListOf<ChatMessage>()
-        initial += ChatMessage.BotText("Based on your choices, I've found perfect matches for you.")
-        HOME_RECOMMENDATIONS.forEach { section ->
-            initial += ChatMessage.BotRecommendation(section)
+        viewModelScope.launch {
+            addMessage(ChatMessage.BotText("Looking for the best spots for you..."))
+            addMessage(ChatMessage.BotTyping)
+
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 37.5665
+            val lng = location?.longitude ?: 126.978
+
+            val result = recommendRepository.getRecommendation(category, lat, lng)
+            removeTyping()
+
+            val places = result.getOrNull()?.map { it.toPlace() }
+
+            if (places.isNullOrEmpty()) {
+                addMessage(ChatMessage.BotText("Based on your choices, I've found perfect matches for you."))
+                HOME_RECOMMENDATIONS.forEach { section ->
+                    addMessage(ChatMessage.BotRecommendation(section))
+                }
+            } else {
+                val section = RecommendationSection(
+                    title = "Picks for You",
+                    icon = HOME_RECOMMENDATIONS[0].icon,
+                    label = "AI",
+                    places = places,
+                    btnText = "",
+                )
+                addMessage(ChatMessage.BotText("Based on your choices, I've found perfect matches for you."))
+                addMessage(ChatMessage.BotRecommendation(section))
+                _uiState.update { it.copy(spotCount = places.size) }
+            }
+            addMessage(ChatMessage.FindOtherPlacesBtn)
         }
-        initial += ChatMessage.FindOtherPlacesBtn
-        _uiState.update { it.copy(chatMessages = initial) }
     }
 
     // ── Place Detail ──
@@ -173,34 +212,75 @@ class HomeViewModel @Inject constructor() : ViewModel() {
             markOptionAnswered(option)
             addMessage(ChatMessage.UserText(option))
             addMessage(ChatMessage.BotTyping)
-            delay(800L)
-            removeTyping()
-            addMessage(ChatMessage.BotText("Updating your preference vector..."))
-            addMessage(ChatMessage.BotTyping)
-            delay(1500L)
-            removeTyping()
 
-            val newPlaces = generateNewRecommendations()
-            val newSection = RecommendationSection(
-                title = "New Picks for You",
-                icon = HOME_RECOMMENDATIONS[0].icon,
-                label = "$selectedFocus · $option",
-                places = newPlaces,
-                btnText = "Show more new picks",
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.1796
+            val lng = location?.longitude ?: 129.0756
+
+            val request = RefreshRecommendRequest(
+                latitude = lat,
+                longitude = lng,
+                category = selectedFocus,
+                mood = option,
             )
-            addMessage(ChatMessage.BotText("Here are fresh picks based on your taste!"))
-            addMessage(ChatMessage.BotRecommendation(newSection))
+
+            val result = recommendRepository.refreshRecommendation(request)
+            removeTyping()
+
+            val newPlaces = result.getOrNull()?.map { it.toPlace() }
+
+            if (newPlaces.isNullOrEmpty()) {
+                addMessage(ChatMessage.BotText("Sorry, I couldn't find places right now. Please try again!"))
+            } else {
+                val newSection = RecommendationSection(
+                    title = "New Picks for You",
+                    icon = HOME_RECOMMENDATIONS[0].icon,
+                    label = "$selectedFocus · $option",
+                    places = newPlaces,
+                    btnText = "",
+                )
+                addMessage(ChatMessage.BotText("Here are fresh picks based on your taste!"))
+                addMessage(ChatMessage.BotRecommendation(newSection))
+                _uiState.update { it.copy(spotCount = it.spotCount + newPlaces.size) }
+            }
+
             addMessage(ChatMessage.FindOtherPlacesBtn)
-
-            _uiState.update { it.copy(spotCount = it.spotCount + newPlaces.size) }
-
             flowStep = FlowStep.IDLE
             selectedFocus = null
         }
     }
 
-    private fun generateNewRecommendations(): List<Place> {
-        return SAMPLE_PLACES.shuffled().take(3)
+    companion object {
+        private val TAG_COLOR_MAP = mapOf(
+            "Nature" to CatAttraction,
+            "Culture" to CatCulture,
+            "Festival" to CatFestival,
+            "Activity" to CatLeports,
+            "Shopping" to CatShopping,
+            "Food" to CatFood,
+            "Lodging" to CatCafe,
+        )
+
+        private val TAG_EMOJI_MAP = mapOf(
+            "Nature" to "\uD83C\uDFDE\uFE0F",
+            "Culture" to "\uD83C\uDFDB\uFE0F",
+            "Festival" to "\uD83C\uDF86",
+            "Activity" to "\uD83C\uDFC4",
+            "Shopping" to "\uD83D\uDECD\uFE0F",
+            "Food" to "\uD83C\uDF5C",
+            "Lodging" to "\uD83C\uDFE8",
+        )
+
+        fun PlaceCardDto.toPlace(): Place = Place(
+            id = attrId.toString(),
+            name = name,
+            nameKr = nameKr,
+            rating = 0f,
+            distance = distance,
+            tag = tag,
+            color = TAG_COLOR_MAP[tag] ?: CatAttraction,
+            emoji = TAG_EMOJI_MAP[tag] ?: "\uD83D\uDCCD",
+        )
     }
 
     // ── Message helpers ──
