@@ -3,6 +3,7 @@ package com.ohmyguide.app.service
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.os.Build
@@ -105,12 +106,26 @@ class LocationForegroundService : Service() {
     }
 
     private fun createNotification(): Notification {
+        val intent = packageManager.getLaunchIntentForPackage(packageName)?.apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val contentText = _naviStatus.value ?: "Tracking your location"
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Oh My Guide")
-            .setContentText("Tracking your location")
+            .setContentText(contentText)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setOngoing(true)
+            .setContentIntent(pendingIntent)
             .build()
+    }
+
+    fun refreshNotification() {
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.notify(NOTIFICATION_ID, createNotification())
     }
 
     override fun onDestroy() {
@@ -135,5 +150,12 @@ class LocationForegroundService : Service() {
 
         private val _locationFlow = MutableStateFlow<LocationData?>(null)
         val locationFlow: StateFlow<LocationData?> = _locationFlow.asStateFlow()
+
+        private val _naviStatus = MutableStateFlow<String?>(null)
+        val naviStatus: StateFlow<String?> = _naviStatus.asStateFlow()
+
+        fun updateNaviStatus(status: String?) {
+            _naviStatus.value = status
+        }
     }
 }

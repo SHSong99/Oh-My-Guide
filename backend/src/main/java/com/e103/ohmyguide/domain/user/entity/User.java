@@ -45,6 +45,21 @@ public class User extends BaseEntity {
 
     private String providerId;
 
+    @Column(name = "nationality")
+    private String nationality;
+
+    @Column(name = "age")
+    private Integer age;
+
+    @Column(name = "gender")
+    private String gender;
+
+    @Column(name = "travel_purpose")
+    private String travelPurpose;
+
+    @Column(name = "lifestyle")
+    private String lifestyle;
+
     @Builder(builderMethodName = "oauth2Builder", builderClassName = "OAuth2UserBuilder")
     private User(String email, String name, String imageUrl, AuthProvider provider, String providerId) {
         this.email = email;
@@ -55,7 +70,10 @@ public class User extends BaseEntity {
         this.onboardingCompleted = false;
     }
 
-    public void completeOnboarding() {
+    public void completeOnboarding(String nationality, Integer age, String gender) {
+        this.nationality = nationality;
+        this.age = age;
+        this.gender = gender;
         this.onboardingCompleted = true;
     }
 

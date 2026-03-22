@@ -3,6 +3,8 @@ package com.ohmyguide.app.ui.screen.home
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +12,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -29,19 +33,30 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import coil.compose.AsyncImage
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.R
 import com.ohmyguide.app.fixtures.PlaceDetail
@@ -269,8 +284,45 @@ fun PlaceDetailSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .fillMaxSize(),
     ) {
+        // Hero image
+        if (place.imageUrl != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)),
+            ) {
+                AsyncImage(
+                    model = place.imageUrl,
+                    contentDescription = place.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)),
+                            )
+                        ),
+                )
+                Text(
+                    text = place.name,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    color = BgWhite,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(20.dp),
+                )
+            }
+        }
+
+        Column(
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+        ) {
         // Back button
         Row(
             modifier = Modifier
@@ -412,6 +464,7 @@ fun PlaceDetailSheet(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+        }
     }
 }
 
@@ -440,7 +493,7 @@ private fun InfoChip(
     }
 }
 
-// ── Chat Option Buttons ──
+// ── Chat Option Buttons (Numbered Selection) ──
 
 @Composable
 fun ChatOptionButtons(
@@ -450,40 +503,138 @@ fun ChatOptionButtons(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val strings = LocalStrings.current
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 46.dp),
+            .padding(start = 46.dp, end = 16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        options.forEach { option ->
+        options.forEachIndexed { index, option ->
+            val number = index + 1
             val isSelected = option == selectedOption
-            val bgColor = when {
-                isSelected -> PrimaryGradient
-                answered -> androidx.compose.ui.graphics.Brush.linearGradient(
-                    listOf(BgSub, BgSub),
-                )
-                else -> PrimaryGradient
-            }
-            val textColor = when {
-                isSelected -> BgWhite
-                answered -> TextCaption
-                else -> BgWhite
-            }
-
-            Text(
+            NumberedOptionCard(
+                number = number,
                 text = option,
-                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = textColor,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(100.dp))
-                    .background(bgColor)
-                    .then(
-                        if (!answered) {
-                            Modifier.clickable { onSelect(option) }
-                        } else Modifier
-                    )
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                isSelected = isSelected,
+                enabled = !answered,
+                onClick = { onSelect(option) },
+            )
+        }
+
+        // "Other" option
+        val otherSelected = answered && selectedOption != null && selectedOption !in options
+        val otherNumber = options.size + 1
+        NumberedOptionCard(
+            number = otherNumber,
+            text = strings.findOtherPlaces,
+            isSelected = otherSelected,
+            enabled = !answered,
+            onClick = { onSelect("__OTHER__") },
+        )
+    }
+}
+
+@Composable
+private fun NumberedOptionCard(
+    number: Int,
+    text: String,
+    isSelected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(if (isSelected) PrimaryBg else BgWhite)
+            .border(
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = if (isSelected) Primary else Border,
+                shape = RoundedCornerShape(14.dp),
+            )
+            .then(if (enabled) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(26.dp)
+                .clip(CircleShape)
+                .background(if (isSelected) Primary else BgSub),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "$number",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = if (isSelected) BgWhite else TextCaption,
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            ),
+            color = if (isSelected) Primary else if (enabled) TextPrimary else TextCaption,
+        )
+    }
+}
+
+// ── Chat Text Input (for "Other" option) ──
+
+@Composable
+fun ChatTextInput(
+    onSubmit: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var text by remember { mutableStateOf("") }
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 46.dp, end = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        OutlinedTextField(
+            value = text,
+            onValueChange = { text = it },
+            placeholder = {
+                Text(
+                    text = LocalStrings.current.categoryPrompt,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(14.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Primary,
+                unfocusedBorderColor = Border,
+            ),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions = KeyboardActions(
+                onSend = { if (text.isNotBlank()) onSubmit(text.trim()) },
+            ),
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(CircleShape)
+                .background(if (text.isNotBlank()) PrimaryGradient else androidx.compose.ui.graphics.Brush.linearGradient(listOf(BgSub, BgSub)))
+                .then(
+                    if (text.isNotBlank()) Modifier.clickable { onSubmit(text.trim()) }
+                    else Modifier
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Filled.Send,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp),
+                tint = if (text.isNotBlank()) BgWhite else TextCaption,
             )
         }
     }

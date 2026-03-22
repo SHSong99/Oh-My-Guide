@@ -151,4 +151,34 @@ interface AppStrings {
     val preview: String
     val placeNo: String
     val placeGo: String
+
+    // ── Transit Format ──
+    val transitRoutes: String
+    val searchingRoutes: String
+    val noTransitRoutes: String
+    val tryWalkOrCar: String
+    val filterAll: String
+    val busLabel: String
+    val busSubwayLabel: String
+    val minSuffix: String
+    val hourSuffix: String
+    val minWalkSuffix: String
+    val etaPrefix: String
+    val notAvailable: String
+    val stopsAway: String
+    val listenToStory: String
+    val getOffAt: String
+    val currentLocation: String
+
+    // ── Confirm Dialog ──
+    val endNaviTitle: String
+    val endNaviMessage: String
+    val confirm: String
+    val cancel: String
+
+    // ── Empty State ──
+    val noRecommendations: String
+    val noRecommendationsDesc: String
+    val noSavedPhrases: String
+    val noSavedPhrasesDesc: String
 }
