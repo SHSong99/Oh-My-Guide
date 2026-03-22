@@ -40,7 +40,7 @@ public class SparkJobService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     // 매일 새벽 4시에 자동 실행 (scheduleEnabled가 true일 때만)
-    @Scheduled(cron = "${spark.schedule.cron:0 0 4 * * *}")
+    @Scheduled(cron = "${spark.schedule.cron:0 0 4 * * *}", zone = "Asia/Seoul")
     public void scheduledAnalysis() {
         if (!scheduleEnabled) {
             return;                                  // 꺼져있으면 아무것도 안 함
