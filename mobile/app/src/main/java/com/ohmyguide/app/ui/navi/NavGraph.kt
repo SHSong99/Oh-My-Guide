@@ -2,19 +2,14 @@ package com.ohmyguide.app.ui.navi
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
+import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.screen.auth.AuthScreen
-import com.ohmyguide.app.ui.screen.auth.AuthState
-import com.ohmyguide.app.ui.screen.auth.AuthViewModel
-import com.ohmyguide.app.ui.screen.onboarding.SplashDestination
 import com.ohmyguide.app.ui.screen.onboarding.SplashScreen
-import com.ohmyguide.app.ui.screen.onboarding.SplashViewModel
 import com.ohmyguide.app.ui.screen.onboarding.CategoryScreen
 import com.ohmyguide.app.ui.screen.onboarding.GpsPermissionScreen
 import com.ohmyguide.app.ui.screen.onboarding.LoadingScreen
@@ -30,46 +25,31 @@ import com.ohmyguide.app.ui.screen.transport.TransitDetailScreen
 import com.ohmyguide.app.ui.screen.transport.TransportPickerScreen
 
 @Composable
-fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String, mode: String) -> Unit = { _, _ -> }) {
+fun NavGraph(
+    navController: NavHostController,
+    onNaviMinimize: (placeId: String, mode: String) -> Unit = { _, _ -> },
+    onNaviStart: () -> Unit = {},
+) {
     NavHost(
         navController = navController,
         startDestination = Screen.Splash.route
     ) {
         composable(Screen.Splash.route) {
-            val splashViewModel: SplashViewModel = hiltViewModel()
-            val destination by splashViewModel.destination.collectAsState()
-
             SplashScreen(
                 onFinish = {
-                    val target = when (destination) {
-                        SplashDestination.Home -> Screen.Home.route
-                        else -> Screen.Welcome.route
-                    }
-                    navController.navigate(target) {
+                    navController.navigate(Screen.Welcome.route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
             )
         }
         composable(Screen.Welcome.route) {
-            val authViewModel: AuthViewModel = hiltViewModel()
-            val authState by authViewModel.authState.collectAsState()
-            val context = LocalContext.current
-            // CredentialManager requires Activity context
-            val activityContext = context as? android.app.Activity ?: context
-
-            LaunchedEffect(authState) {
-                if (authState is AuthState.Success) {
+            WelcomeScreen(
+                onSignIn = {
                     navController.navigate(Screen.GpsPermission.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
-                }
-            }
-
-            WelcomeScreen(
-                onSignIn = { authViewModel.signInWithGoogle(activityContext) },
-                authState = authState,
-                onDismissError = { authViewModel.resetState() },
+                },
             )
         }
         composable(Screen.Login.route) { AuthScreen(navController) }
@@ -123,22 +103,31 @@ fun NavGraph(navController: NavHostController, onNaviMinimize: (placeId: String,
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransportPickerScreen(navController, placeId)
         }
-        composable(Screen.TransitDetail.route) { backStackEntry ->
+        composable(
+            route = Screen.TransitDetail.route,
+            arguments = listOf(
+                navArgument("destLat") { type = NavType.StringType; defaultValue = "0.0" },
+                navArgument("destLng") { type = NavType.StringType; defaultValue = "0.0" },
+            ),
+        ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransitDetailScreen(navController, placeId)
         }
         composable(Screen.Navi.route) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             val mode = backStackEntry.arguments?.getString("mode") ?: "walk"
+
+            LaunchedEffect(placeId, mode) {
+                onNaviStart()
+            }
+
             NaviScreen(
                 navController = navController,
                 placeId = placeId,
                 mode = mode,
                 onMinimize = {
                     onNaviMinimize(placeId, mode)
-                    navController.navigate(Screen.Place.createRoute(placeId)) {
-                        popUpTo(Screen.Home.route)
-                    }
+                    navController.popBackStack()
                 },
             )
         }

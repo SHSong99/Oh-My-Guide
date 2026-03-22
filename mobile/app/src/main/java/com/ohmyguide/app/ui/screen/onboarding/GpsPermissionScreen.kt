@@ -56,6 +56,8 @@ import com.ohmyguide.app.fixtures.COMPANION_OPTIONS
 import com.ohmyguide.app.fixtures.COUNTRY_OPTIONS
 import com.ohmyguide.app.fixtures.GENDER_OPTIONS
 import com.ohmyguide.app.fixtures.LANGUAGE_OPTIONS
+import com.ohmyguide.app.ui.theme.AppLanguage
+import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.PrimaryButton
@@ -67,6 +69,7 @@ import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBgLight
 import com.ohmyguide.app.ui.theme.PrimaryGradient
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 
@@ -78,6 +81,7 @@ fun GpsPermissionScreen(
     onAllow: () -> Unit,
 ) {
     val context = LocalContext.current
+    val strings = LocalStrings.current
     var step by remember { mutableStateOf(OnboardStep.LANGUAGE) }
     var languageLabel by remember { mutableStateOf("") }
     var genderLabel by remember { mutableStateOf("") }
@@ -118,13 +122,15 @@ fun GpsPermissionScreen(
             .padding(start = 20.dp, end = 20.dp, top = 32.dp, bottom = 32.dp),
     ) {
         // Step 1: Language
-        GuideBubble(text = "Find the Best Spots Near You!\nTo give you the best experience,\nwhat language do you prefer?")
+        GuideBubble(text = strings.onboardLangPrompt)
 
         if (step == OnboardStep.LANGUAGE) {
             PillOptionButtons(
                 options = LANGUAGE_OPTIONS.map { it.label },
                 onSelect = { label ->
                     languageLabel = label
+                    val langCode = LANGUAGE_OPTIONS.find { it.label == label }?.id ?: "en"
+                    LanguageManager.setLanguage(context, AppLanguage.fromCode(langCode))
                     step = OnboardStep.GENDER
                 },
             )
@@ -133,7 +139,7 @@ fun GpsPermissionScreen(
         // Step 2: Gender
         if (step > OnboardStep.LANGUAGE) {
             UserBubble(text = languageLabel)
-            GuideBubble(text = "Great! And what is your gender?")
+            GuideBubble(text = strings.onboardGenderPrompt)
 
             if (step == OnboardStep.GENDER) {
                 PillOptionButtons(
@@ -149,7 +155,7 @@ fun GpsPermissionScreen(
         // Step 3: Age
         if (step > OnboardStep.GENDER) {
             UserBubble(text = genderLabel)
-            GuideBubble(text = "Nice! How old are you?")
+            GuideBubble(text = strings.onboardAgePrompt)
 
             if (step > OnboardStep.AGE) {
                 UserBubble(text = ageLabel)
@@ -158,7 +164,7 @@ fun GpsPermissionScreen(
 
         // Step 4: Country
         if (step > OnboardStep.AGE) {
-            GuideBubble(text = "Where are you from?")
+            GuideBubble(text = strings.onboardCountryPrompt)
 
             if (step == OnboardStep.COUNTRY) {
                 CountrySelector(
@@ -173,7 +179,7 @@ fun GpsPermissionScreen(
         // Step 4: Companion
         if (step > OnboardStep.COUNTRY) {
             UserBubble(text = countryLabel)
-            GuideBubble(text = "Awesome! Who are you traveling with?")
+            GuideBubble(text = strings.onboardCompanionPrompt)
 
             if (step == OnboardStep.COMPANION) {
                 CompanionButtons(
@@ -188,12 +194,12 @@ fun GpsPermissionScreen(
         // Step 5: GPS
         if (step == OnboardStep.GPS) {
             UserBubble(text = companionLabel)
-            GuideBubble(text = "Perfect! Lastly, please allow location access so we can explore together.")
+            GuideBubble(text = strings.onboardGpsPrompt)
 
             Spacer(modifier = Modifier.height(8.dp))
 
             PrimaryButton(
-                text = "Allow Location Access",
+                text = strings.allowLocation,
                 onClick = {
                     val permissions = mutableListOf(
                         Manifest.permission.ACCESS_FINE_LOCATION,

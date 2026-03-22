@@ -115,4 +115,96 @@ class UserPhraseRepositoryTest extends IntegrationTestSupport {
         // then
         assertThat(userPhraseRepository.findById(saved.getId())).isEmpty();
     }
+
+    @DisplayName("User와 Phrase로 UserPhrase 존재 여부를 확인한다.")
+    @Test
+    void existsByUserAndPhrase() {
+        // given
+        userPhraseRepository.save(UserPhrase.builder()
+                .user(user)
+                .phrase(phrase)
+                .build());
+
+        // when
+        boolean exists = userPhraseRepository.existsByUserAndPhrase(user, phrase);
+
+        // then
+        assertThat(exists).isTrue();
+    }
+
+    @DisplayName("존재하지 않는 UserPhrase는 false를 반환한다.")
+    @Test
+    void existsByUserAndPhrase_notFound() {
+        // when
+        boolean exists = userPhraseRepository.existsByUserAndPhrase(user, phrase);
+
+        // then
+        assertThat(exists).isFalse();
+    }
+
+    @DisplayName("User와 Phrase로 UserPhrase를 삭제한다.")
+    @Test
+    void deleteByUserAndPhrase() {
+        // given
+        userPhraseRepository.save(UserPhrase.builder()
+                .user(user)
+                .phrase(phrase)
+                .build());
+
+        // when
+        userPhraseRepository.deleteByUserAndPhrase(user, phrase);
+
+        // then
+        assertThat(userPhraseRepository.existsByUserAndPhrase(user, phrase)).isFalse();
+    }
+
+    @DisplayName("존재하지 않는 UserPhrase를 삭제해도 예외가 발생하지 않는다.")
+    @Test
+    void deleteByUserAndPhrase_notFound() {
+        // when & then (예외 발생하지 않음)
+        userPhraseRepository.deleteByUserAndPhrase(user, phrase);
+    }
+
+    @DisplayName("다른 User의 UserPhrase는 삭제되지 않는다.")
+    @Test
+    void deleteByUserAndPhrase_onlyDeletesSpecificUser() {
+        // given
+        User anotherUser = userRepository.save(User.oauth2Builder()
+                .email("another@test.com")
+                .name("다른사용자")
+                .imageUrl("https://image.url")
+                .provider(AuthProvider.google)
+                .providerId("google-id-456")
+                .build());
+
+        userPhraseRepository.save(UserPhrase.builder().user(user).phrase(phrase).build());
+        userPhraseRepository.save(UserPhrase.builder().user(anotherUser).phrase(phrase).build());
+
+        // when
+        userPhraseRepository.deleteByUserAndPhrase(user, phrase);
+
+        // then
+        assertThat(userPhraseRepository.existsByUserAndPhrase(user, phrase)).isFalse();
+        assertThat(userPhraseRepository.existsByUserAndPhrase(anotherUser, phrase)).isTrue();
+    }
+
+    @DisplayName("다른 Phrase의 UserPhrase는 삭제되지 않는다.")
+    @Test
+    void deleteByUserAndPhrase_onlyDeletesSpecificPhrase() {
+        // given
+        Phrase anotherPhrase = phraseRepository.save(Phrase.builder()
+                .content("감사합니다")
+                .language(PhraseLanguage.KOR)
+                .build());
+
+        userPhraseRepository.save(UserPhrase.builder().user(user).phrase(phrase).build());
+        userPhraseRepository.save(UserPhrase.builder().user(user).phrase(anotherPhrase).build());
+
+        // when
+        userPhraseRepository.deleteByUserAndPhrase(user, phrase);
+
+        // then
+        assertThat(userPhraseRepository.existsByUserAndPhrase(user, phrase)).isFalse();
+        assertThat(userPhraseRepository.existsByUserAndPhrase(user, anotherPhrase)).isTrue();
+    }
 }

@@ -2,6 +2,8 @@ package com.e103.ohmyguide;
 
 import com.e103.ohmyguide.domain.auth.security.TokenProvider;
 import com.e103.ohmyguide.domain.auth.service.OAuth2UserProcessingService;
+import com.e103.ohmyguide.domain.phrase.controller.PhraseController;
+import com.e103.ohmyguide.domain.phrase.service.PhraseService;
 import com.e103.ohmyguide.domain.popularplace.controller.PopularPlaceController;
 import com.e103.ohmyguide.domain.popularplace.service.PopularPlaceService;
 import com.e103.ohmyguide.domain.popularplace.service.SparkJobService;
@@ -16,7 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @ActiveProfiles("test")
 @WebMvcTest(controllers = {
-        PopularPlaceController.class
+        PopularPlaceController.class,
+        PhraseController.class
 }, excludeAutoConfiguration = {
         SecurityAutoConfiguration.class,
         OAuth2ClientAutoConfiguration.class
@@ -34,6 +37,9 @@ public abstract class ControllerTestSupport {
 
     @MockitoBean
     protected SparkJobService sparkJobService;
+
+    @MockitoBean
+    protected PhraseService phraseService;
 
     @MockitoBean
     protected OAuth2UserProcessingService oAuth2UserProcessingService;

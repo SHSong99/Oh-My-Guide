@@ -29,10 +29,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.ohmyguide.app.fixtures.Course
 import com.ohmyguide.app.fixtures.EXPLORE_CATEGORY_GROUPS
 import com.ohmyguide.app.fixtures.EXPLORE_COURSES
@@ -60,21 +62,26 @@ fun CourseCard(
             .fillMaxWidth()
             .height(height)
             .clip(RoundedCornerShape(22.dp))
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(catColor.copy(alpha = 0.15f), catColor.copy(alpha = 0.35f))
-                )
-            )
+            .background(catColor.copy(alpha = 0.15f))
             .clickable(onClick = onClick),
     ) {
-        // Emoji background
-        Text(
-            text = course.emoji,
-            fontSize = 64.sp,
+        if (course.imageUrl != null) {
+            AsyncImage(
+                model = course.imageUrl,
+                contentDescription = course.title,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.matchParentSize(),
+            )
+        }
+        // Gradient overlay for text readability
+        Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(16.dp),
-            color = Color.White.copy(alpha = 0.15f),
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Black.copy(alpha = 0.05f), Color.Black.copy(alpha = 0.6f))
+                    )
+                ),
         )
 
         Column(
@@ -107,7 +114,7 @@ fun CourseCard(
                     Text(
                         text = "#$tag",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextPrimary.copy(alpha = 0.6f),
+                        color = BgWhite.copy(alpha = 0.8f),
                         modifier = Modifier.padding(end = 6.dp),
                     )
                 }
@@ -119,13 +126,13 @@ fun CourseCard(
             Text(
                 text = course.title,
                 style = MaterialTheme.typography.headlineSmall,
-                color = TextPrimary,
+                color = BgWhite,
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = course.subtitle,
                 style = MaterialTheme.typography.labelMedium,
-                color = TextCaption,
+                color = BgWhite.copy(alpha = 0.8f),
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -145,10 +152,10 @@ fun CourseCard(
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
-                        .background(TextPrimary.copy(alpha = 0.1f)),
+                        .background(BgWhite.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = TextPrimary)
+                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp), tint = BgWhite)
                 }
             }
         }
@@ -160,16 +167,16 @@ private fun MetaPill(icon: ImageVector, text: String) {
     Row(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(BgWhite.copy(alpha = 0.6f))
+            .background(Color.Black.copy(alpha = 0.3f))
             .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp), tint = TextPrimary)
+        Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp), tint = BgWhite)
         Spacer(modifier = Modifier.width(4.dp))
         Text(
             text = text,
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-            color = TextPrimary,
+            color = BgWhite,
         )
     }
 }

@@ -84,9 +84,24 @@ val DarkPageCounter = Color(0xFF5A6A82)
 val DarkWaveInactive = Color(0xFF3A4A6B)
 
 // ── Transit Colors ──
-val TransitAmber = Color(0xFFF59E0B)
-val TransitGray = Color(0xFF9CA3AF)
+val TransitAmber = Color(0xFFFFBE0B)
+val TransitGray = Color(0xFFB0B8C8)
 val TransitBlueDark = Color(0xFF1D4ED8)
+val TransitWalk = Color(0xFFB0B8C8)
+val TransitCar = Color(0xFFFFBE0B)
+
+// ── Bus Type Colors ──
+val BusDefault = Color(0xFF4D96FF)
+val BusTown = Color(0xFF34D399)
+val BusExpress = Color(0xFFFF6B6B)
+
+// ── Subway Line Colors (부산) ──
+val SubwayLine1 = Color(0xFFF97316)
+val SubwayLine2 = Color(0xFF22C55E)
+val SubwayLine3 = Color(0xFFCA8A04)
+val SubwayLine4 = Color(0xFF60A5FA)
+val SubwayBGK = Color(0xFFA78BFA)
+val SubwayDonghae = Color(0xFF38BDF8)
 
 // ── Menu/Badge Colors ──
 val MenuBookmark = Color(0xFFF59E0B)
