@@ -1,5 +1,7 @@
 package com.e103.ohmyguide;
 
+import com.e103.ohmyguide.domain.attraction.controller.AttractionController;
+import com.e103.ohmyguide.domain.attraction.service.AttractionService;
 import com.e103.ohmyguide.domain.auth.security.TokenProvider;
 import com.e103.ohmyguide.domain.auth.service.OAuth2UserProcessingService;
 import com.e103.ohmyguide.domain.phrase.controller.PhraseController;
@@ -19,7 +21,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 @WebMvcTest(controllers = {
         PopularPlaceController.class,
-        PhraseController.class
+        PhraseController.class,
+        AttractionController.class
 }, excludeAutoConfiguration = {
         SecurityAutoConfiguration.class,
         OAuth2ClientAutoConfiguration.class
@@ -40,6 +43,9 @@ public abstract class ControllerTestSupport {
 
     @MockitoBean
     protected PhraseService phraseService;
+
+    @MockitoBean
+    protected AttractionService attractionService;
 
     @MockitoBean
     protected OAuth2UserProcessingService oAuth2UserProcessingService;
