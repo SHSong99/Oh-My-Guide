@@ -51,6 +51,9 @@ data class Place(
     val tag: String,
     val color: Color,
     val emoji: String = "",
+    val lat: Double = 0.0,
+    val lng: Double = 0.0,
+    val imageUrl: String? = null,
 )
 
 data class PlaceDetail(
@@ -62,83 +65,69 @@ data class PlaceDetail(
 )
 
 val SAMPLE_PLACES = listOf(
-    Place("dm3", "Gwangjang Market", "\uAD11\uC7A5\uC2DC\uC7A5", 4.8f, "350m", "Food", CatFood, "\uD83E\uDD58"),
-    Place("dm4", "Bukchon Hanok Village", "\uBD81\uCD0C\uD55C\uC625\uB9C8\uC744", 4.6f, "1.2km", "Culture", CatCulture, "\uD83C\uDFD8\uFE0F"),
-    Place("dm5", "Namsan Tower", "\uB0A8\uC0B0\uD0C0\uC6CC", 4.7f, "2.1km", "Nature", CatAttraction, "\uD83D\uDDFC"),
-    Place("dm6", "Ikseon-dong", "\uC775\uC120\uB3D9", 4.5f, "600m", "Culture", CatCulture, "\uD83C\uDFD8\uFE0F"),
-    Place("dm7", "Cheonggyecheon Stream", "\uCCAD\uACC4\uCC9C", 4.7f, "400m", "Nature", CatAttraction, "\uD83C\uDF0A"),
+    Place("dm3", "Sinho Beach Trail", "\uC2E0\uD638\uB3D9 \uD574\uC548\uC0B0\uCC45\uB85C", 4.7f, "2.5km", "Nature", CatAttraction, "\uD83C\uDF0A", 35.0807, 128.8785, "https://images.unsplash.com/photo-1517154421773-0529f29ea451?q=80&w=600&auto=format&fit=crop"),
+    Place("dm4", "Nakdong Estuary Eco Center", "\uB099\uB3D9\uAC15\uD558\uAD6C\uC5D0\uCF54\uC13C\uD130", 4.8f, "8.5km", "Nature", CatAttraction, "\uD83E\uDEB6", 35.1044, 128.9459, "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?q=80&w=600&auto=format&fit=crop"),
+    Place("dm5", "Gimhae International Airport", "\uAE40\uD574\uAD6D\uC81C\uACF5\uD56D", 4.6f, "10km", "Culture", CatCulture, "\u2708\uFE0F", 35.1795, 128.9383, "https://images.unsplash.com/photo-1698210876771-36cb7af6e852?q=80&w=600&auto=format&fit=crop"),
+    Place("dm6", "Daejeo Eco Park", "\uB300\uC800\uC0DD\uD0DC\uACF5\uC6D0", 4.9f, "9.5km", "Nature", CatAttraction, "\uD83C\uDF38", 35.2110, 128.9722, "https://images.unsplash.com/photo-1704240699154-da9e9c690373?q=80&w=600&auto=format&fit=crop"),
+    Place("dm7", "Jangnim Port", "\uC7A5\uB9BC\uD3EC\uAD6C", 4.5f, "7.0km", "Food", CatFood, "\uD83E\uDD90", 35.0720, 128.9650, "https://images.unsplash.com/photo-1540138279543-b3728f037467?q=80&w=600&auto=format&fit=crop"),
 )
 
 val SAMPLE_PLACE_DETAILS = mapOf(
     "dm3" to PlaceDetail(
         place = SAMPLE_PLACES[0],
-        desc = "One of the oldest and largest traditional markets in South Korea. Famous for its bindaetteok (mung bean pancakes) and other street food delicacies.",
-        hours = "09:00 - 18:00",
+        desc = "A peaceful coastal trail in Sinho-dong where the Nakdong River meets the sea. Walk along the black pine forest with ocean views.",
+        hours = "Open 24h",
         fee = "Free",
-        walkTime = "5 min walk",
+        walkTime = "30 min walk",
     ),
     "dm4" to PlaceDetail(
         place = SAMPLE_PLACES[1],
-        desc = "A traditional Korean village with hundreds of hanok houses dating back to the Joseon dynasty. Beautiful blend of old and new Seoul.",
-        hours = "10:00 - 17:00",
+        desc = "A world-renowned migratory bird sanctuary at the Nakdong River estuary. Features wetland exhibitions and wildlife observation decks.",
+        hours = "09:00 - 18:00",
         fee = "Free",
-        walkTime = "15 min walk",
+        walkTime = "105 min walk",
     ),
     "dm5" to PlaceDetail(
         place = SAMPLE_PLACES[2],
-        desc = "Iconic tower offering panoramic views of Seoul. A must-visit landmark and popular romantic destination.",
-        hours = "10:00 - 23:00",
-        fee = "\u20A916,000",
-        walkTime = "25 min walk",
+        desc = "Busan's international airport with an observation deck to watch planes take off. Great spot for aviation fans.",
+        hours = "06:00 - 22:00",
+        fee = "Free",
+        walkTime = "130 min walk",
     ),
     "dm6" to PlaceDetail(
         place = SAMPLE_PLACES[3],
-        desc = "A charming alley of renovated 1920s hanok houses, now filled with trendy cafes, restaurants, and boutique shops.",
-        hours = "10:00 - 22:00",
+        desc = "A 182-hectare riverside park famous for canola flowers in spring and cherry blossoms. Hosts the annual Nakdong River Canola Festival.",
+        hours = "06:00 - 21:00",
         fee = "Free",
-        walkTime = "8 min walk",
+        walkTime = "150 min walk",
     ),
     "dm7" to PlaceDetail(
         place = SAMPLE_PLACES[4],
-        desc = "A restored urban stream stretching 10.9km through downtown Seoul. A peaceful walking path with public art and fountains.",
-        hours = "Open 24h",
+        desc = "A traditional fishing port known for fresh seafood restaurants. Try the famous raw fish and crab dishes at the waterfront market.",
+        hours = "06:00 - 22:00",
         fee = "Free",
-        walkTime = "5 min walk",
+        walkTime = "90 min walk",
     ),
     "p3" to PlaceDetail(
-        place = Place("p3", "Hyundai Card Music Library", "현대카드 뮤직 라이브러리", 4.7f, "2.5km", "Culture", CatCulture),
-        desc = "A curated vinyl library with over 10,000 records. Enjoy music in a beautifully designed space with headphones and turntables.",
-        hours = "12:00 - 21:00",
-        fee = "Free (Hyundai Card holders)",
-        walkTime = "30 min walk",
-    ),
-    "p4" to PlaceDetail(
-        place = Place("p4", "Seoul Forest", "서울숲", 4.8f, "4.1km", "Nature", CatAttraction),
-        desc = "A massive urban park with deer gardens, butterfly houses, and art installations. Perfect for a relaxing afternoon stroll.",
+        place = Place("p3", "Jinudo Island", "\uC9C4\uC6B0\uB3C4", 4.7f, "6.0km", "Nature", CatAttraction, lat = 35.0850, lng = 128.9200, imageUrl = "https://images.unsplash.com/photo-1682090369590-c4c82f3cc065?q=80&w=600&auto=format&fit=crop"),
+        desc = "A sandy delta island where the river meets the ocean. Accessible by ferry, offering pristine beaches and tidal flats.",
         hours = "Open 24h",
         fee = "Free",
-        walkTime = "50 min walk",
+        walkTime = "75 min walk",
+    ),
+    "p4" to PlaceDetail(
+        place = Place("p4", "Amisan Observatory", "\uC544\uBBF8\uC0B0\uC804\uB9DD\uB300", 4.8f, "8.0km", "Nature", CatAttraction, lat = 35.0530, lng = 128.9580, imageUrl = "https://images.unsplash.com/photo-1768006273763-85c9ff25e5fa?q=80&w=600&auto=format&fit=crop"),
+        desc = "A scenic hilltop observatory in Dadaepo offering panoramic views of the Nakdong River estuary and the South Sea.",
+        hours = "Open 24h",
+        fee = "Free",
+        walkTime = "100 min walk",
     ),
     "p5" to PlaceDetail(
-        place = Place("p5", "Onion Anguk", "어니언 안국", 4.6f, "800m", "Café", CatCafe),
-        desc = "A trendy bakery-café set inside a renovated hanok. Famous for its pandoro bread and rustic interior.",
-        hours = "08:00 - 22:00",
-        fee = "₩5,000-12,000",
-        walkTime = "10 min walk",
-    ),
-    "cm_m1" to PlaceDetail(
-        place = Place("cm_m1", "Kasina Hannam", "카시나 한남", 4.7f, "2.8km", "Streetwear", CatCulture),
-        desc = "A premium streetwear select shop in Hannam-dong. Curates global and Korean designer brands with limited-edition drops.",
-        hours = "11:00 - 21:00",
-        fee = "Free entry",
-        walkTime = "35 min walk",
-    ),
-    "cm_m2" to PlaceDetail(
-        place = Place("cm_m2", "Anthracite Coffee", "앤트러사이트", 4.6f, "1.2km", "Café", CatCafe),
-        desc = "A specialty coffee roaster housed in a converted shoe factory. Industrial-chic atmosphere with excellent single-origin brews.",
-        hours = "09:00 - 22:00",
-        fee = "₩5,000-8,000",
-        walkTime = "15 min walk",
+        place = Place("p5", "Dadaepo Beach", "\uB2E4\uB300\uD3EC\uD574\uC218\uC695\uC7A5", 4.6f, "9.5km", "Nature", CatAttraction, lat = 35.0470, lng = 128.9660, imageUrl = "https://images.unsplash.com/photo-1617577367443-2d778fedeef4?q=80&w=600&auto=format&fit=crop"),
+        desc = "A beautiful beach famous for its stunning sunset fountain show. The Dadaepo Sunset Fountain of Dreams is one of Korea's largest.",
+        hours = "Open 24h",
+        fee = "Free",
+        walkTime = "120 min walk",
     ),
 )
 
@@ -290,6 +279,7 @@ data class Spot(
     val nameKr: String,
     val desc: String,
     val walkMin: Int,
+    val imageUrl: String? = null,
 )
 
 data class Course(
@@ -304,6 +294,7 @@ data class Course(
     val rating: Float,
     val tags: List<String>,
     val spots: List<Spot>,
+    val imageUrl: String? = null,
 )
 
 data class Region(val id: String, val name: String)
@@ -346,10 +337,11 @@ val EXPLORE_COURSES = listOf(
         rating = 4.8f,
         tags = listOf("K-Pop", "Hongdae", "Idol"),
         spots = listOf(
-            Spot("dh1", "HYBE Insight", "\uD558\uC774\uBE0C \uC778\uC0AC\uC774\uD2B8", "The official museum of HYBE entertainment.", 0),
-            Spot("dh2", "Hongdae Busking Stage", "\uD64D\uB300 \uBC84\uC2A4\uD0B9 \uBB34\uB300", "The legendary busking area.", 15),
-            Spot("dh3", "SM Entertainment Caf\u00E9", "SM \uC5D4\uD130 \uCE74\uD398", "Official SM caf\u00E9 with themed drinks.", 10),
+            Spot("dh1", "HYBE Insight", "\uD558\uC774\uBE0C \uC778\uC0AC\uC774\uD2B8", "The official museum of HYBE entertainment.", 0, "https://images.unsplash.com/photo-1713816821469-6af8114275c5?q=80&w=600&auto=format&fit=crop"),
+            Spot("dh2", "Hongdae Busking Stage", "\uD64D\uB300 \uBC84\uC2A4\uD0B9 \uBB34\uB300", "The legendary busking area.", 15, "https://images.unsplash.com/photo-1765375783706-05aeeaf59e5f?q=80&w=600&auto=format&fit=crop"),
+            Spot("dh3", "SM Entertainment Caf\u00E9", "SM \uC5D4\uD130 \uCE74\uD398", "Official SM caf\u00E9 with themed drinks.", 10, "https://images.unsplash.com/photo-1603685568162-67024e818bec?q=80&w=600&auto=format&fit=crop"),
         ),
+        imageUrl = "https://images.unsplash.com/photo-1765375783706-05aeeaf59e5f?q=80&w=600&auto=format&fit=crop",
     ),
     Course(
         id = "cvs-mukbang",
@@ -363,9 +355,10 @@ val EXPLORE_COURSES = listOf(
         rating = 4.6f,
         tags = listOf("Local", "Food", "Mukbang"),
         spots = listOf(
-            Spot("cvs1", "CU Flagship Seongsu", "CU \uC131\uC218 \uD50C\uB798\uADF8\uC2ED", "Korea's trendiest CU store.", 0),
-            Spot("cvs2", "GS25 Hangang Park", "GS25 \uD55C\uAC15\uACF5\uC6D0\uC810", "Ramyeon by the Han River.", 20),
+            Spot("cvs1", "CU Flagship Seongsu", "CU \uC131\uC218 \uD50C\uB798\uADF8\uC2ED", "Korea's trendiest CU store.", 0, "https://images.unsplash.com/photo-1760020890915-ca605575b93b?q=80&w=600&auto=format&fit=crop"),
+            Spot("cvs2", "GS25 Hangang Park", "GS25 \uD55C\uAC15\uACF5\uC6D0\uC810", "Ramyeon by the Han River.", 20, "https://images.unsplash.com/photo-1628532431030-3b6d433ed166?q=80&w=600&auto=format&fit=crop"),
         ),
+        imageUrl = "https://images.unsplash.com/photo-1760020890915-ca605575b93b?q=80&w=600&auto=format&fit=crop",
     ),
     Course(
         id = "goblin-filming",
@@ -379,10 +372,11 @@ val EXPLORE_COURSES = listOf(
         rating = 4.7f,
         tags = listOf("K-Drama", "Goblin", "Filming"),
         spots = listOf(
-            Spot("gb1", "Deoksugung Stone Wall Road", "\uB355\uC218\uAD81 \uB3CC\uB2F4\uAE38", "The romantic stone wall road.", 0),
-            Spot("gb2", "Bukchon Hanok Village", "\uBD81\uCD0C\uD55C\uC625\uB9C8\uC744", "Traditional village from the drama.", 20),
-            Spot("gb3", "Incheon Open Port Area", "\uC778\uCC9C \uAC1C\uD56D\uC7A5", "The Grim Reaper's tea shop area.", 30),
+            Spot("gb1", "Deoksugung Stone Wall Road", "\uB355\uC218\uAD81 \uB3CC\uB2F4\uAE38", "The romantic stone wall road.", 0, "https://images.unsplash.com/photo-1748835600895-8ff48c51c37f?q=80&w=600&auto=format&fit=crop"),
+            Spot("gb2", "Bukchon Hanok Village", "\uBD81\uCD0C\uD55C\uC625\uB9C8\uC744", "Traditional village from the drama.", 20, "https://images.unsplash.com/photo-1704240699154-da9e9c690373?q=80&w=600&auto=format&fit=crop"),
+            Spot("gb3", "Incheon Open Port Area", "\uC778\uCC9C \uAC1C\uD56D\uC7A5", "The Grim Reaper's tea shop area.", 30, "https://images.unsplash.com/photo-1768711699153-bd696267e52f?q=80&w=600&auto=format&fit=crop"),
         ),
+        imageUrl = "https://images.unsplash.com/photo-1748835600895-8ff48c51c37f?q=80&w=600&auto=format&fit=crop",
     ),
     Course(
         id = "bts-busan",
@@ -396,10 +390,11 @@ val EXPLORE_COURSES = listOf(
         rating = 4.9f,
         tags = listOf("BTS", "Busan", "ARMY"),
         spots = listOf(
-            Spot("bts1", "Jimin's Dance School", "\uC9C0\uBBFC \uB304\uC2A4 \uC2A4\uCFE8", "Where BTS Jimin trained.", 0),
-            Spot("bts2", "Gamcheon Culture Village", "\uAC10\uCC9C\uBB38\uD654\uB9C8\uC744", "Colorful hillside village.", 25),
-            Spot("bts3", "Haeundae Beach", "\uD574\uC6B4\uB300 \uD574\uBCC0", "Featured in BTS MVs.", 30),
+            Spot("bts1", "Jimin's Dance School", "\uC9C0\uBBFC \uB304\uC2A4 \uC2A4\uCFE8", "Where BTS Jimin trained.", 0, "https://images.unsplash.com/photo-1762440775708-7dbfe9e10842?q=80&w=600&auto=format&fit=crop"),
+            Spot("bts2", "Gamcheon Culture Village", "\uAC10\uCC9C\uBB38\uD654\uB9C8\uC744", "Colorful hillside village.", 25, "https://images.unsplash.com/photo-1762440775708-7dbfe9e10842?q=80&w=600&auto=format&fit=crop"),
+            Spot("bts3", "Haeundae Beach", "\uD574\uC6B4\uB300 \uD574\uBCC0", "Featured in BTS MVs.", 30, "https://images.unsplash.com/photo-1768081977305-b5db21d91ec1?q=80&w=600&auto=format&fit=crop"),
         ),
+        imageUrl = "https://images.unsplash.com/photo-1762440775708-7dbfe9e10842?q=80&w=600&auto=format&fit=crop",
     ),
     Course(
         id = "local-market",
@@ -413,10 +408,11 @@ val EXPLORE_COURSES = listOf(
         rating = 4.7f,
         tags = listOf("Local", "Market", "Street Food"),
         spots = listOf(
-            Spot("lm1", "Gwangjang Market", "\uAD11\uC7A5\uC2DC\uC7A5", "Seoul's oldest market.", 0),
-            Spot("lm2", "Tongin Market", "\uD1B5\uC778\uC2DC\uC7A5", "Build your own dosirak.", 20),
-            Spot("lm3", "Mangwon Market", "\uB9DD\uC6D0\uC2DC\uC7A5", "The hipsters' market.", 25),
+            Spot("lm1", "Gwangjang Market", "\uAD11\uC7A5\uC2DC\uC7A5", "Seoul's oldest market.", 0, "https://images.unsplash.com/photo-1628532431030-3b6d433ed166?q=80&w=600&auto=format&fit=crop"),
+            Spot("lm2", "Tongin Market", "\uD1B5\uC778\uC2DC\uC7A5", "Build your own dosirak.", 20, "https://images.unsplash.com/photo-1628532429788-c35922b5e6c1?q=80&w=600&auto=format&fit=crop"),
+            Spot("lm3", "Mangwon Market", "\uB9DD\uC6D0\uC2DC\uC7A5", "The hipsters' market.", 25, "https://images.unsplash.com/photo-1540138279543-b3728f037467?q=80&w=600&auto=format&fit=crop"),
         ),
+        imageUrl = "https://images.unsplash.com/photo-1628532431030-3b6d433ed166?q=80&w=600&auto=format&fit=crop",
     ),
 )
 
@@ -432,79 +428,77 @@ data class FallbackRoute(
     val durationMin: Int,
 )
 
-// 시청 부근 (37.5665, 126.9780) 에서 각 장소까지 경로
+// 송정동 SSAFY 부근 (35.0950, 128.8560) 에서 각 장소까지 경로
 val FALLBACK_ROUTES = mapOf(
-    // dm3 광장시장
+    // dm3 신호동 해안산책로
     ("dm3" to "walk") to FallbackRoute("dm3", "walk", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5672, 126.9830),
-        RoutePoint(37.5680, 126.9880), RoutePoint(37.5690, 126.9940),
-        RoutePoint(37.5700, 126.9990),
-    ), 1500, 5),
-    ("dm3" to "drive") to FallbackRoute("dm3", "drive", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5670, 126.9860),
-        RoutePoint(37.5695, 126.9950), RoutePoint(37.5700, 126.9990),
-    ), 2100, 3),
-    ("dm3" to "transit") to FallbackRoute("dm3", "transit", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5660, 126.9850),
-        RoutePoint(37.5670, 126.9920), RoutePoint(37.5700, 126.9990),
-    ), 2400, 12),
-
-    // dm4 북촌한옥마을
-    ("dm4" to "walk") to FallbackRoute("dm4", "walk", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5700, 126.9790),
-        RoutePoint(37.5740, 126.9800), RoutePoint(37.5780, 126.9815),
-        RoutePoint(37.5826, 126.9831),
-    ), 1800, 15),
-    ("dm4" to "drive") to FallbackRoute("dm4", "drive", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5720, 126.9800),
-        RoutePoint(37.5790, 126.9820), RoutePoint(37.5826, 126.9831),
-    ), 2500, 5),
-    ("dm4" to "transit") to FallbackRoute("dm4", "transit", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5700, 126.9810),
-        RoutePoint(37.5760, 126.9820), RoutePoint(37.5826, 126.9831),
-    ), 3200, 10),
-
-    // dm5 남산타워
-    ("dm5" to "walk") to FallbackRoute("dm5", "walk", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5640, 126.9800),
-        RoutePoint(37.5600, 126.9830), RoutePoint(37.5560, 126.9860),
-        RoutePoint(37.5512, 126.9882),
-    ), 2100, 25),
-    ("dm5" to "drive") to FallbackRoute("dm5", "drive", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5620, 126.9820),
-        RoutePoint(37.5550, 126.9860), RoutePoint(37.5512, 126.9882),
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.0900, 128.8650),
+        RoutePoint(35.0850, 128.8720), RoutePoint(35.0807, 128.8785),
+    ), 2500, 30),
+    ("dm3" to "car") to FallbackRoute("dm3", "car", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.0870, 128.8680),
+        RoutePoint(35.0807, 128.8785),
     ), 3500, 8),
-    ("dm5" to "transit") to FallbackRoute("dm5", "transit", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5630, 126.9810),
-        RoutePoint(37.5570, 126.9850), RoutePoint(37.5512, 126.9882),
+    ("dm3" to "transit") to FallbackRoute("dm3", "transit", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.0880, 128.8700),
+        RoutePoint(35.0807, 128.8785),
     ), 4000, 15),
 
-    // dm6 익선동
-    ("dm6" to "walk") to FallbackRoute("dm6", "walk", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5690, 126.9830),
-        RoutePoint(37.5710, 126.9870), RoutePoint(37.5735, 126.9920),
-    ), 600, 8),
-    ("dm6" to "drive") to FallbackRoute("dm6", "drive", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5700, 126.9850),
-        RoutePoint(37.5735, 126.9920),
-    ), 900, 3),
-    ("dm6" to "transit") to FallbackRoute("dm6", "transit", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5680, 126.9850),
-        RoutePoint(37.5710, 126.9890), RoutePoint(37.5735, 126.9920),
-    ), 1200, 8),
+    // dm4 낙동강하구에코센터
+    ("dm4" to "walk") to FallbackRoute("dm4", "walk", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.0980, 128.8900),
+        RoutePoint(35.1010, 128.9200), RoutePoint(35.1044, 128.9459),
+    ), 8500, 105),
+    ("dm4" to "car") to FallbackRoute("dm4", "car", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.1000, 128.9100),
+        RoutePoint(35.1044, 128.9459),
+    ), 12000, 20),
+    ("dm4" to "transit") to FallbackRoute("dm4", "transit", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.0990, 128.9000),
+        RoutePoint(35.1044, 128.9459),
+    ), 13000, 35),
 
-    // dm7 청계천
+    // dm5 김해국제공항
+    ("dm5" to "walk") to FallbackRoute("dm5", "walk", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.1200, 128.8800),
+        RoutePoint(35.1500, 128.9100), RoutePoint(35.1795, 128.9383),
+    ), 10000, 130),
+    ("dm5" to "car") to FallbackRoute("dm5", "car", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.1400, 128.9000),
+        RoutePoint(35.1795, 128.9383),
+    ), 14000, 20),
+    ("dm5" to "transit") to FallbackRoute("dm5", "transit", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.1300, 128.9000),
+        RoutePoint(35.1795, 128.9383),
+    ), 15000, 40),
+
+    // dm6 대저생태공원
+    ("dm6" to "walk") to FallbackRoute("dm6", "walk", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.1300, 128.9000),
+        RoutePoint(35.1700, 128.9400), RoutePoint(35.2110, 128.9722),
+    ), 9500, 150),
+    ("dm6" to "car") to FallbackRoute("dm6", "car", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.1500, 128.9200),
+        RoutePoint(35.2110, 128.9722),
+    ), 15000, 25),
+    ("dm6" to "transit") to FallbackRoute("dm6", "transit", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.1400, 128.9100),
+        RoutePoint(35.2110, 128.9722),
+    ), 16000, 45),
+
+    // dm7 장림포구
     ("dm7" to "walk") to FallbackRoute("dm7", "walk", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5675, 126.9780),
-        RoutePoint(37.5690, 126.9780),
-    ), 400, 5),
-    ("dm7" to "drive") to FallbackRoute("dm7", "drive", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5690, 126.9780),
-    ), 500, 2),
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.0850, 128.9000),
+        RoutePoint(35.0780, 128.9350), RoutePoint(35.0720, 128.9650),
+    ), 7000, 90),
+    ("dm7" to "car") to FallbackRoute("dm7", "car", listOf(
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.0800, 128.9200),
+        RoutePoint(35.0720, 128.9650),
+    ), 11000, 18),
     ("dm7" to "transit") to FallbackRoute("dm7", "transit", listOf(
-        RoutePoint(37.5665, 126.9780), RoutePoint(37.5670, 126.9790),
-        RoutePoint(37.5690, 126.9780),
-    ), 800, 5),
+        RoutePoint(35.0950, 128.8560), RoutePoint(35.0830, 128.9100),
+        RoutePoint(35.0720, 128.9650),
+    ), 12000, 30),
 )
 
 val HOME_RECOMMENDATIONS = listOf(
@@ -513,21 +507,21 @@ val HOME_RECOMMENDATIONS = listOf(
         icon = Icons.Filled.BarChart,
         label = "Big Data",
         places = listOf(
-            Place("p3", "Hyundai Card Music Library", "\uD604\uB300\uCE74\uB4DC \uBBA4\uC9C1 \uB77C\uC774\uBE0C\uB7EC\uB9AC", 4.7f, "2.5km", "Culture", CatCulture),
-            Place("p4", "Seoul Forest", "\uC11C\uC6B8\uC232", 4.8f, "4.1km", "Nature", CatAttraction),
-            Place("p5", "Onion Anguk", "\uC5B4\uB2C8\uC5B8 \uC548\uAD6D", 4.6f, "800m", "Caf\u00E9", CatCafe),
+            Place("p3", "Jinudo Island", "\uC9C4\uC6B0\uB3C4", 4.7f, "6.0km", "Nature", CatAttraction, lat = 35.0850, lng = 128.9200, imageUrl = "https://images.unsplash.com/photo-1682090369590-c4c82f3cc065?q=80&w=600&auto=format&fit=crop"),
+            Place("p4", "Amisan Observatory", "\uC544\uBBF8\uC0B0\uC804\uB9DD\uB300", 4.8f, "8.0km", "Nature", CatAttraction, lat = 35.0530, lng = 128.9580, imageUrl = "https://images.unsplash.com/photo-1768006273763-85c9ff25e5fa?q=80&w=600&auto=format&fit=crop"),
+            Place("p5", "Dadaepo Beach", "\uB2E4\uB300\uD3EC\uD574\uC218\uC695\uC7A5", 4.6f, "9.5km", "Nature", CatAttraction, lat = 35.0470, lng = 128.9660, imageUrl = "https://images.unsplash.com/photo-1617577367443-2d778fedeef4?q=80&w=600&auto=format&fit=crop"),
         ),
-        btnText = "Show more romantic spots",
+        btnText = "Show more nature spots",
     ),
     RecommendationSection(
         title = "Personalized for You",
         icon = Icons.Filled.AutoAwesome,
         label = "Male \u00B7 20s",
         places = listOf(
-            Place("dm3", "Gwangjang Market", "\uAD11\uC7A5\uC2DC\uC7A5", 4.8f, "1.5km", "Food", CatFood),
-            Place("cm_m1", "Kasina Hannam", "\uCE74\uC2DC\uB098 \uD55C\uB0A8", 4.7f, "2.8km", "Streetwear", CatCulture),
-            Place("cm_m2", "Anthracite Coffee", "\uC564\uD2B8\uB7EC\uC0AC\uC774\uD2B8", 4.6f, "1.2km", "Caf\u00E9", CatCafe),
+            Place("dm3", "Sinho Beach Trail", "\uC2E0\uD638\uB3D9 \uD574\uC548\uC0B0\uCC45\uB85C", 4.7f, "2.5km", "Nature", CatAttraction, lat = 35.0807, lng = 128.8785, imageUrl = "https://images.unsplash.com/photo-1517154421773-0529f29ea451?q=80&w=600&auto=format&fit=crop"),
+            Place("dm4", "Nakdong Estuary Eco Center", "\uB099\uB3D9\uAC15\uD558\uAD6C\uC5D0\uCF54\uC13C\uD130", 4.8f, "8.5km", "Nature", CatAttraction, lat = 35.1044, lng = 128.9459, imageUrl = "https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?q=80&w=600&auto=format&fit=crop"),
+            Place("dm7", "Jangnim Port", "\uC7A5\uB9BC\uD3EC\uAD6C", 4.5f, "7.0km", "Food", CatFood, lat = 35.0720, lng = 128.9650, imageUrl = "https://images.unsplash.com/photo-1540138279543-b3728f037467?q=80&w=600&auto=format&fit=crop"),
         ),
-        btnText = "Show more for Men in 20s",
+        btnText = "Show more near Songjeong",
     ),
 )

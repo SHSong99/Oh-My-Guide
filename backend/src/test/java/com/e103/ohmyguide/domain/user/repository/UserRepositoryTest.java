@@ -52,10 +52,13 @@ class UserRepositoryTest extends IntegrationTestSupport {
         User user = userRepository.save(buildUser("test@test.com"));
 
         // when
-        user.completeOnboarding();
+        user.completeOnboarding("KR", 25, "M");
 
         // then
         assertThat(user.getOnboardingCompleted()).isTrue();
+        assertThat(user.getNationality()).isEqualTo("KR");
+        assertThat(user.getAge()).isEqualTo(25);
+        assertThat(user.getGender()).isEqualTo("M");
     }
 
     @DisplayName("프로필을 업데이트한다.")

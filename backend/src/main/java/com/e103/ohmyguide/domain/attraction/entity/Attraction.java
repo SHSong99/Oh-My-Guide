@@ -81,6 +81,9 @@ public class Attraction extends BaseEntity {
     @Column(name = "overview", length = 10000)
     private String overview;
 
+    @Column(name = "overview_tts", length = 10000)
+    private String overviewTts;
+
     @Builder
     private Attraction(Integer contentId, String title, ContentType contentType, Sido sido, Integer gugunCode, Gugun gugun,
                        String addr1, String addr2, String tel,
