@@ -153,6 +153,7 @@ interface AppStrings {
     val placeGo: String
 
     // ── Transit Format ──
+    val transitRoutes: String
     val searchingRoutes: String
     val noTransitRoutes: String
     val tryWalkOrCar: String

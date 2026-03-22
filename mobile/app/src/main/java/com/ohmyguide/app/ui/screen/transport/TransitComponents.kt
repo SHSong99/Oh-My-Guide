@@ -174,17 +174,17 @@ fun RouteCard(
             ) {
                 Text(
                     text = route.totalTime,
-                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                     color = if (expanded) Primary else TextPrimary,
                 )
-                Spacer(modifier = Modifier.width(8.dp))
+                Spacer(modifier = Modifier.width(10.dp))
                 Row(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(4.dp))
+                        .clip(RoundedCornerShape(6.dp))
                         .background(route.badgeColor)
-                        .padding(horizontal = 6.dp, vertical = 2.dp),
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     val badgeIcon = when (route.pathType) {
                         1 -> Icons.Filled.DirectionsSubway
@@ -192,10 +192,10 @@ fun RouteCard(
                         else -> null
                     }
                     if (route.pathType == 3) {
-                        Icon(Icons.Filled.DirectionsBus, contentDescription = null, modifier = Modifier.size(10.dp), tint = BgWhite)
-                        Icon(Icons.Filled.DirectionsSubway, contentDescription = null, modifier = Modifier.size(10.dp), tint = BgWhite)
+                        Icon(Icons.Filled.DirectionsBus, contentDescription = null, modifier = Modifier.size(12.dp), tint = BgWhite)
+                        Icon(Icons.Filled.DirectionsSubway, contentDescription = null, modifier = Modifier.size(12.dp), tint = BgWhite)
                     } else if (badgeIcon != null) {
-                        Icon(badgeIcon, contentDescription = null, modifier = Modifier.size(10.dp), tint = BgWhite)
+                        Icon(badgeIcon, contentDescription = null, modifier = Modifier.size(12.dp), tint = BgWhite)
                     }
                     val badgeText = when (route.pathType) {
                         1 -> strings.subway.uppercase()
@@ -207,7 +207,7 @@ fun RouteCard(
                         text = badgeText,
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontWeight = FontWeight.Bold,
-                            fontSize = 9.sp,
+                            fontSize = 10.sp,
                         ),
                         color = BgWhite,
                     )
@@ -216,7 +216,7 @@ fun RouteCard(
                 if (expanded) {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
                             .background(Primary),
                         contentAlignment = Alignment.Center,
@@ -224,23 +224,23 @@ fun RouteCard(
                         Icon(
                             Icons.Default.Check,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(18.dp),
                             tint = BgWhite,
                         )
                     }
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(24.dp)
+                            .size(28.dp)
                             .clip(CircleShape)
                             .border(1.5.dp, Border, CircleShape),
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "${route.timeRange}  \u00B7  ${route.payment}",
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
             )
         }
@@ -251,15 +251,15 @@ fun RouteCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .height(28.dp)
-                .clip(RoundedCornerShape(6.dp)),
+                .height(32.dp)
+                .clip(RoundedCornerShape(8.dp)),
         ) {
             route.segments.forEach { segment ->
                 val weight = segment.sectionTime.toFloat() / totalSec
                 Row(
                     modifier = Modifier
                         .weight(weight.coerceAtLeast(0.05f))
-                        .height(28.dp)
+                        .height(32.dp)
                         .background(segment.color),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center,
@@ -271,13 +271,13 @@ fun RouteCard(
                     }
                     val tint = if (segment.type == "walk") TextCaption else BgWhite
                     if (segment.sectionTime >= 2) {
-                        Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp), tint = tint)
+                        Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = tint)
                     }
                     if (segment.sectionTime >= 4) {
-                        Spacer(modifier = Modifier.width(2.dp))
+                        Spacer(modifier = Modifier.width(3.dp))
                         Text(
                             text = "${segment.sectionTime}m",
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp, fontWeight = FontWeight.SemiBold),
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp, fontWeight = FontWeight.Bold),
                             color = tint,
                         )
                     }
@@ -287,7 +287,7 @@ fun RouteCard(
 
         AnimatedVisibility(visible = expanded) {
             Column(
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp),
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 16.dp),
             ) {
                 route.segments.forEachIndexed { index, segment ->
                     SegmentRow(segment = segment, isLast = index == route.segments.lastIndex)
@@ -308,7 +308,7 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
         // Timeline dot + line
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(28.dp),
+            modifier = Modifier.width(32.dp),
         ) {
             val icon = when (segment.type) {
                 "bus" -> Icons.Filled.DirectionsBus
@@ -317,24 +317,24 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
             }
             Box(
                 modifier = Modifier
-                    .size(20.dp)
+                    .size(24.dp)
                     .clip(CircleShape)
                     .background(segment.color),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(icon, contentDescription = null, modifier = Modifier.size(12.dp), tint = BgWhite)
+                Icon(icon, contentDescription = null, modifier = Modifier.size(14.dp), tint = BgWhite)
             }
             if (!isLast) {
                 Box(
                     modifier = Modifier
                         .width(2.dp)
-                        .height(if (segment.type == "walk" && segment.fromKr.isEmpty()) 24.dp else 44.dp)
+                        .height(if (segment.type == "walk" && segment.fromKr.isEmpty()) 20.dp else 48.dp)
                         .background(segment.color.copy(alpha = 0.3f)),
                 )
             }
         }
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(12.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             // Line name + duration + stops
@@ -344,25 +344,27 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
             ) {
                 Text(
                     text = segment.lineName,
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = segment.color,
                 )
                 Text(
                     text = segment.duration,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextCaption,
                 )
                 if (segment.stops > 0) {
                     Text(
                         text = "${segment.stops} ${strings.stopsUnit}",
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         color = TextCaption,
                     )
                 }
             }
 
-            // Realtime arrival info
-            if (segment.type == "bus" && segment.realtimeMin != null) {
+            // Realtime arrival info (hide when 0 min / 0 stops)
+            if (segment.type == "bus" && segment.realtimeMin != null
+                && (segment.realtimeMin > 0 || (segment.realtimeStations ?: 0) > 0)
+            ) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -376,7 +378,7 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
                     )
                     Text(
                         text = "${segment.realtimeMin} ${strings.minSuffix} (${segment.realtimeStations} ${strings.stopsAway})",
-                        style = MaterialTheme.typography.labelSmall.copy(
+                        style = MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.SemiBold,
                         ),
                         color = InfoGreen,
@@ -389,12 +391,12 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
                 Spacer(modifier = Modifier.height(3.dp))
                 Text(
                     text = "${segment.from} \u2192 ${segment.to}",
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.bodySmall,
                     color = TextPrimary,
                 )
                 Text(
                     text = "${segment.fromKr} \u2192 ${segment.toKr}",
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                    style = MaterialTheme.typography.labelSmall,
                     color = TextCaption,
                 )
             }

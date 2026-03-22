@@ -304,6 +304,9 @@ class HomeViewModel @Inject constructor(
             tag = tag,
             color = TAG_COLOR_MAP[tag] ?: CatAttraction,
             emoji = TAG_EMOJI_MAP[tag] ?: "\uD83D\uDCCD",
+            lat = latitude,
+            lng = longitude,
+            imageUrl = imageUrl,
         )
     }
 

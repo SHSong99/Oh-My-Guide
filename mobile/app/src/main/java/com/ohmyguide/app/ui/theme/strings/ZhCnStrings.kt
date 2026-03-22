@@ -138,6 +138,7 @@ object ZhCnStrings : AppStrings {
     override val placeNo = "否"
     override val placeGo = "前往"
 
+    override val transitRoutes = "公交路线"
     override val searchingRoutes = "正在搜索路线..."
     override val noTransitRoutes = "未找到公共交通路线"
     override val tryWalkOrCar = "可以试试步行或打车"
