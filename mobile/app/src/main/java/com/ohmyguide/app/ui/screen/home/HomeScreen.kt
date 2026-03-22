@@ -222,6 +222,7 @@ fun HomeScreen(
                                     detail = detail,
                                     onBack = { viewModel.clearSelection() },
                                     onGoHere = { placeId ->
+                                        viewModel.visitPlace(placeId)
                                         navController.navigate(Screen.Transport.createRoute(placeId))
                                     },
                                 )

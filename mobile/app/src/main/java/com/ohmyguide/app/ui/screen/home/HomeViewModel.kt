@@ -142,6 +142,13 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    fun visitPlace(placeId: String) {
+        val attrId = placeId.toLongOrNull() ?: return
+        viewModelScope.launch {
+            recommendRepository.visitPlace(attrId)
+        }
+    }
+
     // ── Show More ──
 
     fun onShowMore(sectionTitle: String) {

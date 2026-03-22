@@ -121,8 +121,8 @@ def rerank_places(
     generate_reason: bool = True,
 ) -> list[dict]:
     """
-    코사인 유사도 상위 places를 LLM(gpt-5-mini)으로 리랭킹하여
-    top_n개 선정. (5 Credit/회)
+    코사인 유사도 상위 places를 LLM(gpt-4o-mini)으로 리랭킹하여
+    top_n개 선정.
 
     generate_reason=True 이면 추천 이유도 함께 생성.
     LLM 호출 실패 시 코사인 유사도 순 top_n개 반환 (reason=None).
@@ -201,7 +201,7 @@ def rerank_places(
         # 2. Context — 배경 설명
         "## 배경\n"
         "AI 추천 시스템이 코사인 유사도로 사전 필터링한 후보 20개를 당신에게 전달합니다. "
-        "당신은 이 중에서 사용자에게 가장 적합한 장소 {top_n}개를 최종 선정해야 합니다. "
+        f"당신은 이 중에서 사용자에게 가장 적합한 장소 {top_n}개를 최종 선정해야 합니다. "
         "유사도 점수는 참고용이며, 맥락 판단이 더 중요합니다.\n\n"
 
         # 3. 판단 기준 — 구체적 규칙
@@ -222,20 +222,20 @@ def rerank_places(
         "   - 가족 → 아이 체험, 넓은 공간, 편의시설\n"
         "   - 친구 → 액티비티, 맛집, 인스타 감성\n"
         "   - 혼자 → 힐링, 자연, 박물관, 카페\n"
-        "4. **다양성**: {top_n}개가 전부 같은 유형이 되지 않도록 카테고리를 섞어주세요.\n"
+        f"4. **다양성**: {top_n}개가 전부 같은 유형이 되지 않도록 카테고리를 섞어주세요.\n"
         "5. **거리**: 유사한 장소가 여러 개면 가까운 쪽을 우선하세요.\n\n"
 
         # 4. Constraints — 제약 사항
         "## 제약 사항\n"
         "- 후보 목록에 있는 ID만 사용하세요. 목록에 없는 장소를 만들어내지 마세요.\n"
-        "- 정확히 {top_n}개를 선정하세요.\n"
+        f"- 정확히 {top_n}개를 선정하세요.\n"
         "- JSON 외의 텍스트를 출력하지 마세요.\n"
         "- 추천 이유에 '유사도', '코사인', '알고리즘' 같은 시스템 용어를 사용하지 마세요.\n\n"
 
         # 5. Format — 출력 형식
         "## 출력 형식\n"
         f"{json_format}"
-    ).format(top_n=top_n)
+    )
 
     # 5. Examples — 멀티샷 (user 메시지에 예시 포함)
     example_block = ""
@@ -258,7 +258,7 @@ def rerank_places(
     )
 
     try:
-        text = _call_openai("gpt-5-mini", system, user_msg, temperature=0.5, max_tokens=900)
+        text = _call_openai("gpt-4o-mini", system, user_msg, temperature=0.5, max_tokens=900)
         result = _parse_json(text)
         recs = result.get("recommendations", [])
 

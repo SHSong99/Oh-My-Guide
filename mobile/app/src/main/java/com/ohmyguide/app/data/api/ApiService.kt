@@ -22,4 +22,7 @@ interface ApiService {
 
     @POST("api/userRecommend/recommend/refresh")
     suspend fun refreshRecommendation(@Body request: RefreshRecommendRequest): RefreshRecommendResponse
+
+    @POST("api/userRecommend/visit")
+    suspend fun visitPlace(@Body request: Map<String, Long>)
 }

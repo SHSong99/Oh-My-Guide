@@ -12,6 +12,7 @@ services:
     environment:
       - DB_HOST=postgres
       - AI_SERVER_URL=http://fastapi:8000
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
     networks:
       - s14p21e103_app-network
 

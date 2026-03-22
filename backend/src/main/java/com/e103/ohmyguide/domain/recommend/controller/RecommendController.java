@@ -4,6 +4,7 @@ import com.e103.ohmyguide.domain.auth.security.CurrentUser;
 import com.e103.ohmyguide.domain.auth.security.UserPrincipal;
 import com.e103.ohmyguide.domain.recommend.dto.RefreshRequest;
 import com.e103.ohmyguide.domain.recommend.dto.RefreshResponse;
+import com.e103.ohmyguide.domain.recommend.dto.VisitRequest;
 import com.e103.ohmyguide.domain.recommend.service.RecommendService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,5 +39,14 @@ public class RecommendController {
                 userPrincipal.getId(), request
         );
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/visit")
+    public ResponseEntity<Void> visitPlace(
+            @CurrentUser UserPrincipal userPrincipal,
+            @RequestBody VisitRequest request
+    ) {
+        recommendService.visitPlace(userPrincipal.getId(), request.getAttrId());
+        return ResponseEntity.ok().build();
     }
 }

@@ -27,4 +27,12 @@ class RecommendRepository @Inject constructor(
             Result.failure(e)
         }
     }
+
+    suspend fun visitPlace(attrId: Long) {
+        try {
+            apiService.visitPlace(mapOf("attrId" to attrId))
+        } catch (_: Exception) {
+            // 방문 기록 실패해도 네비게이션은 진행
+        }
+    }
 }

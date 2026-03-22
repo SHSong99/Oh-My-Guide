@@ -284,8 +284,14 @@ def get_user_recommend(
     currentLng: float = 126.978,
     userId: int = 1,
     radiusKm: float = 10.0,
+    excludedAttrIds: str | None = None,
 ):
     """초기 추천: 카테고리 선택 후 첫 추천 장소 5개."""
+    # 0. excluded_attr_ids 파싱
+    excluded = []
+    if excludedAttrIds:
+        excluded = [int(x) for x in excludedAttrIds.split(",") if x.strip().isdigit()]
+
     # 1. 사용자 벡터 조회
     user_vec, cold_start = get_user_vector(userId)
     if user_vec is None:
@@ -302,12 +308,13 @@ def get_user_recommend(
         except Exception:
             pass
 
-    # 4. 반경 내 장소 조회
+    # 4. 반경 내 장소 조회 (방문한 장소 제외)
     places = get_places_in_radius(
         lat=currentLat,
         lng=currentLng,
         radius_km=radiusKm,
         content_type_ids=content_type_ids,
+        excluded_attr_ids=excluded or None,
     )
 
     if not places:
