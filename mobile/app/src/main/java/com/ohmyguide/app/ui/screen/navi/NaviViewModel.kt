@@ -83,6 +83,7 @@ sealed class NaviChatMessage {
     object ArrivalConfirm : NaviChatMessage()
     data class NearbyRecommendations(val places: List<Place>) : NaviChatMessage()
     data class Weather(val info: WeatherInfo) : NaviChatMessage()
+    data class StoryPrompt(val placeName: String) : NaviChatMessage()
 }
 
 // ── UI State ──
@@ -197,21 +198,36 @@ class NaviViewModel @Inject constructor(
     private fun initChat() {
         val placeName = detail?.place?.name ?: "your destination"
 
+        // Greeting
         addMessage(NaviChatMessage.BotText(
             "I'll guide you to $placeName! Keep going straight ahead.",
         ))
 
+        // Weather — delivered shortly after start
         viewModelScope.launch {
-            // Step 0: Weather info first
             delay(1500L)
             addMessage(NaviChatMessage.BotTyping)
             delay(800L)
             removeTyping()
             fetchWeatherAndShow()
+        }
 
-            // Step 1: Transit info (if transit mode)
-            if (mode == "transit") {
-                delay(3000L)
+        // Story guide prompt — separate turn
+        viewModelScope.launch {
+            delay(6000L)
+            addMessage(NaviChatMessage.BotTyping)
+            delay(800L)
+            removeTyping()
+            addMessage(NaviChatMessage.BotText(
+                "By the way, I know some interesting stories about $placeName!"
+            ))
+            addMessage(NaviChatMessage.StoryPrompt(placeName = placeName))
+        }
+
+        // Transit info — separate turn (only for transit mode)
+        if (mode == "transit") {
+            viewModelScope.launch {
+                delay(10000L)
                 addMessage(NaviChatMessage.BotTyping)
                 delay(800L)
                 removeTyping()
@@ -219,30 +235,6 @@ class NaviViewModel @Inject constructor(
                 addMessage(NaviChatMessage.TransitInfo(
                     info = TRANSIT_STOPS[placeId] ?: TRANSIT_STOPS.values.first(),
                 ))
-            }
-
-            // Step 2: Destination detail card
-            delay(3000L)
-            addMessage(NaviChatMessage.BotTyping)
-            delay(800L)
-            removeTyping()
-            if (detail != null) {
-                addMessage(NaviChatMessage.BotText("About $placeName:"))
-                addMessage(NaviChatMessage.DestinationDetail(detail = detail))
-            }
-
-            // Step 3: Nearby places
-            delay(3000L)
-            addMessage(NaviChatMessage.BotTyping)
-            delay(800L)
-            removeTyping()
-            val nearbyPlaces = SAMPLE_PLACES
-                .filter { it.id != placeId }
-                .shuffled()
-                .take(4)
-            if (nearbyPlaces.isNotEmpty()) {
-                addMessage(NaviChatMessage.BotText("Here are some interesting places along your route:"))
-                addMessage(NaviChatMessage.NearbyPlaces(places = nearbyPlaces))
             }
         }
     }
