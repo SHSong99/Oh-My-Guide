@@ -8,6 +8,7 @@ import com.ohmyguide.app.BuildConfig
 import com.ohmyguide.app.data.model.ApiResult
 import com.ohmyguide.app.data.repository.NaverDirectionsRepository
 import com.ohmyguide.app.data.repository.TmapRepository
+import com.ohmyguide.app.data.repository.WeatherRepository
 import com.ohmyguide.app.domain.model.NaviRouteCache
 import com.ohmyguide.app.domain.model.NaviRouteData
 import com.ohmyguide.app.domain.model.RouteCoord
@@ -50,6 +51,25 @@ data class TransitStopInfo(
     val exitStopName: String,
 )
 
+data class WeatherInfo(
+    val temperature: Double,
+    val feelsLike: Double,
+    val weatherDesc: String,
+    val emoji: String,
+    val precipProbability: Int,
+    val windSpeed: Double,
+    val isDay: Boolean,
+    val tip: String,
+    val hourlyForecast: List<HourForecast> = emptyList(),
+)
+
+data class HourForecast(
+    val hour: Int,
+    val temp: Double,
+    val emoji: String,
+    val precipProb: Int,
+)
+
 sealed class NaviChatMessage {
     data class BotText(val text: String) : NaviChatMessage()
     object BotTyping : NaviChatMessage()
@@ -62,6 +82,7 @@ sealed class NaviChatMessage {
     data class Phrases(val items: List<PhraseItem>) : NaviChatMessage()
     object ArrivalConfirm : NaviChatMessage()
     data class NearbyRecommendations(val places: List<Place>) : NaviChatMessage()
+    data class Weather(val info: WeatherInfo) : NaviChatMessage()
 }
 
 // ── UI State ──
@@ -80,6 +101,7 @@ class NaviViewModel @Inject constructor(
     private val naviRouteCache: NaviRouteCache,
     private val directionsRepository: NaverDirectionsRepository,
     private val tmapRepository: TmapRepository,
+    private val weatherRepository: WeatherRepository,
 ) : ViewModel() {
 
     val placeId: String = savedStateHandle["placeId"] ?: "dm3"
@@ -180,6 +202,13 @@ class NaviViewModel @Inject constructor(
         ))
 
         viewModelScope.launch {
+            // Step 0: Weather info first
+            delay(1500L)
+            addMessage(NaviChatMessage.BotTyping)
+            delay(800L)
+            removeTyping()
+            fetchWeatherAndShow()
+
             // Step 1: Transit info (if transit mode)
             if (mode == "transit") {
                 delay(3000L)
@@ -373,6 +402,113 @@ class NaviViewModel @Inject constructor(
             addMessage(NaviChatMessage.BotText("Here are some interesting places along your route:"))
             addMessage(NaviChatMessage.NearbyPlaces(places = nearbyPlaces))
         }
+    }
+
+    // ── Weather ──
+
+    private suspend fun fetchWeatherAndShow() {
+        val result = weatherRepository.getHourlyForecast(destinationLat, destinationLng)
+        if (result is ApiResult.Success) {
+            val hourly = result.data.hourly ?: return
+            val currentHour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+            val idx = currentHour.coerceIn(0, (hourly.temperature?.size ?: 1) - 1)
+
+            val temp = hourly.temperature?.getOrNull(idx) ?: return
+            val feelsLike = hourly.apparentTemperature?.getOrNull(idx) ?: temp
+            val code = hourly.weatherCode?.getOrNull(idx) ?: 0
+            val precip = hourly.precipitationProbability?.getOrNull(idx) ?: 0
+            val wind = hourly.windSpeed?.getOrNull(idx) ?: 0.0
+            val isDay = (hourly.isDay?.getOrNull(idx) ?: 1) == 1
+
+            val (desc, emoji) = weatherCodeToDescEmoji(code, isDay)
+            val tip = buildWeatherTip(temp, feelsLike, code, precip, wind, isDay)
+
+            // Build next 4 hours forecast
+            val upcoming = (1..4).mapNotNull { offset ->
+                val futureIdx = idx + offset
+                if (futureIdx >= (hourly.temperature?.size ?: 0)) return@mapNotNull null
+                val futureCode = hourly.weatherCode?.getOrNull(futureIdx) ?: 0
+                val futureIsDay = (hourly.isDay?.getOrNull(futureIdx) ?: 1) == 1
+                val (_, futureEmoji) = weatherCodeToDescEmoji(futureCode, futureIsDay)
+                HourForecast(
+                    hour = (currentHour + offset) % 24,
+                    temp = hourly.temperature?.getOrNull(futureIdx) ?: 0.0,
+                    emoji = futureEmoji,
+                    precipProb = hourly.precipitationProbability?.getOrNull(futureIdx) ?: 0,
+                )
+            }
+
+            addMessage(NaviChatMessage.BotText("Before we start, let me check the weather for you!"))
+            addMessage(NaviChatMessage.Weather(
+                WeatherInfo(
+                    temperature = temp,
+                    feelsLike = feelsLike,
+                    weatherDesc = desc,
+                    emoji = emoji,
+                    precipProbability = precip,
+                    windSpeed = wind,
+                    isDay = isDay,
+                    tip = tip,
+                    hourlyForecast = upcoming,
+                )
+            ))
+        }
+    }
+
+    private fun weatherCodeToDescEmoji(code: Int, isDay: Boolean): Pair<String, String> = when (code) {
+        0 -> "Clear sky" to if (isDay) "☀️" else "🌙"
+        1 -> "Mainly clear" to if (isDay) "🌤️" else "🌙"
+        2 -> "Partly cloudy" to if (isDay) "⛅" else "☁️"
+        3 -> "Overcast" to "☁️"
+        45, 48 -> "Foggy" to "🌫️"
+        51, 53, 55 -> "Drizzle" to "🌦️"
+        61, 63, 65 -> "Rain" to "🌧️"
+        66, 67 -> "Freezing rain" to "🌧️"
+        71, 73, 75 -> "Snow" to "🌨️"
+        77 -> "Snow grains" to "🌨️"
+        80, 81, 82 -> "Rain showers" to "🌧️"
+        85, 86 -> "Snow showers" to "🌨️"
+        95 -> "Thunderstorm" to "⛈️"
+        96, 99 -> "Thunderstorm with hail" to "⛈️"
+        else -> "Unknown" to "🌡️"
+    }
+
+    private fun buildWeatherTip(
+        temp: Double, feelsLike: Double, code: Int, precip: Int, wind: Double, isDay: Boolean,
+    ): String {
+        val tips = mutableListOf<String>()
+
+        // Temperature advice
+        val feelsLikeDiff = temp - feelsLike
+        when {
+            temp >= 33 -> tips.add("It's very hot! Stay hydrated and find shade when possible.")
+            temp >= 28 -> tips.add("It's warm outside. Light clothing recommended.")
+            feelsLike < temp - 3 -> tips.add("Feels colder than it looks (${feelsLike.toInt()}°C). Layer up!")
+            temp in 10.0..20.0 -> tips.add("Mild weather. A light jacket might be nice.")
+            temp < 5 -> tips.add("It's cold! Bundle up warmly.")
+        }
+
+        // Wind advice
+        when {
+            wind >= 14 -> tips.add("🌪️ Very strong wind (${"%.1f".format(wind)}m/s). Be careful outdoors!")
+            wind >= 8 -> tips.add("💨 Windy today (${"%.1f".format(wind)}m/s). Hold onto your hat!")
+        }
+
+        // Precipitation & weather code
+        when {
+            code in 61..67 || code in 80..82 -> tips.add("☂️ Bring an umbrella — it's raining!")
+            code in 71..77 || code in 85..86 -> tips.add("🧤 Snow expected — dress warmly and watch your step.")
+            code == 95 || code == 96 || code == 99 -> tips.add("⚡ Thunderstorm alert! Consider staying indoors.")
+            precip >= 50 -> tips.add("☂️ ${precip}% chance of rain — umbrella recommended.")
+        }
+
+        // Day/night advice
+        if (!isDay) {
+            tips.add("🌙 It's getting dark. Stay on well-lit paths!")
+        }
+
+        return tips.joinToString(" ")
+            .ifEmpty { if (isDay) "Great weather for exploring!" else "Clear night. Enjoy the night views!" }
     }
 
     // ── Arrival Confirmation ──

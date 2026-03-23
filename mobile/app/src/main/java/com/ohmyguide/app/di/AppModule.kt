@@ -4,6 +4,7 @@ import com.ohmyguide.app.data.api.BusanBimsApi
 import com.ohmyguide.app.data.api.NaverDrivingApi
 import com.ohmyguide.app.data.api.NaverWalkingApi
 import com.ohmyguide.app.data.api.OdsayApi
+import com.ohmyguide.app.data.api.OpenMeteoApi
 import com.ohmyguide.app.data.api.TmapApi
 import dagger.Module
 import dagger.Provides
@@ -83,5 +84,16 @@ object AppModule {
             .client(client)
             .build()
             .create(BusanBimsApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOpenMeteoApi(client: OkHttpClient): OpenMeteoApi {
+        return Retrofit.Builder()
+            .baseUrl("https://api.open-meteo.com/v1/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(OpenMeteoApi::class.java)
     }
 }

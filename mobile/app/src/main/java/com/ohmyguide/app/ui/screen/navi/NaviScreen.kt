@@ -230,6 +230,9 @@ fun NaviScreen(
                                         },
                                     )
                                 }
+                                is NaviChatMessage.Weather -> {
+                                    WeatherCard(info = msg.info)
+                                }
                             }
                         }
                     }

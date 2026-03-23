@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -64,6 +65,8 @@ import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.BorderLight
 import com.ohmyguide.app.ui.theme.Error
+import com.ohmyguide.app.ui.theme.InfoBlue
+import com.ohmyguide.app.ui.theme.InfoBlueBg
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
@@ -71,6 +74,7 @@ import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.Secondary
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
+import com.ohmyguide.app.ui.theme.TextSecondary
 
 // ── Sheet Header (unified: place info + progress + stop) ──
 
@@ -650,5 +654,188 @@ fun NearbyPlaceCards(
                 onClick = { onPlaceClick(place.id) },
             )
         }
+    }
+}
+
+// ── Weather Card ──
+
+@Composable
+fun WeatherCard(info: WeatherInfo) {
+    val cardBg = if (info.isDay) InfoBlueBg else Color(0xFF1A1A2E)
+    val cardBorder = if (info.isDay) InfoBlue.copy(alpha = 0.15f) else Color(0xFF2A3A52)
+    val chipBg = if (info.isDay) BgWhite.copy(alpha = 0.6f) else Color(0xFF2A3A52)
+    val mainText = if (info.isDay) TextPrimary else Color(0xFFE8ECF4)
+    val subText = if (info.isDay) TextSecondary else Color(0xFF8892A4)
+    val accentColor = if (info.isDay) InfoBlue else Color(0xFF7CB3FF)
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(cardBg)
+            .border(1.dp, cardBorder, RoundedCornerShape(20.dp))
+            .padding(16.dp),
+    ) {
+        // Current weather header
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Big emoji with subtle background
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(chipBg),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = info.emoji,
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+            }
+            Spacer(modifier = Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = info.weatherDesc,
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = mainText,
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = "${info.temperature.toInt()}°",
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        color = mainText,
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Feels ${info.feelsLike.toInt()}°",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = subText,
+                        modifier = Modifier.padding(bottom = 2.dp),
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Info chips row
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            WeatherInfoChip(
+                emoji = "💨",
+                label = "%.1f m/s".format(info.windSpeed),
+                chipBg = chipBg,
+                textColor = mainText,
+                modifier = Modifier.weight(1f),
+            )
+            WeatherInfoChip(
+                emoji = "💧",
+                label = "${info.precipProbability}%",
+                chipBg = chipBg,
+                textColor = mainText,
+                modifier = Modifier.weight(1f),
+            )
+            WeatherInfoChip(
+                emoji = if (info.isDay) "🌅" else "🌃",
+                label = if (info.isDay) "Day" else "Night",
+                chipBg = chipBg,
+                textColor = mainText,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
+        // Hourly forecast
+        if (info.hourlyForecast.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(14.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(chipBg)
+                    .padding(horizontal = 8.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                info.hourlyForecast.forEach { h ->
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "%02d:00".format(h.hour),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = subText,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = h.emoji,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "${h.temp.toInt()}°",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = mainText,
+                        )
+                        if (h.precipProb > 0) {
+                            Text(
+                                text = "💧${h.precipProb}%",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = accentColor,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tip bubble
+        if (info.tip.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(chipBg)
+                    .padding(12.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Text(text = "💡", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = info.tip,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = accentColor,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeatherInfoChip(
+    emoji: String,
+    label: String,
+    chipBg: Color,
+    textColor: Color,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(chipBg)
+            .padding(horizontal = 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Text(text = emoji, style = MaterialTheme.typography.labelMedium)
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+            color = textColor,
+        )
     }
 }
