@@ -49,6 +49,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.naver.maps.geometry.LatLng
+import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
@@ -125,14 +126,8 @@ fun HomeScreen(
         position = CameraPosition(initialPosition, 14.0)
     }
 
-    LaunchedEffect(locationData) {
-        val loc = locationData ?: return@LaunchedEffect
-        if (cameraPositionState.position.target == DEFAULT_POSITION) {
-            cameraPositionState.animate(
-                CameraUpdate.scrollAndZoomTo(LatLng(loc.latitude, loc.longitude), 14.0),
-            )
-        }
-    }
+    // Track whether initial camera fit has been done
+    var initialCameraFitted by remember { mutableStateOf(false) }
 
     val mapProperties = remember {
         MapProperties(locationTrackingMode = LocationTrackingMode.NoFollow)
@@ -226,6 +221,76 @@ fun HomeScreen(
                 val snapPoints = listOf(expandedY, halfY, collapsedY)
                 val target = snapPoints.minByOrNull { abs(it - sheetOffsetY.value) } ?: halfY
                 scope.launch { sheetOffsetY.animateTo(target, tween(300)) }
+            }
+
+            // Initial camera: user at visible-center, zoom to include all markers
+            val mapContainerHeightPx = maxHeightPx
+            LaunchedEffect(locationData, markerPlaces) {
+                if (initialCameraFitted) return@LaunchedEffect
+                val loc = locationData ?: return@LaunchedEffect
+
+                val userLatLng = LatLng(loc.latitude, loc.longitude)
+
+                // 시트가 하단 50%를 가리므로, 보이는 영역은 상단 50%
+                // 내 위치를 보이는 영역 중앙(= 전체 맵의 25% 지점)에 놓으려면
+                // 카메라 타겟을 아래로 밀어야 함
+                // 보이는 높이의 절반 = 전체의 25% → 카메라 중심에서 25% 아래 = 내 위치
+                // 즉, 카메라 중심을 내 위치보다 아래로 이동 (위도 감소)
+                val visibleFraction = 0.5f  // 보이는 비율
+                // 카메라 중심을 보이는 영역 중앙에 맞추기 위한 오프셋 비율
+                // 전체 높이의 중심 → 보이는 영역 중앙: 25% 위로 올려야 함
+                // 즉, 내 위치를 화면의 25% 지점에 놓기 위해 카메라를 아래로 이동
+
+                // 마커 포함 줌 레벨 계산
+                val markerPoints = markerPlaces
+                    .filter { it.lat != 0.0 && it.lng != 0.0 }
+                    .map { LatLng(it.lat, it.lng) }
+
+                // 1단계: 먼저 마커 포함 bounds로 적정 줌 레벨 파악
+                val sidePaddingPx = with(density) { 40.dp.toPx().toInt() }
+                val topPaddingPx = with(density) { 20.dp.toPx().toInt() }
+                val bottomPaddingPx = (mapContainerHeightPx * 0.5f).toInt()
+
+                if (markerPoints.isNotEmpty()) {
+                    // 내 위치 중심 bounds: 내 위치를 기준으로 마커까지 거리를 대칭으로 반영
+                    val allPoints = markerPoints + userLatLng
+                    var maxLatDelta = 0.0
+                    var maxLngDelta = 0.0
+                    allPoints.forEach { pt ->
+                        maxLatDelta = maxOf(maxLatDelta, abs(pt.latitude - userLatLng.latitude))
+                        maxLngDelta = maxOf(maxLngDelta, abs(pt.longitude - userLatLng.longitude))
+                    }
+                    // 내 위치 중심으로 대칭 bounds 생성
+                    val symmetricBounds = LatLngBounds.from(
+                        LatLng(userLatLng.latitude + maxLatDelta, userLatLng.longitude + maxLngDelta),
+                        LatLng(userLatLng.latitude - maxLatDelta, userLatLng.longitude - maxLngDelta),
+                    )
+                    cameraPositionState.animate(
+                        CameraUpdate.fitBounds(
+                            symmetricBounds,
+                            sidePaddingPx,
+                            topPaddingPx,
+                            sidePaddingPx,
+                            bottomPaddingPx,
+                        ),
+                    )
+                } else {
+                    // 마커 없을 때: 내 위치를 보이는 영역 중앙에
+                    val defaultBounds = LatLngBounds.from(
+                        LatLng(userLatLng.latitude + 0.01, userLatLng.longitude + 0.01),
+                        LatLng(userLatLng.latitude - 0.01, userLatLng.longitude - 0.01),
+                    )
+                    cameraPositionState.animate(
+                        CameraUpdate.fitBounds(
+                            defaultBounds,
+                            sidePaddingPx,
+                            topPaddingPx,
+                            sidePaddingPx,
+                            bottomPaddingPx,
+                        ),
+                    )
+                }
+                initialCameraFitted = true
             }
 
             // When place selected → expand sheet & move camera
