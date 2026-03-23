@@ -17,12 +17,19 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
+import com.ohmyguide.app.service.TtsManager
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -53,10 +60,19 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
     val placeName = detail?.place?.name ?: "Place"
     val placeNameKr = detail?.place?.nameKr ?: ""
 
+    val context = LocalContext.current
+    val ttsManager = remember { TtsManager(context) }
+    val isSpeaking by ttsManager.isSpeaking.collectAsState()
+
+    val scope = rememberCoroutineScope()
     var currentPage by remember { mutableIntStateOf(0) }
-    var isPlaying by remember { mutableStateOf(true) }
     val totalPages = MOCK_PAGES.size
     val isLastPage = currentPage == totalPages - 1
+
+    // Cleanup TTS on dismiss
+    DisposableEffect(Unit) {
+        onDispose { ttsManager.shutdown() }
+    }
 
     Box(
         modifier = Modifier
@@ -112,7 +128,18 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
                     Spacer(modifier = Modifier.height(16.dp))
                 }
 
-                AudioPlayerBar(isPlaying = isPlaying, onToggle = { isPlaying = !isPlaying })
+                AudioPlayerBar(
+                    isPlaying = isSpeaking,
+                    onToggle = {
+                        if (isSpeaking) {
+                            ttsManager.pause()
+                        } else if (ttsManager.hasPaused()) {
+                            ttsManager.resume()
+                        } else {
+                            scope.launch { ttsManager.speak(MOCK_PAGES[currentPage]) }
+                        }
+                    },
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -143,8 +170,14 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
         StoryBottomNav(
             currentPage = currentPage,
             isLastPage = isLastPage,
-            onPrev = { if (currentPage > 0) currentPage-- },
+            onPrev = {
+                if (currentPage > 0) {
+                    ttsManager.stop()
+                    currentPage--
+                }
+            },
             onNext = {
+                ttsManager.stop()
                 if (isLastPage) onDismiss()
                 else currentPage++
             },

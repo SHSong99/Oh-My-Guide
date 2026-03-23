@@ -55,6 +55,11 @@ android {
             "TMAP_APP_KEY",
             "\"${localProperties.getProperty("TMAP_APP_KEY", "")}\""
         )
+        buildConfigField(
+            "String",
+            "GOOGLE_CLOUD_TTS_KEY",
+            "\"${localProperties.getProperty("GOOGLE_CLOUD_TTS_KEY", "")}\""
+        )
     }
 
     buildTypes {
