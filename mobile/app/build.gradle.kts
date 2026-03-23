@@ -30,31 +30,13 @@ android {
         manifestPlaceholders["NAVER_MAP_CLIENT_ID"] =
             localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")
 
-        buildConfigField(
-            "String",
-            "NAVER_MAP_CLIENT_ID",
-            "\"${localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")}\""
-        )
-        buildConfigField(
-            "String",
-            "ODSAY_API_KEY",
-            "\"${localProperties.getProperty("ODSAY_API_KEY", "")}\""
-        )
-        buildConfigField(
-            "String",
-            "BUSAN_BIMS_SERVICE_KEY",
-            "\"${localProperties.getProperty("BUSAN_BIMS_SERVICE_KEY", "")}\""
-        )
-        buildConfigField(
-            "String",
-            "NAVER_MAP_CLIENT_SECRET",
-            "\"${localProperties.getProperty("NAVER_MAP_CLIENT_SECRET", "")}\""
-        )
-        buildConfigField(
-            "String",
-            "TMAP_APP_KEY",
-            "\"${localProperties.getProperty("TMAP_APP_KEY", "")}\""
-        )
+        buildConfigField("String", "NAVER_MAP_CLIENT_ID", "\"${localProperties.getProperty("NAVER_MAP_CLIENT_ID", "")}\"")
+        buildConfigField("String", "BASE_URL", "\"${localProperties.getProperty("BASE_URL", "")}\"")
+        buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localProperties.getProperty("GOOGLE_WEB_CLIENT_ID", "")}\"")
+        buildConfigField("String", "ODSAY_API_KEY", "\"${localProperties.getProperty("ODSAY_API_KEY", "")}\"")
+        buildConfigField("String", "BUSAN_BIMS_SERVICE_KEY", "\"${localProperties.getProperty("BUSAN_BIMS_SERVICE_KEY", "")}\"")
+        buildConfigField("String", "NAVER_MAP_CLIENT_SECRET", "\"${localProperties.getProperty("NAVER_MAP_CLIENT_SECRET", "")}\"")
+        buildConfigField("String", "TMAP_APP_KEY", "\"${localProperties.getProperty("TMAP_APP_KEY", "")}\"")
     }
 
     buildTypes {
@@ -104,6 +86,7 @@ dependencies {
 
     // Coroutines
     implementation(libs.coroutines.android)
+    implementation(libs.coroutines.play.services)
 
     // ViewModel
     implementation(libs.lifecycle.viewmodel.compose)
@@ -117,6 +100,17 @@ dependencies {
 
     // Location
     implementation(libs.play.services.location)
+
+    // Credential Manager (Google Sign-In)
+    implementation(libs.credentials)
+    implementation(libs.credentials.play)
+    implementation(libs.googleid)
+
+    // Encrypted Storage
+    implementation(libs.security.crypto)
+
+    // Google Sign-In (Authorization API for access token)
+    implementation(libs.play.services.auth)
 
     // Image Loading
     implementation(libs.coil.compose)

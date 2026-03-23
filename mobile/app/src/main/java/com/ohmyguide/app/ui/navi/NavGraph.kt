@@ -64,24 +64,29 @@ fun NavGraph(
         }
         composable(Screen.InterestSelect.route) {
             CategoryScreen(
-                onConfirm = {
-                    navController.navigate(Screen.Loading.route) {
+                onConfirm = { selectedCategories ->
+                    val categoryStr = selectedCategories.joinToString(",")
+                    navController.navigate("loading?category=$categoryStr") {
                         popUpTo(Screen.InterestSelect.route) { inclusive = true }
                     }
                 },
             )
         }
-        composable(Screen.Loading.route) {
+        composable("loading?category={category}") { backStackEntry ->
+            val category = backStackEntry.arguments?.getString("category") ?: ""
             LoadingScreen(
                 onFinish = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Loading.route) { inclusive = true }
+                    navController.navigate(Screen.Home.createRoute(category)) {
+                        popUpTo("loading?category={category}") { inclusive = true }
                     }
                 },
             )
         }
 
-        composable(Screen.Home.route) { HomeScreen(navController) }
+        composable(Screen.Home.route) { backStackEntry ->
+            val category = backStackEntry.arguments?.getString("category") ?: ""
+            HomeScreen(navController, category = category)
+        }
         composable(Screen.Map.route) { MapScreen(navController) }
         composable(Screen.Explore.route) { ExploreScreen(navController) }
         composable(Screen.Phrases.route) { PhrasesScreen(navController) }

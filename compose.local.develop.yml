@@ -23,10 +23,13 @@ services:
       - ./backend/.env
     environment:
       DB_HOST: postgres
+      AI_SERVER_URL: http://fastapi-server:8000
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
     depends_on:
       - postgres
       - kafka
       - redis
+      - fastapi-server
     networks:
       - app-network
 

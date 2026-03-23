@@ -64,7 +64,7 @@ fun PlaceCard(
                 .background(BgSub),
             contentAlignment = Alignment.Center,
         ) {
-            if (place.imageUrl != null) {
+            if (!place.imageUrl.isNullOrEmpty()) {
                 AsyncImage(
                     model = place.imageUrl,
                     contentDescription = place.name,
@@ -77,24 +77,26 @@ fun PlaceCard(
                     fontSize = 32.sp,
                 )
             }
-            // Rating badge
-            Box(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(TextPrimary.copy(alpha = 0.6f))
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(12.dp), tint = Star)
-                    Spacer(modifier = Modifier.width(3.dp))
-                    Text(
-                        text = "${place.rating}",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = BgWhite,
-                    )
+            // Rating badge (hide if 0)
+            if (place.rating > 0f) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(TextPrimary.copy(alpha = 0.6f))
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(12.dp), tint = Star)
+                        Spacer(modifier = Modifier.width(3.dp))
+                        Text(
+                            text = "${place.rating}",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = BgWhite,
+                        )
+                    }
                 }
             }
         }

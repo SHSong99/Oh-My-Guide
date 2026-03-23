@@ -77,6 +77,10 @@ management:
 server:
 port: 8080
 
+ai:
+  server:
+    url: ${AI_SERVER_URL:http://localhost:8000}
+
 tour-api:
   service-key: ${TOUR_API_KEY}
   base-url: https://apis.data.go.kr/B551011/KorService2
