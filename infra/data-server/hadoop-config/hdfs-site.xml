@@ -85,4 +85,14 @@
     <name>dfs.namenode.safemode.threshold-pct</name>
     <value>0.0</value>
   </property>
+
+  <!--
+    DataNode 등록 시 IP-hostname 검증 비활성화
+    로컬 개발 환경에서 DataNode hostname(localhost)과 실제 IP(172.x.x.x) 불일치로
+    hostname이 무시되는 문제 방지
+  -->
+  <property>
+    <name>dfs.namenode.datanode.registration.ip-hostname-check</name>
+    <value>false</value>
+  </property>
 </configuration>

@@ -19,7 +19,6 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -34,26 +33,9 @@ object AppModule {
 
     @Provides
     @Singleton
-    @Named("authenticated")
-    fun provideAuthenticatedClient(authInterceptor: AuthInterceptor): OkHttpClient {
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
             .addInterceptor(authInterceptor)
-            .addInterceptor(
-                HttpLoggingInterceptor().apply {
-                    level = if (BuildConfig.DEBUG)
-                        HttpLoggingInterceptor.Level.BODY
-                    else
-                        HttpLoggingInterceptor.Level.NONE
-                }
-            )
-            .build()
-    }
-
-    @Provides
-    @Singleton
-    @Named("plain")
-    fun providePlainClient(): OkHttpClient {
-        return OkHttpClient.Builder()
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
                     level = HttpLoggingInterceptor.Level.BODY
@@ -64,7 +46,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideRetrofit(@Named("authenticated") okHttpClient: OkHttpClient): Retrofit {
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         val baseUrl = BuildConfig.BASE_URL.let { if (it.endsWith("/")) it else "$it/" }
         return Retrofit.Builder()
             .baseUrl(baseUrl)
@@ -81,7 +63,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOdsayApi(@Named("plain") client: OkHttpClient): OdsayApi {
+    fun provideOdsayApi(client: OkHttpClient): OdsayApi {
         return Retrofit.Builder()
             .baseUrl("https://api.odsay.com/v1/api/")
             .client(client)
@@ -92,7 +74,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideNaverDrivingApi(@Named("plain") client: OkHttpClient): NaverDrivingApi {
+    fun provideNaverDrivingApi(client: OkHttpClient): NaverDrivingApi {
         return Retrofit.Builder()
             .baseUrl("https://maps.apigw.ntruss.com/map-direction/v1/")
             .client(client)
@@ -103,7 +85,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideNaverWalkingApi(@Named("plain") client: OkHttpClient): NaverWalkingApi {
+    fun provideNaverWalkingApi(client: OkHttpClient): NaverWalkingApi {
         return Retrofit.Builder()
             .baseUrl("https://maps.apigw.ntruss.com/map-direction-15/v1/")
             .client(client)
@@ -114,7 +96,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideTmapApi(@Named("plain") client: OkHttpClient): TmapApi {
+    fun provideTmapApi(client: OkHttpClient): TmapApi {
         return Retrofit.Builder()
             .baseUrl("https://apis.openapi.sk.com/")
             .client(client)
@@ -125,7 +107,7 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideBusanBimsApi(@Named("plain") client: OkHttpClient): BusanBimsApi {
+    fun provideBusanBimsApi(client: OkHttpClient): BusanBimsApi {
         return Retrofit.Builder()
             .baseUrl("http://apis.data.go.kr/6260000/BusanBIMS/")
             .client(client)

@@ -15,6 +15,6 @@ scrape_configs:
     static_configs:
       - targets: ['node-exporter:9100']
 
-  - job_name: 'kafka'
+  - job_name: 'kafka_exporter'
     static_configs:
       - targets: ['kafka-exporter:9308']

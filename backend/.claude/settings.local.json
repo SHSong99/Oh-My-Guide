@@ -38,7 +38,8 @@
       "Bash(PGPASSWORD=1234 \"/c/Program Files/PostgreSQL/17/bin/pg_dump.exe\" -h localhost -p 5432 -U admin -d ohmyguide -F c -f \"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.backup\" 2>&1)",
       "Bash(docker exec:*)",
       "Bash(\"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.backup\")",
-      "Bash(\"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.sql\")"
+      "Bash(\"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.sql\")",
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8099' 2>&1)"
     ]
   }
 }

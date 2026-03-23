@@ -2,19 +2,28 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, count, dense_rank, when, sum as spark_sum, monotonically_increasing_id
 from pyspark.sql.window import Window
 import os
+import sys
 
 # ===== 설정 =====
-# 환경변수에서 DB 정보를 읽음. 없으면 기본값 사용
-DB_HOST = os.environ.get('DB_HOST', 'j14e103.p.ssafy.io')   # 배포 서버 기본값
-DB_PORT = os.environ.get('DB_PORT', '5432')
-DB_NAME = os.environ.get('DB_NAME', 'ohmyguide')
-DB_USER = os.environ.get('DB_USER', 'admin')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'admin1234')
+# Livy args로 전달된 경우 sys.argv 사용, 없으면 환경변수, 없으면 기본값
+if len(sys.argv) >= 6:
+    DB_HOST     = sys.argv[1]
+    DB_PORT     = sys.argv[2]
+    DB_NAME     = sys.argv[3]
+    DB_USER     = sys.argv[4]
+    DB_PASSWORD = sys.argv[5]
+else:
+    DB_HOST     = os.environ.get('DB_HOST', 'j14e103.p.ssafy.io')
+    DB_PORT     = os.environ.get('DB_PORT', '5432')
+    DB_NAME     = os.environ.get('DB_NAME', 'ohmyguide')
+    DB_USER     = os.environ.get('DB_USER', 'admin')
+    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'admin1234')
 
 # 1. Spark 세션 생성 (Spark 프로그램의 시작점)
 spark = SparkSession.builder \
     .appName("TravelLogAnalysis") \
     .config("spark.jars", "/opt/spark-jobs/postgresql-42.7.4.jar") \
+    .config("spark.hadoop.dfs.client.use.datanode.hostname", "false") \
     .getOrCreate()
 
 # 2. HDFS에서 모든 날짜의 CSV 로그 읽기

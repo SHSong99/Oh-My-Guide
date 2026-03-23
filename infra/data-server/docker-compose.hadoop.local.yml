@@ -18,9 +18,13 @@ services:
       - "6066:6066"
 
   spark-worker:
+    environment:
+      - DATANODE_HOSTNAME=datanode
     ports:
       - "8081:8081"
 
   livy:
+    environment:
+      - DATANODE_HOSTNAME=datanode
     ports:
       - "8998:8998"

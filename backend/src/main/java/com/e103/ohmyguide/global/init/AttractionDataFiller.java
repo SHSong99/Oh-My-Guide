@@ -30,7 +30,7 @@ public class AttractionDataFiller implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         log.info("=== Attraction 이미지 결측치 채우기 시작 ===");
 
-        List<Attraction> attractions = attractionRepository.findCultureAttractionsWithNullOverview();
+        List<Attraction> attractions = attractionRepository.findAttractionsWithMissingOverviewOrImage();
 
         log.info("대상 Attraction 수: {}", attractions.size());
 

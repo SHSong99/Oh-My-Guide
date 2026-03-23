@@ -29,3 +29,4 @@ CLAUDE.md
 
 # Claude Code
 .claude/
+docker-compose.app.local.yml
