@@ -26,7 +26,7 @@ public class UserService {
     public UserResponse completeOnboarding(Long userId, OnboardingRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
-        user.completeOnboarding(request.getNationality(), request.getAge(), request.getGender());
+        user.completeOnboarding(request.getNationality(), request.getAge(), request.getGender(), request.getCompanion(), request.getCountry());
         return UserResponse.from(user);
     }
 }

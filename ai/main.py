@@ -145,7 +145,7 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/api/ai/recommend", response_model=RecommendResponse)
+@app.post("/ai/recommend", response_model=RecommendResponse)
 def recommend(req: RecommendRequest):
     # 1. 사용자 벡터 조회
     user_vec, cold_start = get_user_vector(req.user_id)
@@ -194,7 +194,7 @@ def recommend(req: RecommendRequest):
     )
 
 
-@app.post("/api/ai/refine", response_model=RecommendResponse)
+@app.post("/ai/refine", response_model=RecommendResponse)
 def refine(req: RefineRequest):
     # 1. 사용자 벡터 조회
     user_vec, cold_start = get_user_vector(req.user_id)
@@ -277,7 +277,7 @@ def _parse_mobile_categories(category_str: str | None) -> list[int]:
     return list(ids) if ids else [12, 14, 15, 28, 32, 38, 39]
 
 
-@app.get("/api/userRecommend", response_model=RefreshResponse)
+@app.get("/userRecommend", response_model=RefreshResponse)
 def get_user_recommend(
     category: str | None = None,
     currentLat: float = 37.5665,
@@ -285,6 +285,10 @@ def get_user_recommend(
     userId: int = 1,
     radiusKm: float = 10.0,
     excludedAttrIds: str | None = None,
+    age: int | None = None,
+    gender: str | None = None,
+    companion: str | None = None,
+    country: str | None = None,
 ):
     """초기 추천: 카테고리 선택 후 첫 추천 장소 5개."""
     # 0. excluded_attr_ids 파싱
@@ -300,9 +304,15 @@ def get_user_recommend(
     # 2. 카테고리 매핑
     content_type_ids = _parse_mobile_categories(category)
 
-    # 3. cold-start 처리
+    # 3. cold-start 처리 (사용자 프로필 반영)
     if cold_start:
-        user_vec = build_cold_start_vector(content_type_ids=content_type_ids)
+        user_vec = build_cold_start_vector(
+            companion=companion,
+            age=age,
+            gender=gender,
+            country=country,
+            content_type_ids=content_type_ids,
+        )
         try:
             save_user_vector(userId, user_vec)
         except Exception:
@@ -323,8 +333,14 @@ def get_user_recommend(
     # 5. 코사인 유사도 → 상위 20개
     top20 = rank_places(places, user_vec, top_n=20)
 
-    # 6. LLM 리랭킹 → 상위 5개
+    # 6. LLM 리랭킹 → 상위 5개 (사용자 프로필 맥락 전달)
     user_context = {"time": get_time_context()}
+    if companion:
+        user_context["companion"] = companion
+    if age:
+        user_context["age"] = age
+    if country and country not in ("KR", "kr"):
+        user_context["language"] = country
     weather = get_weather(currentLat, currentLng)
     if weather:
         user_context["weather"] = weather
@@ -370,7 +386,7 @@ def _parse_category_text(text: str | None) -> list[int]:
     return matched if matched else list(_CATEGORY_KEYWORDS.keys())
 
 
-@app.post("/api/userRecommend/recommend/refresh", response_model=RefreshResponse)
+@app.post("/userRecommend/recommend/refresh", response_model=RefreshResponse)
 def refresh_recommend(req: RefreshRequest):
     """GO 없이 재추천: 카테고리/분위기/텍스트를 자연어로 받아 5개 추천."""
     # 1. 사용자 벡터 조회

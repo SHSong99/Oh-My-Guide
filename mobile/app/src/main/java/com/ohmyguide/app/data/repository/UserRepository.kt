@@ -18,9 +18,9 @@ class UserRepository @Inject constructor(
         }
     }
 
-    suspend fun completeOnboarding(nationality: String, age: Int, gender: String): Result<UserResponse> {
+    suspend fun completeOnboarding(nationality: String, age: Int, gender: String, companion: String? = null, country: String? = null): Result<UserResponse> {
         return try {
-            val response = apiService.completeOnboarding(OnboardingRequest(nationality, age, gender))
+            val response = apiService.completeOnboarding(OnboardingRequest(nationality, age, gender, companion, country))
             Result.success(response)
         } catch (e: Exception) {
             Result.failure(e)
