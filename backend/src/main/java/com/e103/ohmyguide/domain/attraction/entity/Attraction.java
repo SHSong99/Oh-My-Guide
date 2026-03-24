@@ -3,6 +3,7 @@ package com.e103.ohmyguide.domain.attraction.entity;
 import com.e103.ohmyguide.domain.contenttype.entity.ContentType;
 import com.e103.ohmyguide.domain.gugun.entity.Gugun;
 import com.e103.ohmyguide.domain.sido.entity.Sido;
+import com.e103.ohmyguide.domain.themeattraction.entity.ThemeAttraction;
 import com.e103.ohmyguide.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -11,6 +12,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -84,6 +87,9 @@ public class Attraction extends BaseEntity {
     @Column(name = "overview_tts", length = 10000)
     private String overviewTts;
 
+    @OneToMany(mappedBy = "attraction")
+    private List<ThemeAttraction> themeAttractions = new ArrayList<>();
+
     @Builder
     private Attraction(Integer contentId, String title, ContentType contentType, Sido sido, Integer gugunCode, Gugun gugun,
                        String addr1, String addr2, String tel,
@@ -111,5 +117,13 @@ public class Attraction extends BaseEntity {
         if (this.firstImage1 == null || this.firstImage1.isEmpty()) this.firstImage1 = firstImage1;
         if (this.firstImage2 == null || this.firstImage2.isEmpty()) this.firstImage2 = firstImage2;
         if (this.overview == null || this.overview.isEmpty()) this.overview = overview;
+    }
+
+    public void update(String title, BigDecimal latitude, BigDecimal longitude, String firstImage1, String overview) {
+        if (title != null) this.title = title;
+        if (latitude != null) this.latitude = latitude;
+        if (longitude != null) this.longitude = longitude;
+        if (firstImage1 != null) this.firstImage1 = firstImage1;
+        if (overview != null) this.overview = overview;
     }
 }

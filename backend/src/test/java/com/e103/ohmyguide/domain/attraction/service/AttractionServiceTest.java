@@ -1,8 +1,11 @@
 package com.e103.ohmyguide.domain.attraction.service;
 
 import com.e103.ohmyguide.IntegrationTestSupport;
+import com.e103.ohmyguide.domain.attraction.dto.AttractionDetailResponse;
 import com.e103.ohmyguide.domain.attraction.entity.Attraction;
 import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
+import com.e103.ohmyguide.domain.attraction.service.request.AttractionCreateServiceRequest;
+import com.e103.ohmyguide.domain.attraction.service.request.AttractionUpdateServiceRequest;
 import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,6 +77,140 @@ class AttractionServiceTest extends IntegrationTestSupport {
 
         // then
         assertThat(guideMessage).isEmpty();
+    }
+
+    @DisplayName("관광지를 등록하면 DB에 저장되고 응답 DTO를 반환한다.")
+    @Test
+    void createAttraction_savedSuccessfully() {
+        // given
+        AttractionCreateServiceRequest request = AttractionCreateServiceRequest.of(
+                "한라산",
+                new BigDecimal("33.36160800"),
+                new BigDecimal("126.53390800"),
+                "http://image.url/hallasan.jpg",
+                "한라산 개요"
+        );
+
+        // when
+        AttractionDetailResponse response = attractionService.createAttraction(request);
+
+        // then
+        assertThat(attractionRepository.findAll()).hasSize(1);
+        Attraction saved = attractionRepository.findAll().get(0);
+        assertThat(saved.getTitle()).isEqualTo("한라산");
+        assertThat(saved.getLatitude()).isEqualByComparingTo(new BigDecimal("33.36160800"));
+        assertThat(saved.getLongitude()).isEqualByComparingTo(new BigDecimal("126.53390800"));
+        assertThat(saved.getFirstImage1()).isEqualTo("http://image.url/hallasan.jpg");
+        assertThat(saved.getOverview()).isEqualTo("한라산 개요");
+        assertThat(response.getAttrId()).isEqualTo(saved.getId());
+        assertThat(response.getTitle()).isEqualTo("한라산");
+    }
+
+    @DisplayName("firstImage1, overview 없이 필수 필드만으로 관광지를 등록할 수 있다.")
+    @Test
+    void createAttraction_withoutOptionalFields() {
+        // given
+        AttractionCreateServiceRequest request = AttractionCreateServiceRequest.of(
+                "성산일출봉",
+                new BigDecimal("33.45840800"),
+                new BigDecimal("126.94240800"),
+                null,
+                null
+        );
+
+        // when
+        attractionService.createAttraction(request);
+
+        // then
+        Attraction saved = attractionRepository.findAll().get(0);
+        assertThat(saved.getTitle()).isEqualTo("성산일출봉");
+        assertThat(saved.getFirstImage1()).isNull();
+        assertThat(saved.getOverview()).isNull();
+    }
+
+    @DisplayName("관광지 title을 수정하면 DB에 반영된다.")
+    @Test
+    void updateAttraction_titleUpdated() {
+        // given
+        Attraction attraction = attractionRepository.save(Attraction.builder()
+                .title("한라산")
+                .latitude(new BigDecimal("33.36160800"))
+                .longitude(new BigDecimal("126.53390800"))
+                .build());
+        AttractionUpdateServiceRequest request = AttractionUpdateServiceRequest.of(
+                "한라산 국립공원", null, null, null, null);
+
+        // when
+        attractionService.updateAttraction(attraction.getId(), request);
+
+        // then
+        Attraction updated = attractionRepository.findById(attraction.getId()).get();
+        assertThat(updated.getTitle()).isEqualTo("한라산 국립공원");
+        assertThat(updated.getLatitude()).isEqualByComparingTo(new BigDecimal("33.36160800"));
+        assertThat(updated.getLongitude()).isEqualByComparingTo(new BigDecimal("126.53390800"));
+    }
+
+    @DisplayName("관광지 위경도와 이미지를 수정하면 DB에 반영되고 나머지 필드는 유지된다.")
+    @Test
+    void updateAttraction_partialUpdate() {
+        // given
+        Attraction attraction = attractionRepository.save(Attraction.builder()
+                .title("한라산")
+                .latitude(new BigDecimal("33.36160800"))
+                .longitude(new BigDecimal("126.53390800"))
+                .firstImage1("old_image.jpg")
+                .overview("기존 개요")
+                .build());
+        AttractionUpdateServiceRequest request = AttractionUpdateServiceRequest.of(
+                null,
+                new BigDecimal("33.50000000"),
+                new BigDecimal("126.60000000"),
+                "new_image.jpg",
+                null
+        );
+
+        // when
+        attractionService.updateAttraction(attraction.getId(), request);
+
+        // then
+        Attraction updated = attractionRepository.findById(attraction.getId()).get();
+        assertThat(updated.getTitle()).isEqualTo("한라산");
+        assertThat(updated.getLatitude()).isEqualByComparingTo(new BigDecimal("33.50000000"));
+        assertThat(updated.getLongitude()).isEqualByComparingTo(new BigDecimal("126.60000000"));
+        assertThat(updated.getFirstImage1()).isEqualTo("new_image.jpg");
+        assertThat(updated.getOverview()).isEqualTo("기존 개요");
+    }
+
+    @DisplayName("updateAttraction은 수정된 관광지의 DTO를 반환한다.")
+    @Test
+    void updateAttraction_returnsUpdatedDto() {
+        // given
+        Attraction attraction = attractionRepository.save(Attraction.builder()
+                .title("한라산")
+                .latitude(new BigDecimal("33.36160800"))
+                .longitude(new BigDecimal("126.53390800"))
+                .build());
+        AttractionUpdateServiceRequest request = AttractionUpdateServiceRequest.of(
+                "한라산 국립공원", null, null, null, "새로운 개요");
+
+        // when
+        AttractionDetailResponse response = attractionService.updateAttraction(attraction.getId(), request);
+
+        // then
+        assertThat(response.getTitle()).isEqualTo("한라산 국립공원");
+        assertThat(response.getOverview()).isEqualTo("새로운 개요");
+    }
+
+    @DisplayName("존재하지 않는 관광지 ID로 수정하면 ResourceNotFoundException이 발생한다.")
+    @Test
+    void updateAttraction_throwsExceptionWhenNotFound() {
+        // given
+        AttractionUpdateServiceRequest request = AttractionUpdateServiceRequest.of(
+                "한라산", null, null, null, null);
+
+        // when & then
+        assertThatThrownBy(() -> attractionService.updateAttraction(999L, request))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 
     private Attraction buildAttraction(String title, String overviewTts) {
