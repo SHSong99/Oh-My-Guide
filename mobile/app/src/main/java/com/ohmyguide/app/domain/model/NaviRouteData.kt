@@ -4,6 +4,12 @@ import androidx.compose.ui.graphics.Color
 
 data class RouteCoord(val lat: Double, val lng: Double)
 
+data class StopInfo(
+    val name: String,
+    val lat: Double,
+    val lng: Double,
+)
+
 data class RouteSegmentGeo(
     val type: String,
     val coords: List<RouteCoord>,
@@ -11,6 +17,7 @@ data class RouteSegmentGeo(
     val lineName: String,
     val fromName: String,
     val toName: String,
+    val stops: List<StopInfo> = emptyList(),
 )
 
 data class NaviRouteData(

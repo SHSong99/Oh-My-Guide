@@ -99,6 +99,7 @@ fun NaviScreen(
     val strings = LocalStrings.current
     var storyPlaceId by remember { mutableStateOf<String?>(null) }
     var showStopDialog by remember { mutableStateOf(false) }
+    var showStorySpotlight by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsState()
 
     BackHandler { showStopDialog = true }
@@ -154,6 +155,12 @@ fun NaviScreen(
                     modeLabel = modeLabel,
                     progressPct = state.progressPct,
                     onStop = { showStopDialog = true },
+                    onStory = {
+                        showStorySpotlight = false
+                        storyPlaceId = placeId
+                    },
+                    onPhrases = { viewModel.onPhrasesClick() },
+                    storyHighlight = showStorySpotlight,
                 )
 
                 // Chat messages
@@ -230,17 +237,23 @@ fun NaviScreen(
                                         },
                                     )
                                 }
+                                is NaviChatMessage.Weather -> {
+                                    WeatherCard(info = msg.info)
+                                }
+                                is NaviChatMessage.StoryPrompt -> {
+                                    LaunchedEffect(Unit) {
+                                        showStorySpotlight = true
+                                    }
+                                    NaviBotBubble(
+                                        text = "See the 🎧 button at the top? Tap it anytime to listen while you walk!",
+                                    )
+                                }
                             }
                         }
                     }
 
-                    // Fixed action buttons at the bottom of chat
                     item {
                         Spacer(modifier = Modifier.height(12.dp))
-                        NaviQuickActions(
-                            onStory = { storyPlaceId = placeId },
-                            onPhrases = { viewModel.onPhrasesClick() },
-                        )
                     }
                 }
             },
