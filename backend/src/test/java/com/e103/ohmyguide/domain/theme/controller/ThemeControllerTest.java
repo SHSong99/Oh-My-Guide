@@ -1,8 +1,11 @@
 package com.e103.ohmyguide.domain.theme.controller;
 
 import com.e103.ohmyguide.ControllerTestSupport;
+import com.e103.ohmyguide.domain.theme.service.response.AttractionSummaryResponse;
+import com.e103.ohmyguide.domain.theme.service.response.ThemeDetailResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeInfoResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeInfosResponse;
+import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -68,5 +71,66 @@ class ThemeControllerTest extends ControllerTestSupport {
 
         // then
         then(themeService).should(times(1)).getThemes();
+    }
+
+    @DisplayName("GET /api/themes/{themeId} - 테마 상세 정보와 관광지 목록을 반환한다.")
+    @Test
+    void getTheme_returns200() throws Exception {
+        // given
+        List<AttractionSummaryResponse> attractions = List.of(
+                AttractionSummaryResponse.builder().attractionId(1L).title("한라산").image("image_url").overview("한라산 개요").build(),
+                AttractionSummaryResponse.builder().attractionId(2L).title("성산일출봉").image("image_url2").overview("성산 개요").build()
+        );
+        ThemeDetailResponse response = ThemeDetailResponse.builder()
+                .themeId(1L)
+                .name("자연")
+                .description("자연 경관 테마")
+                .attractionCount(2)
+                .attractions(attractions)
+                .build();
+        given(themeService.getTheme(1L)).willReturn(response);
+
+        // when & then
+        mockMvc.perform(get("/api/themes/1"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.themeId").value(1))
+                .andExpect(jsonPath("$.name").value("자연"))
+                .andExpect(jsonPath("$.description").value("자연 경관 테마"))
+                .andExpect(jsonPath("$.attractionCount").value(2))
+                .andExpect(jsonPath("$.attractions.length()").value(2))
+                .andExpect(jsonPath("$.attractions[0].attractionId").value(1))
+                .andExpect(jsonPath("$.attractions[0].title").value("한라산"))
+                .andExpect(jsonPath("$.attractions[1].attractionId").value(2))
+                .andExpect(jsonPath("$.attractions[1].title").value("성산일출봉"));
+    }
+
+    @DisplayName("GET /api/themes/{themeId} - 존재하지 않는 테마 ID 조회 시 404를 반환한다.")
+    @Test
+    void getTheme_returns404WhenNotFound() throws Exception {
+        // given
+        given(themeService.getTheme(999L))
+                .willThrow(new ResourceNotFoundException("Theme", "themeId", 999L));
+
+        // when & then
+        mockMvc.perform(get("/api/themes/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @DisplayName("GET /api/themes/{themeId} - 서비스를 정확히 한 번 호출한다.")
+    @Test
+    void getTheme_callsServiceOnce() throws Exception {
+        // given
+        given(themeService.getTheme(1L))
+                .willReturn(ThemeDetailResponse.builder()
+                        .themeId(1L).name("자연").description("자연 경관 테마")
+                        .attractionCount(0).attractions(List.of())
+                        .build());
+
+        // when
+        mockMvc.perform(get("/api/themes/1"));
+
+        // then
+        then(themeService).should(times(1)).getTheme(1L);
     }
 }
