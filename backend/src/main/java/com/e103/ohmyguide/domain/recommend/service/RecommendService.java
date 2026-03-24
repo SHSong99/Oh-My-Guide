@@ -8,6 +8,7 @@ import com.e103.ohmyguide.domain.user.repository.UserRepository;
 import com.e103.ohmyguide.domain.uservisit.entity.UserVisit;
 import com.e103.ohmyguide.domain.uservisit.repository.UserVisitRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -19,6 +20,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RecommendService {
@@ -50,7 +52,9 @@ public class RecommendService {
             if (user.getNationality() != null) builder.queryParam("country", user.getNationality());
         }
 
+        log.info("RecommendService: ai 서버로 요청 전송");
         ResponseEntity<RefreshResponse> response = restTemplate.getForEntity(builder.toUriString(), RefreshResponse.class);
+        log.info("RecommendService: ai 서버로 요청 종료");
         return response.getBody();
     }
 
