@@ -89,21 +89,16 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             addMessage(ChatMessage.BotTyping)
 
-            // TODO: 테스트용 하드코딩 (부산 강서구 녹산동) — 배포 시 GPS로 복원
-            val lat = 35.0946
-            val lng = 128.8564
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.0780
+            val lng = location?.longitude ?: 128.8510
 
             val result = recommendRepository.getRecommendation(category, lat, lng)
             removeTyping()
 
-            Log.d("HomeVM", "API result: success=${result.isSuccess}, error=${result.exceptionOrNull()?.message}")
-            val dtos = result.getOrNull()
-            Log.d("HomeVM", "DTOs: ${dtos?.size}, first=${dtos?.firstOrNull()}")
-            val places = dtos?.map { it.toPlace() }
-            Log.d("HomeVM", "Places: ${places?.size}, first=${places?.firstOrNull()?.name}")
+            val places = result.getOrNull()?.map { it.toPlace() }
 
             if (places.isNullOrEmpty()) {
-                Log.d("HomeVM", "No places - showing error message")
                 addMessage(ChatMessage.BotText("No places found nearby. Try a different category!"))
             } else {
                 val section = RecommendationSection(
@@ -166,8 +161,9 @@ class HomeViewModel @Inject constructor(
             .find { it.id == placeId }
 
         viewModelScope.launch {
-            val lat = 35.0946
-            val lng = 128.8564
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.0780
+            val lng = location?.longitude ?: 128.8510
             val reachLat = place?.lat ?: lat
             val reachLng = place?.lng ?: lng
             recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
@@ -181,8 +177,9 @@ class HomeViewModel @Inject constructor(
             addMessage(ChatMessage.UserText("Show more $sectionTitle"))
             addMessage(ChatMessage.BotTyping)
 
-            val lat = 35.0946
-            val lng = 128.8564
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.0780
+            val lng = location?.longitude ?: 128.8510
             val result = recommendRepository.getRecommendation(sectionTitle, lat, lng)
             removeTyping()
 
@@ -268,9 +265,9 @@ class HomeViewModel @Inject constructor(
             addMessage(ChatMessage.UserText(option))
             addMessage(ChatMessage.BotTyping)
 
-            // TODO: 테스트용 하드코딩 (부산 강서구 녹산동) — 배포 시 GPS로 복원
-            val lat = 35.0946
-            val lng = 128.8564
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.0780
+            val lng = location?.longitude ?: 128.8510
 
             val request = RefreshRecommendRequest(
                 latitude = lat,
