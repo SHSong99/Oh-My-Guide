@@ -7,8 +7,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,17 +15,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Send
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.ripple
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -39,17 +35,24 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.fixtures.COMPANION_OPTIONS
@@ -62,7 +65,6 @@ import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.common.GuideBubble
 import com.ohmyguide.app.ui.common.PrimaryButton
 import com.ohmyguide.app.ui.common.UserBubble
-import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
@@ -72,10 +74,10 @@ import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 private enum class OnboardStep { LANGUAGE, GENDER, AGE, COUNTRY, COMPANION, GPS }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun GpsPermissionScreen(
     onAllow: () -> Unit,
@@ -86,7 +88,6 @@ fun GpsPermissionScreen(
     var languageLabel by remember { mutableStateOf("") }
     var genderLabel by remember { mutableStateOf("") }
     var ageLabel by remember { mutableStateOf("") }
-    var ageInput by remember { mutableStateOf("") }
     var countryLabel by remember { mutableStateOf("") }
     var companionLabel by remember { mutableStateOf("") }
 
@@ -157,6 +158,15 @@ fun GpsPermissionScreen(
             UserBubble(text = genderLabel)
             GuideBubble(text = strings.onboardAgePrompt)
 
+            if (step == OnboardStep.AGE) {
+                AgeWheelPicker(
+                    onConfirm = { age ->
+                        ageLabel = "$age ${strings.yearsOld}"
+                        step = OnboardStep.COUNTRY
+                    },
+                )
+            }
+
             if (step > OnboardStep.AGE) {
                 UserBubble(text = ageLabel)
             }
@@ -176,7 +186,7 @@ fun GpsPermissionScreen(
             }
         }
 
-        // Step 4: Companion
+        // Step 5: Companion
         if (step > OnboardStep.COUNTRY) {
             UserBubble(text = countryLabel)
             GuideBubble(text = strings.onboardCompanionPrompt)
@@ -191,7 +201,7 @@ fun GpsPermissionScreen(
             }
         }
 
-        // Step 5: GPS
+        // Step 6: GPS
         if (step == OnboardStep.GPS) {
             UserBubble(text = companionLabel)
             GuideBubble(text = strings.onboardGpsPrompt)
@@ -215,91 +225,138 @@ fun GpsPermissionScreen(
             )
         }
     }
-
-    // Age input bar — only visible during AGE step
-    if (step == OnboardStep.AGE) {
-        AgeInputBar(
-            value = ageInput,
-            onValueChange = { ageInput = it },
-            onSend = {
-                if (ageInput.isNotBlank()) {
-                    ageLabel = "${ageInput} years old"
-                    ageInput = ""
-                    step = OnboardStep.COUNTRY
-                }
-            },
-        )
-    }
     }
 }
 
+// ── Age Wheel Picker ──
+
 @Composable
-private fun AgeInputBar(
-    value: String,
-    onValueChange: (String) -> Unit,
-    onSend: () -> Unit,
+private fun AgeWheelPicker(
+    onConfirm: (Int) -> Unit,
 ) {
-    Row(
+    val ageRange = (10..99).toList()
+    val defaultIndex = ageRange.indexOf(20)
+    val itemHeightDp = 44.dp
+    val visibleItems = 5
+    val density = LocalDensity.current
+    val itemHeightPx = with(density) { itemHeightDp.roundToPx() }
+
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = defaultIndex - visibleItems / 2,
+    )
+
+    val selectedAge by remember {
+        derivedStateOf {
+            val centerOffset = listState.firstVisibleItemIndex +
+                visibleItems / 2
+            ageRange.getOrElse(centerOffset) { 20 }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        snapshotFlow {
+            listState.firstVisibleItemIndex +
+                listState.firstVisibleItemScrollOffset / itemHeightPx
+        }
+            .distinctUntilChanged()
+            .collect { /* keep derivedStateOf reactive */ }
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BgWhite)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(start = 46.dp, bottom = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = { newVal ->
-                if (newVal.all { it.isDigit() } && newVal.length <= 3) {
-                    onValueChange(newVal)
-                }
-            },
-            placeholder = {
-                Text(
-                    text = "Enter your age",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextCaption,
-                )
-            },
-            modifier = Modifier.weight(1f),
-            shape = RoundedCornerShape(100.dp),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number,
-                imeAction = ImeAction.Send,
-            ),
-            keyboardActions = KeyboardActions(onSend = { onSend() }),
-            textStyle = MaterialTheme.typography.bodyMedium,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = Primary,
-                unfocusedBorderColor = Border,
-                focusedContainerColor = BgWhite,
-                unfocusedContainerColor = BgWhite,
-            ),
-        )
-        Spacer(modifier = Modifier.width(8.dp))
         Box(
             modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-                .background(
-                    if (value.isNotBlank()) PrimaryGradient
-                    else Brush.linearGradient(listOf(BgSub, BgSub))
-                )
-                .then(
-                    if (value.isNotBlank()) Modifier.clickable(onClick = onSend)
-                    else Modifier
-                ),
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(BgWhite)
+                .border(1.dp, Border, RoundedCornerShape(14.dp))
+                .padding(vertical = 8.dp),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Filled.Send,
-                contentDescription = "Send",
-                modifier = Modifier.size(20.dp),
-                tint = if (value.isNotBlank()) BgWhite else TextCaption,
+            // Center selection highlight
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.6f)
+                    .height(itemHeightDp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(PrimaryBgLight),
+            )
+
+            // Wheel list
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(itemHeightDp * visibleItems)
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                0f to Color.Transparent,
+                                0.3f to Color.White,
+                            ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                        drawRect(
+                            brush = Brush.verticalGradient(
+                                0.7f to Color.White,
+                                1f to Color.Transparent,
+                            ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                    },
+                horizontalAlignment = Alignment.CenterHorizontally,
+                flingBehavior = androidx.compose.foundation.gestures.snapping
+                    .rememberSnapFlingBehavior(listState),
+            ) {
+                items(ageRange.size) { index ->
+                    val age = ageRange[index]
+                    val isSelected = age == selectedAge
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(itemHeightDp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "$age",
+                            style = if (isSelected) MaterialTheme.typography.headlineSmall
+                            else MaterialTheme.typography.bodyLarge,
+                            color = if (isSelected) Primary else TextCaption,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Confirm button
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(PrimaryGradient)
+                .clickable { onConfirm(selectedAge) }
+                .padding(vertical = 14.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "I'm $selectedAge years old",
+                style = MaterialTheme.typography.titleMedium,
+                color = BgWhite,
             )
         }
     }
 }
+
+// ── Pill Option Buttons ──
 
 @Composable
 private fun PillOptionButtons(
@@ -331,6 +388,8 @@ private fun PillOptionButtons(
         }
     }
 }
+
+// ── Companion Buttons ──
 
 @Composable
 private fun CompanionButtons(
@@ -378,41 +437,83 @@ private fun CompanionButtons(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+// ── Country Selector (Toggle Dropdown) ──
+
 @Composable
 private fun CountrySelector(
     onSelect: (String) -> Unit,
 ) {
-    FlowRow(
+    var expanded by remember { mutableStateOf(false) }
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(start = 46.dp, bottom = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        COUNTRY_OPTIONS.forEach { country ->
-            Row(
+        // Toggle header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(14.dp))
+                .background(BgWhite)
+                .border(1.dp, Border, RoundedCornerShape(14.dp))
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = ripple(),
+                ) { expanded = !expanded }
+                .padding(14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "Select your country",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextCaption,
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Filled.KeyboardArrowUp
+                else Icons.Filled.KeyboardArrowDown,
+                contentDescription = "Toggle",
+                tint = TextCaption,
+                modifier = Modifier.size(20.dp),
+            )
+        }
+
+        // Expandable country list
+        if (expanded) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
+                    .fillMaxWidth()
+                    .height(200.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(BgWhite)
-                    .border(1.dp, Border, RoundedCornerShape(20.dp))
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple(),
-                    ) { onSelect("${country.flag} ${country.name}") }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
+                    .border(1.dp, Border, RoundedCornerShape(14.dp))
+                    .verticalScroll(rememberScrollState()),
             ) {
-                Text(
-                    text = country.flag,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-                Spacer(modifier = Modifier.width(6.dp))
-                Text(
-                    text = country.name,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextPrimary,
-                )
+                COUNTRY_OPTIONS.forEach { country ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = ripple(),
+                            ) { onSelect("${country.flag} ${country.name}") }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = country.flag,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = country.name,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextPrimary,
+                        )
+                    }
+                }
             }
         }
     }

@@ -1,5 +1,10 @@
 package com.ohmyguide.app.ui.screen.story
 
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -23,10 +28,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ohmyguide.app.ui.theme.BgWhite
@@ -93,6 +100,36 @@ fun StoryTopBar(currentPage: Int, totalPages: Int, onBack: () -> Unit) {
 
 @Composable
 fun AudioPlayerBar(isPlaying: Boolean, onToggle: () -> Unit) {
+    // Pulse for play button when paused
+    val pulseScale = if (!isPlaying) {
+        val pulseTransition = rememberInfiniteTransition(label = "playPulse")
+        val scale by pulseTransition.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.15f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(600),
+                repeatMode = RepeatMode.Reverse,
+            ),
+            label = "pulseScale",
+        )
+        scale
+    } else 1f
+
+    // Wave animation phase for playing state
+    val wavePhase = if (isPlaying) {
+        val waveTransition = rememberInfiniteTransition(label = "wave")
+        val phase by waveTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 6.28f, // 2 * PI
+            animationSpec = infiniteRepeatable(
+                animation = tween(1200),
+                repeatMode = RepeatMode.Restart,
+            ),
+            label = "wavePhase",
+        )
+        phase
+    } else 0f
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -101,13 +138,15 @@ fun AudioPlayerBar(isPlaying: Boolean, onToggle: () -> Unit) {
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Play/Pause button with pulse when paused
         Box(
             modifier = Modifier
+                .graphicsLayer { scaleX = pulseScale; scaleY = pulseScale }
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(
                     if (isPlaying) Brush.linearGradient(listOf(Primary, PrimaryLight))
-                    else Brush.linearGradient(listOf(DarkBorder, DarkBorder))
+                    else Brush.linearGradient(listOf(Primary.copy(alpha = 0.6f), PrimaryLight.copy(alpha = 0.6f)))
                 )
                 .clickable(onClick = onToggle),
             contentAlignment = Alignment.Center,
@@ -124,12 +163,16 @@ fun AudioPlayerBar(isPlaying: Boolean, onToggle: () -> Unit) {
             Text(
                 text = if (isPlaying) LocalStrings.current.nowPlaying else LocalStrings.current.paused,
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = Primary,
+                color = if (isPlaying) Primary else DarkText,
             )
             Spacer(modifier = Modifier.height(6.dp))
+            // Animated wave bars
             Row(horizontalArrangement = Arrangement.spacedBy(2.5.dp)) {
                 repeat(24) { i ->
-                    val h = if (isPlaying) (4 + (kotlin.math.sin(i * 0.8) * 8 + 6)).dp else 3.dp
+                    val h = if (isPlaying) {
+                        val wave = kotlin.math.sin(i * 0.7 + wavePhase.toDouble())
+                        (4 + (wave * 8 + 6)).dp
+                    } else 3.dp
                     Box(
                         modifier = Modifier
                             .width(2.5.dp)

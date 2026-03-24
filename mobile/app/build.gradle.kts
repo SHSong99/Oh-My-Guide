@@ -37,6 +37,7 @@ android {
         buildConfigField("String", "BUSAN_BIMS_SERVICE_KEY", "\"${localProperties.getProperty("BUSAN_BIMS_SERVICE_KEY", "")}\"")
         buildConfigField("String", "NAVER_MAP_CLIENT_SECRET", "\"${localProperties.getProperty("NAVER_MAP_CLIENT_SECRET", "")}\"")
         buildConfigField("String", "TMAP_APP_KEY", "\"${localProperties.getProperty("TMAP_APP_KEY", "")}\"")
+        buildConfigField("String", "GOOGLE_CLOUD_TTS_KEY", "\"${localProperties.getProperty("GOOGLE_CLOUD_TTS_KEY", "")}\"")
     }
 
     buildTypes {
