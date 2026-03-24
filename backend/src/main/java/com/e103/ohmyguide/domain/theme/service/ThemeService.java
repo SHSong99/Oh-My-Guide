@@ -1,6 +1,8 @@
 package com.e103.ohmyguide.domain.theme.service;
 
 import com.e103.ohmyguide.domain.theme.entity.Theme;
+import com.e103.ohmyguide.domain.theme.service.request.ThemeCreateServiceRequest;
+import com.e103.ohmyguide.domain.theme.service.request.ThemeUpdateServiceRequest;
 import com.e103.ohmyguide.domain.theme.service.response.AttractionSummaryResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeDetailResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeInfoResponse;
@@ -21,6 +23,29 @@ import java.util.List;
 public class ThemeService {
 
     private final ThemeRepository themeRepository;
+
+    @Transactional
+    public void createTheme(ThemeCreateServiceRequest request) {
+        Theme theme = Theme.builder()
+                .name(request.getName())
+                .description(request.getDescription())
+                .build();
+        themeRepository.save(theme);
+    }
+
+    @Transactional
+    public void updateTheme(Long themeId, ThemeUpdateServiceRequest request) {
+        Theme theme = themeRepository.findById(themeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Theme", "themeId", themeId));
+        theme.update(request.getName(), request.getDescription());
+    }
+
+    @Transactional
+    public void deleteTheme(Long themeId) {
+        Theme theme = themeRepository.findById(themeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Theme", "themeId", themeId));
+        themeRepository.delete(theme);
+    }
 
     public ThemeInfosResponse getThemes() {
         List<ThemeInfoResponse> themes = themeRepository.findAll()

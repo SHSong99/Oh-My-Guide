@@ -6,6 +6,8 @@ import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
 import java.math.BigDecimal;
 import com.e103.ohmyguide.domain.theme.entity.Theme;
 import com.e103.ohmyguide.domain.theme.repository.ThemeRepository;
+import com.e103.ohmyguide.domain.theme.service.request.ThemeCreateServiceRequest;
+import com.e103.ohmyguide.domain.theme.service.request.ThemeUpdateServiceRequest;
 import com.e103.ohmyguide.domain.theme.service.response.AttractionSummaryResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeDetailResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeInfoResponse;
@@ -35,6 +37,70 @@ class ThemeServiceTest extends IntegrationTestSupport {
 
     @Autowired
     private ThemeAttractionRepository themeAttractionRepository;
+
+    @DisplayName("테마를 생성하면 DB에 저장된다.")
+    @Test
+    void createTheme_savedSuccessfully() {
+        // given
+        ThemeCreateServiceRequest request = ThemeCreateServiceRequest.of("자연", "자연 경관 테마");
+
+        // when
+        themeService.createTheme(request);
+
+        // then
+        assertThat(themeRepository.findAll()).hasSize(1);
+        Theme saved = themeRepository.findAll().get(0);
+        assertThat(saved.getName()).isEqualTo("자연");
+        assertThat(saved.getDescription()).isEqualTo("자연 경관 테마");
+    }
+
+    @DisplayName("테마 name과 description을 수정하면 DB에 반영된다.")
+    @Test
+    void updateTheme_updatedSuccessfully() {
+        // given
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+        ThemeUpdateServiceRequest request = ThemeUpdateServiceRequest.of("역사", "역사 유적 테마");
+
+        // when
+        themeService.updateTheme(theme.getId(), request);
+
+        // then
+        Theme updated = themeRepository.findById(theme.getId()).get();
+        assertThat(updated.getName()).isEqualTo("역사");
+        assertThat(updated.getDescription()).isEqualTo("역사 유적 테마");
+    }
+
+    @DisplayName("존재하지 않는 테마 ID로 수정하면 ResourceNotFoundException이 발생한다.")
+    @Test
+    void updateTheme_throwsExceptionWhenNotFound() {
+        // given
+        ThemeUpdateServiceRequest request = ThemeUpdateServiceRequest.of("역사", "역사 유적 테마");
+
+        // when & then
+        assertThatThrownBy(() -> themeService.updateTheme(999L, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @DisplayName("테마를 삭제하면 DB에서 제거된다.")
+    @Test
+    void deleteTheme_deletedSuccessfully() {
+        // given
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+
+        // when
+        themeService.deleteTheme(theme.getId());
+
+        // then
+        assertThat(themeRepository.findById(theme.getId())).isEmpty();
+    }
+
+    @DisplayName("존재하지 않는 테마 ID로 삭제하면 ResourceNotFoundException이 발생한다.")
+    @Test
+    void deleteTheme_throwsExceptionWhenNotFound() {
+        // when & then
+        assertThatThrownBy(() -> themeService.deleteTheme(999L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
 
     @DisplayName("저장된 모든 테마를 count와 함께 반환한다.")
     @Test

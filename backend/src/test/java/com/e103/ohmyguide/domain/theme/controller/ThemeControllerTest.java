@@ -12,10 +12,16 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.times;
+import static org.springframework.http.MediaType.APPLICATION_JSON;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -141,5 +147,104 @@ class ThemeControllerTest extends ControllerTestSupport {
 
         // then
         then(themeService).should(times(1)).getTheme(1L);
+    }
+
+    @DisplayName("POST /api/themes - 테마를 생성하면 200을 반환한다.")
+    @Test
+    void createTheme_returns200() throws Exception {
+        // given
+        String body = objectMapper.writeValueAsString(
+                new java.util.HashMap<>() {{
+                    put("name", "자연");
+                    put("description", "자연 경관 테마");
+                }}
+        );
+
+        // when & then
+        mockMvc.perform(post("/api/themes")
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isOk());
+    }
+
+    @DisplayName("POST /api/themes - name이 비어있으면 400을 반환한다.")
+    @Test
+    void createTheme_returns400WhenNameBlank() throws Exception {
+        // given
+        String body = objectMapper.writeValueAsString(
+                new java.util.HashMap<>() {{
+                    put("name", "");
+                    put("description", "자연 경관 테마");
+                }}
+        );
+
+        // when & then
+        mockMvc.perform(post("/api/themes")
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @DisplayName("PUT /api/themes/{themeId} - 테마를 수정하면 200을 반환한다.")
+    @Test
+    void updateTheme_returns200() throws Exception {
+        // given
+        String body = objectMapper.writeValueAsString(
+                new java.util.HashMap<>() {{
+                    put("name", "역사");
+                    put("description", "역사 유적 테마");
+                }}
+        );
+
+        // when & then
+        mockMvc.perform(put("/api/themes/1")
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andDo(print())
+                .andExpect(status().isOk());
+
+        then(themeService).should(times(1)).updateTheme(eq(1L), any());
+    }
+
+    @DisplayName("PUT /api/themes/{themeId} - description이 비어있으면 400을 반환한다.")
+    @Test
+    void updateTheme_returns400WhenDescriptionBlank() throws Exception {
+        // given
+        String body = objectMapper.writeValueAsString(
+                new java.util.HashMap<>() {{
+                    put("name", "역사");
+                    put("description", "");
+                }}
+        );
+
+        // when & then
+        mockMvc.perform(put("/api/themes/1")
+                        .contentType(APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @DisplayName("DELETE /api/themes/{themeId} - 테마를 삭제하면 204를 반환한다.")
+    @Test
+    void deleteTheme_returns204() throws Exception {
+        // when & then
+        mockMvc.perform(delete("/api/themes/1"))
+                .andDo(print())
+                .andExpect(status().isNoContent());
+
+        then(themeService).should(times(1)).deleteTheme(1L);
+    }
+
+    @DisplayName("DELETE /api/themes/{themeId} - 존재하지 않는 테마 삭제 시 404를 반환한다.")
+    @Test
+    void deleteTheme_returns404WhenNotFound() throws Exception {
+        // given
+        org.mockito.Mockito.doThrow(new ResourceNotFoundException("Theme", "themeId", 999L))
+                .when(themeService).deleteTheme(999L);
+
+        // when & then
+        mockMvc.perform(delete("/api/themes/999"))
+                .andExpect(status().isNotFound());
     }
 }
