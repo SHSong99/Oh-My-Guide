@@ -1,7 +1,9 @@
 package com.ohmyguide.app.data.api
 
+import com.ohmyguide.app.data.model.AttractionDetailDto
 import com.ohmyguide.app.data.model.AuthResponse
 import com.ohmyguide.app.data.model.GoogleLoginRequest
+import com.ohmyguide.app.data.model.GuideNavigationResponse
 import com.ohmyguide.app.data.model.OnboardingRequest
 import com.ohmyguide.app.data.model.RefreshRecommendRequest
 import com.ohmyguide.app.data.model.RefreshRecommendResponse
@@ -10,6 +12,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
@@ -35,6 +38,17 @@ interface ApiService {
     @POST("userRecommend/recommend/refresh")
     suspend fun refreshRecommendation(@Body request: RefreshRecommendRequest): RefreshRecommendResponse
 
-    @POST("userRecommend/visit")
-    suspend fun visitPlace(@Body request: Map<String, Long>)
+    // Guide (GO 버튼 → 네비게이션 시작, 방문기록 + 로그 전송 포함)
+    @GET("guide/{placeId}")
+    suspend fun startGuideNavigation(
+        @Path("placeId") placeId: Long,
+        @Query("currentLat") currentLat: Double,
+        @Query("currentLng") currentLng: Double,
+        @Query("reachLat") reachLat: Double,
+        @Query("reachLng") reachLng: Double,
+    ): GuideNavigationResponse
+
+    // Attraction
+    @GET("attractions/{attrId}")
+    suspend fun getAttractionDetail(@Path("attrId") attrId: Long): AttractionDetailDto
 }
