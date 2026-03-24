@@ -24,8 +24,16 @@ sealed class Screen(val route: String) {
     object Place : Screen("place/{placeId}") {
         fun createRoute(placeId: String) = "place/$placeId"
     }
-    object Transport : Screen("transport/{placeId}") {
-        fun createRoute(placeId: String) = "transport/$placeId"
+    object Transport : Screen("transport/{placeId}?courseId={courseId}&spotIndex={spotIndex}") {
+        fun createRoute(
+            placeId: String,
+            courseId: String? = null,
+            spotIndex: Int? = null,
+        ): String {
+            var route = "transport/$placeId"
+            if (courseId != null) route += "?courseId=$courseId&spotIndex=${spotIndex ?: 0}"
+            return route
+        }
     }
     object TransitDetail : Screen("transit_detail/{placeId}?destLat={destLat}&destLng={destLng}") {
         fun createRoute(placeId: String, destLat: Double, destLng: Double) =
@@ -37,7 +45,16 @@ sealed class Screen(val route: String) {
     object CourseNavi : Screen("course_navi/{courseId}") {
         fun createRoute(courseId: String) = "course_navi/$courseId"
     }
-    object Navi : Screen("navi/{placeId}/{mode}") {
-        fun createRoute(placeId: String, mode: String = "walk") = "navi/$placeId/$mode"
+    object Navi : Screen("navi/{placeId}/{mode}?courseId={courseId}&spotIndex={spotIndex}") {
+        fun createRoute(
+            placeId: String,
+            mode: String = "walk",
+            courseId: String? = null,
+            spotIndex: Int? = null,
+        ): String {
+            var route = "navi/$placeId/$mode"
+            if (courseId != null) route += "?courseId=$courseId&spotIndex=${spotIndex ?: 0}"
+            return route
+        }
     }
 }

@@ -14,6 +14,16 @@ interface NaverDrivingApi {
         @Query("goal") goal: String,
         @Query("option") option: String = "traoptimal",
     ): NaverDirectionsResponse
+
+    @GET("driving")
+    suspend fun getRouteWithWaypoints(
+        @Header("X-NCP-APIGW-API-KEY-ID") clientId: String,
+        @Header("X-NCP-APIGW-API-KEY") clientSecret: String,
+        @Query("start") start: String,
+        @Query("goal") goal: String,
+        @Query("waypoints") waypoints: String,
+        @Query("option") option: String = "traoptimal",
+    ): NaverDirectionsResponse
 }
 
 interface NaverWalkingApi {
