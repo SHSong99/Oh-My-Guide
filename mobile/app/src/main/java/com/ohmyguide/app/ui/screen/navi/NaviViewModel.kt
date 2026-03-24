@@ -13,6 +13,8 @@ import com.ohmyguide.app.domain.model.NaviRouteCache
 import com.ohmyguide.app.domain.model.NaviRouteData
 import com.ohmyguide.app.domain.model.RouteCoord
 import com.ohmyguide.app.domain.model.RouteSegmentGeo
+import com.ohmyguide.app.fixtures.Course
+import com.ohmyguide.app.fixtures.EXPLORE_COURSES
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
@@ -94,6 +96,10 @@ data class NaviUiState(
     val progressPct: Float = 0f,
     val userLat: Double = 35.0950,
     val userLng: Double = 128.8560,
+    // Course mode
+    val course: Course? = null,
+    val spotIndex: Int = 0,
+    val totalSpots: Int = 0,
 )
 
 @HiltViewModel
@@ -107,6 +113,11 @@ class NaviViewModel @Inject constructor(
 
     val placeId: String = savedStateHandle["placeId"] ?: "dm3"
     val mode: String = savedStateHandle["mode"] ?: "walk"
+    val courseId: String? = savedStateHandle.get<String>("courseId")?.ifEmpty { null }
+    val spotIndex: Int = savedStateHandle.get<String>("spotIndex")?.toIntOrNull() ?: 0
+
+    val course: Course? = courseId?.let { id -> EXPLORE_COURSES.find { it.id == id } }
+    val isCourseMode: Boolean = course != null
 
     val detail: PlaceDetail? = SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
@@ -141,6 +152,10 @@ class NaviViewModel @Inject constructor(
             "p3" to (35.0850 to 128.9200),
             "p4" to (35.0530 to 128.9580),
             "p5" to (35.0470 to 128.9660),
+            // Course spots
+            "dh1" to (37.5265 to 127.0405),
+            "dh2" to (37.5563 to 126.9236),
+            "dh3" to (37.5586 to 126.9267),
         )
         private const val ARRIVAL_THRESHOLD_METERS = 100.0
 
@@ -187,6 +202,15 @@ class NaviViewModel @Inject constructor(
     }
 
     init {
+        if (isCourseMode) {
+            _uiState.update {
+                it.copy(
+                    course = course,
+                    spotIndex = spotIndex,
+                    totalSpots = course?.spots?.size ?: 0,
+                )
+            }
+        }
         initChat()
         if (mode == "transit") {
             startGpsTracking()
@@ -197,6 +221,14 @@ class NaviViewModel @Inject constructor(
 
     private fun initChat() {
         val placeName = detail?.place?.name ?: "your destination"
+
+        if (isCourseMode) {
+            val courseName = course?.title ?: ""
+            val total = course?.spots?.size ?: 0
+            addMessage(NaviChatMessage.BotText(
+                "\uD83D\uDCCD $courseName — Spot ${spotIndex + 1}/$total"
+            ))
+        }
 
         // Greeting
         addMessage(NaviChatMessage.BotText(

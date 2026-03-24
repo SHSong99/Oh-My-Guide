@@ -26,6 +26,7 @@ interface AppStrings {
     val welcomeDesc: String
     val signInGoogle: String
     val signInHint: String
+    val loginSuccess: String
 
     // ── Onboarding ──
     val onboardLangPrompt: String
@@ -78,6 +79,15 @@ interface AppStrings {
     val curatedCourses: String
     val noCoursesFound: String
     val tryDifferentRegion: String
+    val exploreThisCourse: String
+    val seeAllCourses: String
+    val swipeToDiscover: String
+    val themeKpopTitle: String
+    val themeKpopSubtitle: String
+    val themeBtsTitle: String
+    val themeBtsSubtitle: String
+    val themeSsafyTitle: String
+    val themeSsafySubtitle: String
     val courseRoute: String
     val startCourseNavi: String
     val courseProgress: String

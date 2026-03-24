@@ -52,6 +52,30 @@ class NaverDirectionsRepository @Inject constructor(
         }
     }
 
+    suspend fun getDrivingRouteWithWaypoints(
+        startLat: Double,
+        startLng: Double,
+        waypoints: List<Pair<Double, Double>>,
+        endLat: Double,
+        endLng: Double,
+    ): ApiResult<List<RouteCoord>> {
+        return try {
+            val waypointsStr = waypoints.joinToString(":") { (lat, lng) -> "$lng,$lat" }
+            val response = drivingApi.getRouteWithWaypoints(
+                clientId = BuildConfig.NAVER_MAP_CLIENT_ID,
+                clientSecret = BuildConfig.NAVER_MAP_CLIENT_SECRET,
+                start = "$startLng,$startLat",
+                goal = "$endLng,$endLat",
+                waypoints = waypointsStr,
+            )
+            parseResponse(response)
+        } catch (e: Exception) {
+            ApiResult.Error(-1, e.message ?: "Waypoint route error")
+        }
+    }
+
+    fun parseFullResponse(response: NaverDirectionsResponse) = response.route?.traoptimal?.firstOrNull()
+
     private fun parseResponse(response: NaverDirectionsResponse): ApiResult<List<RouteCoord>> {
         val path = response.route?.traoptimal?.firstOrNull()?.path
         if (path.isNullOrEmpty()) {

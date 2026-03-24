@@ -117,6 +117,15 @@ val MenuThemeBg = Color(0xFFFDF2F8)
 
 // ── Explore Dark ──
 val ExploreDarkBg = Color(0xFF0A0A14)
+val ExploreProgressTrack = Color(0x4DFFFFFF)
+val ExploreProgressFilled = Color(0xFFFFFFFF)
+
+// ── Course Leg Colors ──
+val CourseLeg1 = Color(0xFF5478FF)
+val CourseLeg2 = Color(0xFF16A34A)
+val CourseLeg3 = Color(0xFFEA580C)
+val CourseLeg4 = Color(0xFF7C3AED)
+val CourseLeg5 = Color(0xFFE11D48)
 
 // ── Misc ──
 val SavedBg = Color(0xFFFFF9C4)

@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,8 @@ import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.material3.Icon
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.activity.compose.BackHandler
@@ -77,6 +80,10 @@ private val PLACE_COORDINATES = mapOf(
     "p3" to LatLng(35.0850, 128.9200),
     "p4" to LatLng(35.0530, 128.9580),
     "p5" to LatLng(35.0470, 128.9660),
+    // Course spots
+    "dh1" to LatLng(37.5265, 127.0405),
+    "dh2" to LatLng(37.5563, 126.9236),
+    "dh3" to LatLng(37.5586, 126.9267),
 )
 private val DEFAULT_USER_POSITION = LatLng(35.0950, 128.8560)
 
@@ -93,6 +100,8 @@ fun NaviScreen(
     navController: NavController,
     placeId: String,
     mode: String = "walk",
+    courseId: String? = null,
+    spotIndex: Int = 0,
     onMinimize: () -> Unit = {},
     viewModel: NaviViewModel = hiltViewModel(),
 ) {
@@ -263,6 +272,8 @@ fun NaviScreen(
                 placeName = placeName,
                 mode = mode,
                 naviRoute = naviRoute,
+                course = state.course,
+                currentSpotIndex = state.spotIndex,
                 onMinimize = onMinimize,
             )
         }
@@ -294,6 +305,8 @@ private fun MapArea(
     placeName: String,
     mode: String,
     naviRoute: NaviRouteData?,
+    course: com.ohmyguide.app.fixtures.Course? = null,
+    currentSpotIndex: Int = 0,
     onMinimize: () -> Unit,
 ) {
     val destinationPosition = PLACE_COORDINATES[placeId] ?: DEFAULT_USER_POSITION
@@ -394,8 +407,63 @@ private fun MapArea(
                 width = 36.dp,
                 height = 54.dp,
             )
+
+            // 코스 스팟 마커 (코스 모드일 때)
+            if (course != null) {
+                course.spots.forEachIndexed { index, spot ->
+                    if (spot.id != placeId) {
+                        val spotCoord = PLACE_COORDINATES[spot.id]
+                        if (spotCoord != null) {
+                            Marker(
+                                state = rememberMarkerState(
+                                    key = "course_spot_$index",
+                                    position = spotCoord,
+                                ),
+                                captionText = "${index + 1}. ${spot.name}",
+                                width = if (index <= currentSpotIndex) 28.dp else 24.dp,
+                                height = if (index <= currentSpotIndex) 42.dp else 36.dp,
+                                icon = if (index < currentSpotIndex) {
+                                    OverlayImage.fromResource(R.drawable.ic_marker_waypoint)
+                                } else {
+                                    OverlayImage.fromResource(R.drawable.ic_marker_destination)
+                                },
+                                alpha = if (index <= currentSpotIndex) 1f else 0.6f,
+                            )
+                        }
+                    }
+                }
+            }
         }
 
+        // 코스 이동 중 배지 (좌측 상단)
+        if (course != null) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(12.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(com.ohmyguide.app.ui.theme.Primary.copy(alpha = 0.9f))
+                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Filled.Navigation,
+                    contentDescription = null,
+                    modifier = Modifier.size(14.dp),
+                    tint = BgWhite,
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                androidx.compose.material3.Text(
+                    text = "${course.title} ${currentSpotIndex + 1}/${course.spots.size}",
+                    style = androidx.compose.material3.MaterialTheme.typography.labelSmall.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    color = BgWhite,
+                )
+            }
+        }
+
+        // Minimize 버튼 (우측 상단)
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)

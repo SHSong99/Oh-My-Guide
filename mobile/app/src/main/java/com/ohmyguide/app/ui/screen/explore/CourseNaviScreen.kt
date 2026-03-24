@@ -1,10 +1,12 @@
 package com.ohmyguide.app.ui.screen.explore
 
+import android.graphics.Color as AndroidColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,6 +26,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -31,22 +34,28 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
@@ -55,12 +64,14 @@ import com.naver.maps.map.compose.MapProperties
 import com.naver.maps.map.compose.MapUiSettings
 import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
+import com.naver.maps.map.compose.PathOverlay
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberMarkerState
+import com.naver.maps.map.overlay.OverlayImage
 import com.ohmyguide.app.fixtures.Course
 import com.ohmyguide.app.fixtures.EXPLORE_COURSES
 import com.ohmyguide.app.fixtures.Spot
-import com.ohmyguide.app.ui.navi.Screen
+import com.ohmyguide.app.ui.common.buildCircleMarker
 import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
@@ -75,42 +86,58 @@ import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
 
-// Mock coordinates for course spots
-private val SPOT_COORDINATES = listOf(
-    LatLng(37.5580, 126.9269),
-    LatLng(37.5563, 126.9236),
-    LatLng(37.5550, 126.9300),
-    LatLng(37.5535, 126.9340),
-    LatLng(37.5520, 126.9380),
-)
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalNaverMapApi::class)
 @Composable
 fun CourseNaviScreen(
     navController: NavController,
     courseId: String,
+    viewModel: CourseNaviViewModel = hiltViewModel(),
 ) {
-    val course = EXPLORE_COURSES.find { it.id == courseId }
+    val course = viewModel.course
         ?: EXPLORE_COURSES.firstOrNull()
         ?: return
 
-    var currentSpotIndex by remember { mutableIntStateOf(0) }
-    val currentSpot = course.spots.getOrNull(currentSpotIndex) ?: return
+    val uiState by viewModel.uiState.collectAsState()
+    val routeData by viewModel.routeData.collectAsState()
+    val currentSpot = course.spots.getOrNull(uiState.currentSpotIndex) ?: return
     val totalSpots = course.spots.size
-    val progressPct = (currentSpotIndex + 1).toFloat() / totalSpots
+    val progressPct = (uiState.currentSpotIndex + 1).toFloat() / totalSpots
 
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition(
-            SPOT_COORDINATES.getOrElse(0) { LatLng(37.5560, 126.9270) },
-            14.0,
-        )
+    // Image markers
+    val context = LocalContext.current
+    val density = LocalDensity.current
+    val markerSizePx = with(density) { 48.dp.roundToPx() }
+    val markerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
+
+    // Load spot images as circular markers
+    course.spots.forEach { spot ->
+        if (spot.imageUrl != null && !markerIcons.containsKey(spot.id)) {
+            val request = ImageRequest.Builder(context)
+                .data(spot.imageUrl)
+                .size(markerSizePx)
+                .allowHardware(false)
+                .target { drawable ->
+                    val bmp = (drawable as android.graphics.drawable.BitmapDrawable).bitmap
+                    val borderColor = if (spot.id == currentSpot.id) {
+                        AndroidColor.parseColor("#5478FF")
+                    } else {
+                        AndroidColor.WHITE
+                    }
+                    markerIcons[spot.id] = buildCircleMarker(bmp, markerSizePx, 4f, borderColor)
+                }
+                .build()
+            coil.ImageLoader(context).enqueue(request)
+        }
     }
 
+    val firstSpot = course.spots.first()
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition(LatLng(firstSpot.lat, firstSpot.lng), 13.0)
+    }
     val mapProperties = remember { MapProperties() }
     val mapUiSettings = remember {
         MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = false)
     }
-
     val scaffoldState = rememberBottomSheetScaffoldState()
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -139,16 +166,17 @@ fun CourseNaviScreen(
                 CourseNaviSheetContent(
                     course = course,
                     currentSpot = currentSpot,
-                    currentSpotIndex = currentSpotIndex,
+                    currentSpotIndex = uiState.currentSpotIndex,
                     progressPct = progressPct,
-                    onSpotTap = { index -> currentSpotIndex = index },
+                    onSpotTap = { index -> viewModel.selectSpot(index) },
                     onNext = {
-                        if (currentSpotIndex < totalSpots - 1) currentSpotIndex++
+                        if (uiState.currentSpotIndex < totalSpots - 1) {
+                            viewModel.selectSpot(uiState.currentSpotIndex + 1)
+                        }
                     },
                 )
             },
         ) {
-            // Map with course markers
             Box(modifier = Modifier.fillMaxSize()) {
                 NaverMap(
                     modifier = Modifier.fillMaxSize(),
@@ -160,49 +188,83 @@ fun CourseNaviScreen(
                     MapEffect(mapLocale) { naverMap ->
                         naverMap.setLocale(mapLocale)
                     }
-                    course.spots.forEachIndexed { index, spot ->
-                        val coord = SPOT_COORDINATES.getOrElse(index) {
-                            LatLng(37.556 + index * 0.002, 126.927 + index * 0.003)
+
+                    // Polyline segments
+                    routeData?.segments?.forEach { segment ->
+                        val coords = segment.coords.map { LatLng(it.lat, it.lng) }
+                        if (coords.size >= 2) {
+                            PathOverlay(
+                                coords = coords,
+                                width = 6.dp,
+                                color = segment.color,
+                                outlineWidth = 2.dp,
+                                outlineColor = segment.color.copy(alpha = 0.4f),
+                            )
                         }
-                        Marker(
-                            state = rememberMarkerState(position = coord),
-                            captionText = "${index + 1}. ${spot.name}",
-                        )
+                    }
+
+                    // Spot markers (image or default)
+                    course.spots.forEachIndexed { index, spot ->
+                        if (spot.lat != 0.0 && spot.lng != 0.0) {
+                            val icon = markerIcons[spot.id]
+                            if (icon != null) {
+                                Marker(
+                                    state = rememberMarkerState(
+                                        key = "spot_${spot.id}",
+                                        position = LatLng(spot.lat, spot.lng),
+                                    ),
+                                    icon = icon,
+                                    captionText = "${index + 1}. ${spot.name}",
+                                    width = 48.dp,
+                                    height = 48.dp,
+                                    zIndex = if (index == uiState.currentSpotIndex) 1 else 0,
+                                )
+                            } else {
+                                Marker(
+                                    state = rememberMarkerState(
+                                        key = "spot_${spot.id}",
+                                        position = LatLng(spot.lat, spot.lng),
+                                    ),
+                                    captionText = "${index + 1}. ${spot.name}",
+                                )
+                            }
+                        }
                     }
                 }
 
-                // Top bar overlay
+                // Loading indicator
+                if (uiState.isLoading) {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(color = Primary)
+                    }
+                }
+
+                // Top bar: spot progress chips + close button
                 Row(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
                         .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                        .padding(top = 12.dp, end = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    // Distance badge
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(100.dp))
-                            .background(BgWhite.copy(alpha = 0.95f))
-                            .padding(horizontal = 14.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
+                    LazyRow(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(start = 12.dp, end = 8.dp),
                     ) {
-                        Icon(Icons.Filled.Navigation, contentDescription = null, modifier = Modifier.size(14.dp), tint = Primary)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = course.duration,
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = Primary,
-                        )
-                        Text(
-                            text = " · ${course.spotCount} ${LocalStrings.current.spots}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = TextCaption,
-                        )
+                        itemsIndexed(course.spots) { index, spot ->
+                            SpotProgressChip(
+                                index = index + 1,
+                                name = spot.name,
+                                isActive = index == uiState.currentSpotIndex,
+                                isCompleted = index < uiState.currentSpotIndex,
+                                onClick = { viewModel.selectSpot(index) },
+                            )
+                        }
                     }
-
-                    // Close button
                     Box(
                         modifier = Modifier
                             .size(36.dp)
@@ -233,7 +295,6 @@ private fun CourseNaviSheetContent(
             .fillMaxWidth()
             .verticalScroll(rememberScrollState()),
     ) {
-        // Current spot header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -277,15 +338,15 @@ private fun CourseNaviSheetContent(
                 .clip(RoundedCornerShape(16.dp))
                 .background(BgSub),
         ) {
-            // Image placeholder
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = "📍", fontSize = 36.sp)
+            if (currentSpot.imageUrl != null) {
+                AsyncImage(
+                    model = currentSpot.imageUrl,
+                    contentDescription = currentSpot.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
-            // Name overlay
-            Column(
+            Box(
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
@@ -296,18 +357,19 @@ private fun CourseNaviSheetContent(
                     )
                     .padding(14.dp),
             ) {
-                Text(
-                    text = currentSpot.name,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = BgWhite,
-                )
-                Text(
-                    text = currentSpot.nameKr,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = BgWhite.copy(alpha = 0.8f),
-                )
+                Column {
+                    Text(
+                        text = currentSpot.name,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = BgWhite,
+                    )
+                    Text(
+                        text = currentSpot.nameKr,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = BgWhite.copy(alpha = 0.8f),
+                    )
+                }
             }
-            // "Right here" badge
             Row(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
@@ -323,44 +385,12 @@ private fun CourseNaviSheetContent(
             }
         }
 
-        // Description
         Text(
             text = currentSpot.desc,
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary,
             modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
         )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Course progress section
-        Text(
-            text = LocalStrings.current.courseProgress,
-            style = MaterialTheme.typography.labelLarge.copy(
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp,
-            ),
-            color = TextCaption,
-            modifier = Modifier.padding(horizontal = 20.dp),
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        LazyRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
-        ) {
-            itemsIndexed(course.spots) { index, spot ->
-                SpotProgressChip(
-                    index = index + 1,
-                    name = spot.name,
-                    isActive = index == currentSpotIndex,
-                    isCompleted = index < currentSpotIndex,
-                    onClick = { onSpotTap(index) },
-                )
-            }
-        }
 
         Spacer(modifier = Modifier.height(20.dp))
     }
