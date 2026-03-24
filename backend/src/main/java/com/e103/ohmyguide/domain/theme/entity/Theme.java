@@ -13,7 +13,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Table(name = "theme")
+@Table(name = "themes")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Theme extends BaseEntity {
 
