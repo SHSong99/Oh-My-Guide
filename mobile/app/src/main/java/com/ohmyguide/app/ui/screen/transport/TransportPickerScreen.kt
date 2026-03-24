@@ -55,6 +55,8 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 fun TransportPickerScreen(
     navController: NavController,
     placeId: String,
+    courseId: String? = null,
+    spotIndex: Int = 0,
     viewModel: TransportPickerViewModel = hiltViewModel(),
 ) {
     val strings = LocalStrings.current
@@ -171,7 +173,12 @@ fun TransportPickerScreen(
                     )
                 } else {
                     navController.navigate(
-                        Screen.Navi.createRoute(placeId, selectedMode.name.lowercase())
+                        Screen.Navi.createRoute(
+                            placeId = placeId,
+                            mode = selectedMode.name.lowercase(),
+                            courseId = courseId,
+                            spotIndex = spotIndex,
+                        )
                     )
                 }
             },

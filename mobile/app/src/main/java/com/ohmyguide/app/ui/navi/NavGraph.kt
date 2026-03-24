@@ -1,5 +1,6 @@
 package com.ohmyguide.app.ui.navi
 
+import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +22,7 @@ import com.ohmyguide.app.ui.screen.onboarding.GpsPermissionScreen
 import com.ohmyguide.app.ui.screen.onboarding.LoadingScreen
 import com.ohmyguide.app.ui.screen.onboarding.OnboardingHelper
 import com.ohmyguide.app.ui.screen.onboarding.WelcomeScreen
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.data.repository.UserRepository
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
@@ -58,8 +60,11 @@ fun NavGraph(
             val authState by authViewModel.authState.collectAsState()
             val context = LocalContext.current
 
+            val strings = LocalStrings.current
+
             LaunchedEffect(authState) {
                 if (authState is AuthState.Success) {
+                    Toast.makeText(context, strings.loginSuccess, Toast.LENGTH_SHORT).show()
                     authViewModel.resetState()
                     navController.navigate(Screen.GpsPermission.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
@@ -131,9 +136,17 @@ fun NavGraph(
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             PlaceScreen(navController, placeId)
         }
-        composable(Screen.Transport.route) { backStackEntry ->
+        composable(
+            route = Screen.Transport.route,
+            arguments = listOf(
+                navArgument("courseId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("spotIndex") { type = NavType.StringType; defaultValue = "0" },
+            ),
+        ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
-            TransportPickerScreen(navController, placeId)
+            val courseId = backStackEntry.arguments?.getString("courseId")?.ifEmpty { null }
+            val spotIndex = backStackEntry.arguments?.getString("spotIndex")?.toIntOrNull() ?: 0
+            TransportPickerScreen(navController, placeId, courseId = courseId, spotIndex = spotIndex)
         }
         composable(
             route = Screen.TransitDetail.route,
@@ -145,9 +158,17 @@ fun NavGraph(
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransitDetailScreen(navController, placeId)
         }
-        composable(Screen.Navi.route) { backStackEntry ->
+        composable(
+            route = Screen.Navi.route,
+            arguments = listOf(
+                navArgument("courseId") { type = NavType.StringType; defaultValue = "" },
+                navArgument("spotIndex") { type = NavType.StringType; defaultValue = "0" },
+            ),
+        ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             val mode = backStackEntry.arguments?.getString("mode") ?: "walk"
+            val courseId = backStackEntry.arguments?.getString("courseId")?.ifEmpty { null }
+            val spotIndex = backStackEntry.arguments?.getString("spotIndex")?.toIntOrNull() ?: 0
 
             LaunchedEffect(placeId, mode) {
                 onNaviStart()
@@ -157,6 +178,8 @@ fun NavGraph(
                 navController = navController,
                 placeId = placeId,
                 mode = mode,
+                courseId = courseId,
+                spotIndex = spotIndex,
                 onMinimize = {
                     onNaviMinimize(placeId, mode)
                     navController.popBackStack()
