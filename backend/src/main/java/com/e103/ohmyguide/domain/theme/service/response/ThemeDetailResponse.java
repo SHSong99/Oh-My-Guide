@@ -1,4 +1,4 @@
-package com.e103.ohmyguide.domain.theme.response;
+package com.e103.ohmyguide.domain.theme.service.response;
 
 import com.e103.ohmyguide.domain.theme.entity.Theme;
 import lombok.Builder;

@@ -1,10 +1,10 @@
 package com.e103.ohmyguide.domain.theme.service;
 
 import com.e103.ohmyguide.domain.theme.entity.Theme;
-import com.e103.ohmyguide.domain.theme.response.AttractionSummaryResponse;
-import com.e103.ohmyguide.domain.theme.response.ThemeDetailResponse;
-import com.e103.ohmyguide.domain.theme.response.ThemeInfoResponse;
-import com.e103.ohmyguide.domain.theme.response.ThemeInfosResponse;
+import com.e103.ohmyguide.domain.theme.service.response.AttractionSummaryResponse;
+import com.e103.ohmyguide.domain.theme.service.response.ThemeDetailResponse;
+import com.e103.ohmyguide.domain.theme.service.response.ThemeInfoResponse;
+import com.e103.ohmyguide.domain.theme.service.response.ThemeInfosResponse;
 import com.e103.ohmyguide.domain.theme.repository.ThemeRepository;
 import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;

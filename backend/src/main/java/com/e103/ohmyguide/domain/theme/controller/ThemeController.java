@@ -1,6 +1,6 @@
 package com.e103.ohmyguide.domain.theme.controller;
 
-import com.e103.ohmyguide.domain.theme.response.ThemeInfosResponse;
+import com.e103.ohmyguide.domain.theme.service.response.ThemeInfosResponse;
 import com.e103.ohmyguide.domain.theme.service.ThemeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

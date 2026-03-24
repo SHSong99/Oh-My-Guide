@@ -1,8 +1,8 @@
 package com.e103.ohmyguide.domain.theme.controller;
 
 import com.e103.ohmyguide.ControllerTestSupport;
-import com.e103.ohmyguide.domain.theme.response.ThemeInfoResponse;
-import com.e103.ohmyguide.domain.theme.response.ThemeInfosResponse;
+import com.e103.ohmyguide.domain.theme.service.response.ThemeInfoResponse;
+import com.e103.ohmyguide.domain.theme.service.response.ThemeInfosResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
