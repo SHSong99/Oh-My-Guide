@@ -1,6 +1,7 @@
 package com.e103.ohmyguide;
 
 import com.e103.ohmyguide.domain.attraction.controller.AttractionController;
+import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
 import com.e103.ohmyguide.domain.attraction.service.AttractionService;
 import com.e103.ohmyguide.domain.auth.security.TokenProvider;
 import com.e103.ohmyguide.domain.auth.service.OAuth2UserProcessingService;
@@ -58,5 +59,8 @@ public abstract class ControllerTestSupport {
 
     @MockitoBean
     protected TokenProvider tokenProvider;
+
+    @MockitoBean
+    protected AttractionRepository attractionRepository;
 
 }
