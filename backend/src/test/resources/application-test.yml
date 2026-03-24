@@ -1,0 +1,56 @@
+spring:
+  config:
+    import: ""
+
+  datasource:
+    url: jdbc:tc:postgresql:16:///gmdb
+    username: test
+    password: test
+    driver-class-name: org.testcontainers.jdbc.ContainerDatabaseDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: test-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+jwt:
+  secret: test-secret-key-for-testing-purpose-only
+  expiration: 3600000
+
+tour-api:
+  service-key: ${TOUR_API_KEY:}
+  base-url: https://apis.data.go.kr/B551011/KorService2
+
+hdfs:
+  uri: hdfs://${HDFS_HOST:localhost}:${HDFS_PORT:9000}
+  user: ${HDFS_USER:root}
+
+spark:
+  master:
+    rest-url: ${SPARK_REST_URL:http://localhost:6066}
+  job:
+    app-resource: /opt/spark-jobs/analyze_logs.py
+    jars: /opt/spark-jobs/postgresql-42.7.4.jar
+  schedule:
+    enabled: ${SPARK_SCHEDULE_ENABLED:false}
+    cron: ${SPARK_SCHEDULE_CRON:0 0 4 * * *}

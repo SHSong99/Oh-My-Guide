@@ -7,25 +7,23 @@ import android.graphics.Paint
 import android.graphics.Shader
 import android.location.Geocoder
 import java.util.Locale
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.Orientation
-import androidx.compose.foundation.gestures.draggable
-import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.SheetValue
+import androidx.compose.material3.rememberBottomSheetScaffoldState
+import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -33,7 +31,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
@@ -41,15 +38,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.naver.maps.geometry.LatLng
-import com.naver.maps.geometry.LatLngBounds
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
@@ -78,21 +72,22 @@ import com.ohmyguide.app.ui.theme.DragHandle
 import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
-import kotlinx.coroutines.launch
-import kotlin.math.abs
-import kotlin.math.roundToInt
 
 private val DEFAULT_POSITION = LatLng(37.5700, 126.9920)
 
-private enum class SheetAnchor { COLLAPSED, HALF, EXPANDED }
-
-@OptIn(ExperimentalNaverMapApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalNaverMapApi::class)
 @Composable
 fun HomeScreen(
     navController: NavController,
+    category: String = "",
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // 초기 추천 로드
+    LaunchedEffect(Unit) {
+        viewModel.loadInitialRecommendation(category)
+    }
 
     val context = LocalContext.current
     val locationData by LocationForegroundService.locationFlow.collectAsState()
@@ -100,7 +95,7 @@ fun HomeScreen(
     var locationName by remember { mutableStateOf("") }
     val strings = LocalStrings.current
 
-    // GPS → English address
+    // GPS 좌표 → 영어 주소 변환
     LaunchedEffect(locationData) {
         if (locationName.isNotEmpty()) return@LaunchedEffect
         val loc = locationData ?: return@LaunchedEffect
@@ -126,17 +121,36 @@ fun HomeScreen(
         position = CameraPosition(initialPosition, 14.0)
     }
 
-    // Track whether initial camera fit has been done
-    var initialCameraFitted by remember { mutableStateOf(false) }
+    // 첫 GPS 위치가 들어오면 카메라를 내 위치로 이동
+    LaunchedEffect(locationData) {
+        val loc = locationData ?: return@LaunchedEffect
+        if (cameraPositionState.position.target == DEFAULT_POSITION) {
+            cameraPositionState.animate(
+                CameraUpdate.scrollAndZoomTo(LatLng(loc.latitude, loc.longitude), 14.0),
+            )
+        }
+    }
 
     val mapProperties = remember {
-        MapProperties(locationTrackingMode = LocationTrackingMode.NoFollow)
+        MapProperties(
+            locationTrackingMode = LocationTrackingMode.NoFollow,
+        )
     }
     val mapUiSettings = remember {
-        MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = true)
+        MapUiSettings(
+            isZoomControlEnabled = false,
+            isLocationButtonEnabled = true,
+        )
     }
 
-    // Marker data
+    val sheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.PartiallyExpanded,
+    )
+    val scaffoldState = rememberBottomSheetScaffoldState(
+        bottomSheetState = sheetState,
+    )
+
+    // Collect all recommended places for map markers
     val markerPlaces = remember(state.chatMessages) {
         state.chatMessages
             .filterIsInstance<ChatMessage.BotRecommendation>()
@@ -145,6 +159,7 @@ fun HomeScreen(
             .distinctBy { it.id }
     }
 
+    // Load place images as circular marker icons (normal + selected)
     val density = LocalDensity.current
     val markerSizeDp = 44.dp
     val selectedMarkerSizeDp = 56.dp
@@ -166,9 +181,34 @@ fun HomeScreen(
                 val result = context.imageLoader.execute(request)
                 if (result is SuccessResult) {
                     val srcBitmap = (result.drawable as android.graphics.drawable.BitmapDrawable).bitmap
+                    // Normal marker (white border)
                     markerIcons[place.id] = buildCircleMarker(srcBitmap, markerSizePx, borderPx, android.graphics.Color.WHITE)
+                    // Selected marker (blue border, larger)
                     selectedMarkerIcons[place.id] = buildCircleMarker(srcBitmap, selectedMarkerSizePx, selectedBorderPx, 0xFF5478FF.toInt())
                 }
+            }
+        }
+    }
+
+    // When place selected → expand sheet & move camera
+    LaunchedEffect(state.selectedDetail) {
+        val detail = state.selectedDetail
+        if (detail != null) {
+            sheetState.expand()
+            val place = detail.place
+            if (place.lat != 0.0 && place.lng != 0.0) {
+                cameraPositionState.animate(
+                    CameraUpdate.scrollAndZoomTo(LatLng(place.lat, place.lng), 16.0),
+                )
+            }
+        }
+    }
+
+    // When sheet collapses → clear selection
+    LaunchedEffect(sheetState) {
+        snapshotFlow { sheetState.currentValue }.collect { value ->
+            if (value == SheetValue.PartiallyExpanded && state.sheetMode == SheetMode.PLACE_DETAIL) {
+                viewModel.clearSelection()
             }
         }
     }
@@ -186,192 +226,16 @@ fun HomeScreen(
             },
         )
 
-        // Main content area with 3-stage sheet
-        BoxWithConstraints(modifier = Modifier.weight(1f)) {
-            val maxHeightPx = with(density) { maxHeight.toPx() }
-            val collapsedHeightDp = 72.dp
-            val collapsedHeightPx = with(density) { collapsedHeightDp.toPx() }
+        Box(modifier = Modifier.weight(1f)) {
+            val showFindBtn = state.sheetMode == SheetMode.RECOMMENDATIONS &&
+                state.chatMessages.any { it is ChatMessage.FindOtherPlacesBtn }
 
-            // Anchor positions (Y offset from top)
-            val expandedY = 0f
-            val halfY = maxHeightPx * 0.5f
-            val collapsedY = maxHeightPx - collapsedHeightPx
-
-            val scope = rememberCoroutineScope()
-            val sheetOffsetY = remember { Animatable(halfY) }
-
-            val currentAnchor = remember(sheetOffsetY.value) {
-                val snapPoints = listOf(expandedY, halfY, collapsedY)
-                val nearest = snapPoints.minByOrNull { abs(it - sheetOffsetY.value) } ?: halfY
-                when (nearest) {
-                    expandedY -> SheetAnchor.EXPANDED
-                    collapsedY -> SheetAnchor.COLLAPSED
-                    else -> SheetAnchor.HALF
-                }
-            }
-
-            val dragState = rememberDraggableState { delta ->
-                scope.launch {
-                    val newY = (sheetOffsetY.value + delta).coerceIn(expandedY, collapsedY)
-                    sheetOffsetY.snapTo(newY)
-                }
-            }
-
-            fun snapToNearest() {
-                val snapPoints = listOf(expandedY, halfY, collapsedY)
-                val target = snapPoints.minByOrNull { abs(it - sheetOffsetY.value) } ?: halfY
-                scope.launch { sheetOffsetY.animateTo(target, tween(300)) }
-            }
-
-            // Initial camera: user at visible-center, zoom to include all markers
-            val mapContainerHeightPx = maxHeightPx
-            LaunchedEffect(locationData, markerPlaces) {
-                if (initialCameraFitted) return@LaunchedEffect
-                val loc = locationData ?: return@LaunchedEffect
-
-                val userLatLng = LatLng(loc.latitude, loc.longitude)
-
-                // 시트가 하단 50%를 가리므로, 보이는 영역은 상단 50%
-                // 내 위치를 보이는 영역 중앙(= 전체 맵의 25% 지점)에 놓으려면
-                // 카메라 타겟을 아래로 밀어야 함
-                // 보이는 높이의 절반 = 전체의 25% → 카메라 중심에서 25% 아래 = 내 위치
-                // 즉, 카메라 중심을 내 위치보다 아래로 이동 (위도 감소)
-                val visibleFraction = 0.5f  // 보이는 비율
-                // 카메라 중심을 보이는 영역 중앙에 맞추기 위한 오프셋 비율
-                // 전체 높이의 중심 → 보이는 영역 중앙: 25% 위로 올려야 함
-                // 즉, 내 위치를 화면의 25% 지점에 놓기 위해 카메라를 아래로 이동
-
-                // 마커 포함 줌 레벨 계산
-                val markerPoints = markerPlaces
-                    .filter { it.lat != 0.0 && it.lng != 0.0 }
-                    .map { LatLng(it.lat, it.lng) }
-
-                // 1단계: 먼저 마커 포함 bounds로 적정 줌 레벨 파악
-                val sidePaddingPx = with(density) { 40.dp.toPx().toInt() }
-                val topPaddingPx = with(density) { 20.dp.toPx().toInt() }
-                val bottomPaddingPx = (mapContainerHeightPx * 0.5f).toInt()
-
-                if (markerPoints.isNotEmpty()) {
-                    // 내 위치 중심 bounds: 내 위치를 기준으로 마커까지 거리를 대칭으로 반영
-                    val allPoints = markerPoints + userLatLng
-                    var maxLatDelta = 0.0
-                    var maxLngDelta = 0.0
-                    allPoints.forEach { pt ->
-                        maxLatDelta = maxOf(maxLatDelta, abs(pt.latitude - userLatLng.latitude))
-                        maxLngDelta = maxOf(maxLngDelta, abs(pt.longitude - userLatLng.longitude))
-                    }
-                    // 내 위치 중심으로 대칭 bounds 생성
-                    val symmetricBounds = LatLngBounds.from(
-                        LatLng(userLatLng.latitude + maxLatDelta, userLatLng.longitude + maxLngDelta),
-                        LatLng(userLatLng.latitude - maxLatDelta, userLatLng.longitude - maxLngDelta),
-                    )
-                    cameraPositionState.animate(
-                        CameraUpdate.fitBounds(
-                            symmetricBounds,
-                            sidePaddingPx,
-                            topPaddingPx,
-                            sidePaddingPx,
-                            bottomPaddingPx,
-                        ),
-                    )
-                } else {
-                    // 마커 없을 때: 내 위치를 보이는 영역 중앙에
-                    val defaultBounds = LatLngBounds.from(
-                        LatLng(userLatLng.latitude + 0.01, userLatLng.longitude + 0.01),
-                        LatLng(userLatLng.latitude - 0.01, userLatLng.longitude - 0.01),
-                    )
-                    cameraPositionState.animate(
-                        CameraUpdate.fitBounds(
-                            defaultBounds,
-                            sidePaddingPx,
-                            topPaddingPx,
-                            sidePaddingPx,
-                            bottomPaddingPx,
-                        ),
-                    )
-                }
-                initialCameraFitted = true
-            }
-
-            // When place selected → expand sheet & move camera
-            LaunchedEffect(state.selectedDetail) {
-                val detail = state.selectedDetail
-                if (detail != null) {
-                    sheetOffsetY.animateTo(expandedY, tween(300))
-                    val place = detail.place
-                    if (place.lat != 0.0 && place.lng != 0.0) {
-                        cameraPositionState.animate(
-                            CameraUpdate.scrollAndZoomTo(LatLng(place.lat, place.lng), 16.0),
-                        )
-                    }
-                }
-            }
-
-            // When sheet collapses from PLACE_DETAIL → clear selection
-            LaunchedEffect(currentAnchor) {
-                if (currentAnchor != SheetAnchor.EXPANDED && state.sheetMode == SheetMode.PLACE_DETAIL) {
-                    viewModel.clearSelection()
-                }
-            }
-
-            // Map layer
-            Box(modifier = Modifier.fillMaxSize()) {
-                NaverMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState,
-                    locationSource = locationSource,
-                    properties = mapProperties,
-                    uiSettings = mapUiSettings,
-                ) {
-                    val mapLocale = LanguageManager.current.value.locale
-                    MapEffect(mapLocale) { naverMap ->
-                        naverMap.setLocale(mapLocale)
-                    }
-                    val selectedId = state.selectedDetail?.place?.id
-                    markerPlaces.forEach { place ->
-                        val isSelected = place.id == selectedId
-                        val icon = if (isSelected) selectedMarkerIcons[place.id] else markerIcons[place.id]
-                        if (icon != null) {
-                            Marker(
-                                state = rememberMarkerState(
-                                    key = place.id,
-                                    position = LatLng(place.lat, place.lng),
-                                ),
-                                captionText = place.name,
-                                icon = icon,
-                                width = if (isSelected) selectedMarkerSizeDp else markerSizeDp,
-                                height = if (isSelected) selectedMarkerSizeDp else markerSizeDp,
-                                zIndex = if (isSelected) 1 else 0,
-                                onClick = {
-                                    viewModel.selectPlace(place.id)
-                                    true
-                                },
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Sheet layer
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset { IntOffset(0, sheetOffsetY.value.roundToInt()) }
-                    .shadow(8.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
-                    .background(BgWhite),
-            ) {
-                // ── Drag area: handle + LocationBar ──
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .draggable(
-                            state = dragState,
-                            orientation = Orientation.Vertical,
-                            onDragStopped = { snapToNearest() },
-                        ),
-                ) {
-                    // Drag handle
+            BottomSheetScaffold(
+                scaffoldState = scaffoldState,
+                sheetPeekHeight = 360.dp,
+                sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                sheetContainerColor = BgWhite,
+                sheetDragHandle = {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -386,121 +250,79 @@ fun HomeScreen(
                                 .background(DragHandle),
                         )
                     }
-
+                },
+                sheetContent = {
                     when (state.sheetMode) {
-                        SheetMode.RECOMMENDATIONS -> {
-                            LocationBar(
-                                spotCount = state.spotCount,
-                                locationName = locationName,
-                            )
-                        }
-                        SheetMode.PLACE_DETAIL -> {}
-                    }
-                }
-
-                // ── Content area ──
-                val isExpanded = currentAnchor == SheetAnchor.EXPANDED
-                val contentScrollState = rememberScrollState()
-
-                // Auto-scroll when messages change (recommendations mode)
-                LaunchedEffect(state.chatMessages.size) {
-                    if (state.sheetMode == SheetMode.RECOMMENDATIONS && isExpanded) {
-                        contentScrollState.animateScrollTo(contentScrollState.maxValue)
-                    }
-                }
-
-                when (state.sheetMode) {
-                    SheetMode.RECOMMENDATIONS -> {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f)
-                                .then(
-                                    if (isExpanded) Modifier.verticalScroll(contentScrollState)
-                                    else Modifier
+                        SheetMode.RECOMMENDATIONS -> RecommendationsSheet(
+                            state = state,
+                            locationName = locationName,
+                            onPlaceClick = { placeId -> viewModel.selectPlace(placeId) },
+                            onShowMore = { title -> viewModel.onShowMore(title) },
+                            onSelectOption = { option -> viewModel.onSelectOption(option) },
+                        )
+                        SheetMode.PLACE_DETAIL -> {
+                            state.selectedDetail?.let { detail ->
+                                PlaceDetailSheet(
+                                    detail = detail,
+                                    onBack = { viewModel.clearSelection() },
+                                    onGoHere = { placeId ->
+                                        viewModel.startGuide(placeId)
+                                        navController.navigate(Screen.Transport.createRoute(placeId))
+                                    },
                                 )
-                                .padding(bottom = 12.dp),
-                        ) {
-                            state.chatMessages.forEachIndexed { index, msg ->
-                                if (msg is ChatMessage.FindOtherPlacesBtn) return@forEachIndexed
-                                val msgModifier = Modifier.padding(horizontal = 16.dp)
-                                when (msg) {
-                                    is ChatMessage.BotText -> {
-                                        GuideBubble(
-                                            text = msg.text,
-                                            modifier = msgModifier.padding(vertical = 4.dp),
-                                            showAvatar = index == 0 ||
-                                                state.chatMessages.getOrNull(index - 1) !is ChatMessage.BotText,
-                                        )
-                                    }
-                                    is ChatMessage.BotTyping -> {
-                                        TypingIndicator(
-                                            modifier = msgModifier.padding(vertical = 4.dp),
-                                            showAvatar = state.chatMessages.getOrNull(index - 1)
-                                                .let { it !is ChatMessage.BotText && it !is ChatMessage.BotRecommendation },
-                                        )
-                                    }
-                                    is ChatMessage.UserText -> {
-                                        UserBubble(
-                                            text = msg.text,
-                                            modifier = msgModifier.padding(vertical = 4.dp),
-                                        )
-                                    }
-                                    is ChatMessage.BotRecommendation -> {
-                                        RecommendationBlock(
-                                            section = msg.section,
-                                            onPlaceClick = { placeId -> viewModel.selectPlace(placeId) },
-                                            onShowMore = if (msg.section.btnText.isNotEmpty()) {
-                                                { viewModel.onShowMore(msg.section.title) }
-                                            } else null,
-                                        )
-                                    }
-                                    is ChatMessage.BotOptions -> {
-                                        ChatOptionButtons(
-                                            options = msg.options,
-                                            answered = msg.answered,
-                                            selectedOption = msg.selectedOption,
-                                            onSelect = { option -> viewModel.onSelectOption(option) },
-                                            modifier = msgModifier.padding(vertical = 4.dp),
-                                        )
-                                    }
-                                    is ChatMessage.UserInput -> {
-                                        ChatTextInput(
-                                            onSubmit = msg.onSubmit,
-                                            modifier = msgModifier.padding(vertical = 4.dp),
-                                        )
-                                    }
-                                    else -> {}
-                                }
                             }
                         }
+                    }
+                },
+            ) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    NaverMap(
+                        modifier = Modifier.fillMaxSize(),
+                        cameraPositionState = cameraPositionState,
+                        locationSource = locationSource,
+                        properties = mapProperties,
+                        uiSettings = mapUiSettings,
+                    ) {
+                        val mapLocale = LanguageManager.current.value.locale
+                        MapEffect(mapLocale) { naverMap ->
+                            naverMap.setLocale(mapLocale)
+                        }
+                        val selectedId = state.selectedDetail?.place?.id
+                        markerPlaces.forEach { place ->
+                            val isSelected = place.id == selectedId
+                            val icon = if (isSelected) selectedMarkerIcons[place.id] else markerIcons[place.id]
+                            if (icon != null) {
+                                Marker(
+                                    state = rememberMarkerState(
+                                        key = place.id,
+                                        position = LatLng(place.lat, place.lng),
+                                    ),
+                                    captionText = place.name,
+                                    icon = icon,
+                                    width = if (isSelected) selectedMarkerSizeDp else markerSizeDp,
+                                    height = if (isSelected) selectedMarkerSizeDp else markerSizeDp,
+                                    zIndex = if (isSelected) 1 else 0,
+                                    onClick = {
+                                        viewModel.selectPlace(place.id)
+                                        true
+                                    },
+                                )
+                            }
+                        }
+                    }
+                }
+            }
 
-                        // Find other places button — fixed at bottom, hidden in COLLAPSED
-                        if (currentAnchor != SheetAnchor.COLLAPSED) {
-                            val showFindBtn = state.chatMessages.any { it is ChatMessage.FindOtherPlacesBtn }
-                            if (showFindBtn) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .background(BgWhite)
-                                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                                ) {
-                                    FindOtherPlacesButton(onClick = { viewModel.onFindOtherPlaces() })
-                                }
-                            }
-                        }
-                    }
-                    SheetMode.PLACE_DETAIL -> {
-                        state.selectedDetail?.let { detail ->
-                            PlaceDetailSheet(
-                                detail = detail,
-                                onBack = { viewModel.clearSelection() },
-                                onGoHere = { placeId ->
-                                    navController.navigate(Screen.Transport.createRoute(placeId))
-                                },
-                            )
-                        }
-                    }
+            // Find other places — floating at bottom of Box, above sheet
+            if (showFindBtn) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .background(BgWhite)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                ) {
+                    FindOtherPlacesButton(onClick = { viewModel.onFindOtherPlaces() })
                 }
             }
         }
@@ -514,6 +336,84 @@ fun HomeScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun RecommendationsSheet(
+    state: HomeUiState,
+    locationName: String,
+    onPlaceClick: (String) -> Unit,
+    onShowMore: (String) -> Unit,
+    onSelectOption: (String) -> Unit,
+) {
+    val scrollState = rememberScrollState()
+
+    // Auto-scroll when messages change
+    LaunchedEffect(state.chatMessages.size) {
+        scrollState.animateScrollTo(scrollState.maxValue)
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(scrollState)
+            .padding(bottom = 12.dp),
+    ) {
+        LocationBar(spotCount = state.spotCount, locationName = locationName)
+
+        state.chatMessages.forEachIndexed { index, msg ->
+            if (msg is ChatMessage.FindOtherPlacesBtn) return@forEachIndexed
+            val msgModifier = Modifier.padding(horizontal = 16.dp)
+            when (msg) {
+                is ChatMessage.BotText -> {
+                    GuideBubble(
+                        text = msg.text,
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                        showAvatar = index == 0 ||
+                            state.chatMessages.getOrNull(index - 1) !is ChatMessage.BotText,
+                    )
+                }
+                is ChatMessage.BotTyping -> {
+                    TypingIndicator(
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                        showAvatar = state.chatMessages.getOrNull(index - 1)
+                            .let { it !is ChatMessage.BotText && it !is ChatMessage.BotRecommendation },
+                    )
+                }
+                is ChatMessage.UserText -> {
+                    UserBubble(
+                        text = msg.text,
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                    )
+                }
+                is ChatMessage.BotRecommendation -> {
+                    RecommendationBlock(
+                        section = msg.section,
+                        onPlaceClick = onPlaceClick,
+                        onShowMore = if (msg.section.btnText.isNotEmpty()) {
+                            { onShowMore(msg.section.title) }
+                        } else null,
+                    )
+                }
+                is ChatMessage.BotOptions -> {
+                    ChatOptionButtons(
+                        options = msg.options,
+                        answered = msg.answered,
+                        selectedOption = msg.selectedOption,
+                        onSelect = onSelectOption,
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                    )
+                }
+                is ChatMessage.UserInput -> {
+                    ChatTextInput(
+                        onSubmit = msg.onSubmit,
+                        modifier = msgModifier.padding(vertical = 4.dp),
+                    )
+                }
+                else -> {}
+            }
+        }
     }
 }
 

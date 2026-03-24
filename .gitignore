@@ -24,3 +24,9 @@ test/mapsapitest/src/**/*.js
 test/mapsapitest/src/**/*.js.map
 test/mapsapitest/src/**/*.d.ts
 test/mapsapitest/src/**/*.d.ts.map
+
+CLAUDE.md
+
+# Claude Code
+.claude/
+docker-compose.app.local.yml

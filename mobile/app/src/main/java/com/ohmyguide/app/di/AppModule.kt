@@ -1,14 +1,20 @@
 package com.ohmyguide.app.di
 
+import android.content.Context
+import com.ohmyguide.app.BuildConfig
+import com.ohmyguide.app.data.api.ApiService
+import com.ohmyguide.app.data.api.AuthInterceptor
 import com.ohmyguide.app.data.api.BusanBimsApi
 import com.ohmyguide.app.data.api.NaverDrivingApi
 import com.ohmyguide.app.data.api.NaverWalkingApi
 import com.ohmyguide.app.data.api.OdsayApi
 import com.ohmyguide.app.data.api.OpenMeteoApi
 import com.ohmyguide.app.data.api.TmapApi
+import com.ohmyguide.app.data.local.TokenDataStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -22,14 +28,38 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideTokenDataStore(@ApplicationContext context: Context): TokenDataStore {
+        return TokenDataStore(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
             .addInterceptor(
                 HttpLoggingInterceptor().apply {
                     level = HttpLoggingInterceptor.Level.BODY
                 }
             )
             .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
+        val baseUrl = BuildConfig.BASE_URL.let { if (it.endsWith("/")) it else "$it/" }
+        return Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideApiService(retrofit: Retrofit): ApiService {
+        return retrofit.create(ApiService::class.java)
     }
 
     @Provides
