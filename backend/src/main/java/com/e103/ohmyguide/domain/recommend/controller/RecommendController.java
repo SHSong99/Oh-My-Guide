@@ -44,7 +44,7 @@ public class RecommendController {
         RefreshResponse response = recommendService.refreshRecommendation(
                 userPrincipal.getId(), request
         );
-        log.info("RecommendController.getRecommendation: size = {} ", response.getRecommendations().size());
+        log.info("RecommendController.refreshRecommendation: size = {} ", response.getRecommendations().size());
         return ResponseEntity.ok(response);
     }
 
