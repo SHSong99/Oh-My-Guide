@@ -100,7 +100,7 @@ fun GpsPermissionScreen(
             val intent = Intent(context, LocationForegroundService::class.java)
             context.startForegroundService(intent)
         }
-        onAllow(genderLabel, ageInput.toIntOrNull() ?: 25, countryLabel, companionLabel)
+        onAllow(genderLabel, ageLabel.toIntOrNull() ?: 25, countryLabel, companionLabel)
     }
 
     val scrollState = rememberScrollState()
