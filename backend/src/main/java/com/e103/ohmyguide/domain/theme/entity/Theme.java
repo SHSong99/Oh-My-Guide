@@ -28,7 +28,7 @@ public class Theme extends BaseEntity {
     private String description;
 
     @OneToMany(mappedBy = "theme")
-    private List<ThemeAttraction> attractions = new ArrayList<>();
+    private List<ThemeAttraction> themeAttractions = new ArrayList<>();
 
     @Builder
     private Theme(String name, String description) {

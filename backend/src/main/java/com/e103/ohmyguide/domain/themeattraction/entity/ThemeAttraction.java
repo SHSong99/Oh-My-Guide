@@ -35,7 +35,7 @@ public class ThemeAttraction extends BaseEntity {
 
     public void assignTheme(Theme theme) {
         this.theme = theme;
-        theme.getAttractions().add(this);
+        theme.getThemeAttractions().add(this);
     }
 
     public void assignAttraction(Attraction attraction) {
