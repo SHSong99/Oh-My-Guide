@@ -1,5 +1,6 @@
 package com.e103.ohmyguide.domain.theme.controller;
 
+import com.e103.ohmyguide.domain.theme.controller.request.ThemeAttractionAddRequest;
 import com.e103.ohmyguide.domain.theme.controller.request.ThemeCreateRequest;
 import com.e103.ohmyguide.domain.theme.controller.request.ThemeUpdateRequest;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeDetailResponse;
@@ -11,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/themes")
+@RequestMapping("/themes")
 @RequiredArgsConstructor
 public class ThemeController {
 
@@ -44,6 +45,22 @@ public class ThemeController {
     @DeleteMapping("/{themeId}")
     public ResponseEntity<Void> deleteTheme(@PathVariable Long themeId) {
         themeService.deleteTheme(themeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{themeId}/attractions")
+    public ResponseEntity<Void> addAttraction(
+            @PathVariable Long themeId,
+            @Valid @RequestBody ThemeAttractionAddRequest request) {
+        themeService.addAttraction(themeId, request.toServiceRequest());
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/{themeId}/attractions/{attractionId}")
+    public ResponseEntity<Void> removeAttraction(
+            @PathVariable Long themeId,
+            @PathVariable Long attractionId) {
+        themeService.removeAttraction(themeId, attractionId);
         return ResponseEntity.noContent().build();
     }
 }

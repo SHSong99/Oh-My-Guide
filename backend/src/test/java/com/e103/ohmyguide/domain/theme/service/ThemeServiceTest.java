@@ -6,8 +6,10 @@ import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
 import java.math.BigDecimal;
 import com.e103.ohmyguide.domain.theme.entity.Theme;
 import com.e103.ohmyguide.domain.theme.repository.ThemeRepository;
+import com.e103.ohmyguide.domain.theme.service.request.ThemeAttractionAddServiceRequest;
 import com.e103.ohmyguide.domain.theme.service.request.ThemeCreateServiceRequest;
 import com.e103.ohmyguide.domain.theme.service.request.ThemeUpdateServiceRequest;
+
 import com.e103.ohmyguide.domain.theme.service.response.AttractionSummaryResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeDetailResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeInfoResponse;
@@ -99,6 +101,84 @@ class ThemeServiceTest extends IntegrationTestSupport {
     void deleteTheme_throwsExceptionWhenNotFound() {
         // when & then
         assertThatThrownBy(() -> themeService.deleteTheme(999L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @DisplayName("테마에 관광지를 추가하면 ThemeAttraction이 저장된다.")
+    @Test
+    void addAttraction_savedSuccessfully() {
+        // given
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+        Attraction attraction = attractionRepository.save(Attraction.builder().title("한라산").build());
+        ThemeAttractionAddServiceRequest request = ThemeAttractionAddServiceRequest.of(attraction.getId(), 1);
+
+        // when
+        themeService.addAttraction(theme.getId(), request);
+
+        // then
+        assertThat(themeAttractionRepository.findAll()).hasSize(1);
+        ThemeAttraction saved = themeAttractionRepository.findAll().get(0);
+        assertThat(saved.getAttractionOrder()).isEqualTo(1);
+    }
+
+    @DisplayName("존재하지 않는 테마에 관광지를 추가하면 ResourceNotFoundException이 발생한다.")
+    @Test
+    void addAttraction_throwsExceptionWhenThemeNotFound() {
+        // given
+        Attraction attraction = attractionRepository.save(Attraction.builder().title("한라산").build());
+        ThemeAttractionAddServiceRequest request = ThemeAttractionAddServiceRequest.of(attraction.getId(), 1);
+
+        // when & then
+        assertThatThrownBy(() -> themeService.addAttraction(999L, request))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @DisplayName("존재하지 않는 관광지를 테마에 추가하면 ResourceNotFoundException이 발생한다.")
+    @Test
+    void addAttraction_throwsExceptionWhenAttractionNotFound() {
+        // given
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+        ThemeAttractionAddServiceRequest request = ThemeAttractionAddServiceRequest.of(999L, 1);
+
+        // when & then
+        assertThatThrownBy(() -> themeService.addAttraction(theme.getId(), request))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @DisplayName("테마에서 관광지를 제거하면 ThemeAttraction이 삭제된다.")
+    @Test
+    void removeAttraction_deletedSuccessfully() {
+        // given
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+        Attraction attraction = attractionRepository.save(Attraction.builder().title("한라산").build());
+        ThemeAttraction ta = ThemeAttraction.builder().attractionOrder(1).build();
+        ta.assignTheme(theme);
+        ta.assignAttraction(attraction);
+        ThemeAttraction saved = themeAttractionRepository.save(ta);
+
+        // when
+        themeService.removeAttraction(theme.getId(), attraction.getId());
+
+        // then
+        assertThat(themeAttractionRepository.findById(saved.getId())).isEmpty();
+    }
+
+    @DisplayName("존재하지 않는 테마로 관광지를 제거하면 ResourceNotFoundException이 발생한다.")
+    @Test
+    void removeAttraction_throwsExceptionWhenThemeNotFound() {
+        // when & then
+        assertThatThrownBy(() -> themeService.removeAttraction(999L, 1L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @DisplayName("테마에 속하지 않는 attractionId로 제거하면 ResourceNotFoundException이 발생한다.")
+    @Test
+    void removeAttraction_throwsExceptionWhenAttractionNotInTheme() {
+        // given
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+
+        // when & then
+        assertThatThrownBy(() -> themeService.removeAttraction(theme.getId(), 999L))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
