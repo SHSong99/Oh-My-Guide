@@ -11,8 +11,11 @@ import com.ohmyguide.app.data.repository.TmapRepository
 import com.ohmyguide.app.data.repository.WeatherRepository
 import com.ohmyguide.app.domain.model.NaviRouteCache
 import com.ohmyguide.app.domain.model.NaviRouteData
+import com.ohmyguide.app.domain.model.PlaceDetailCache
 import com.ohmyguide.app.domain.model.RouteCoord
 import com.ohmyguide.app.domain.model.RouteSegmentGeo
+import com.ohmyguide.app.fixtures.Course
+import com.ohmyguide.app.fixtures.EXPLORE_COURSES
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
@@ -20,6 +23,8 @@ import com.ohmyguide.app.fixtures.SAMPLE_PLACES
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.theme.LanguageManager
+import com.ohmyguide.app.data.model.GuidePlaceDto
+import com.ohmyguide.app.ui.theme.CatAttraction
 import com.ohmyguide.app.ui.theme.TransitAmber
 import com.ohmyguide.app.ui.theme.TransitGray
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -94,6 +99,10 @@ data class NaviUiState(
     val progressPct: Float = 0f,
     val userLat: Double = 35.0950,
     val userLng: Double = 128.8560,
+    // Course mode
+    val course: Course? = null,
+    val spotIndex: Int = 0,
+    val totalSpots: Int = 0,
 )
 
 @HiltViewModel
@@ -107,9 +116,17 @@ class NaviViewModel @Inject constructor(
 
     val placeId: String = savedStateHandle["placeId"] ?: "dm3"
     val mode: String = savedStateHandle["mode"] ?: "walk"
+    val courseId: String? = savedStateHandle.get<String>("courseId")?.ifEmpty { null }
+    val spotIndex: Int = savedStateHandle.get<String>("spotIndex")?.toIntOrNull() ?: 0
 
-    val detail: PlaceDetail? = SAMPLE_PLACE_DETAILS[placeId]
+    val course: Course? = courseId?.let { id -> EXPLORE_COURSES.find { it.id == id } }
+    val isCourseMode: Boolean = course != null
+
+    val detail: PlaceDetail? = PlaceDetailCache.get(placeId)
+        ?: SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
+
+    private val guideData = PlaceDetailCache.getGuide(placeId)
 
     private val _naviRoute = MutableStateFlow<NaviRouteData?>(
         if (mode == "transit") naviRouteCache.peek() else null
@@ -120,8 +137,12 @@ class NaviViewModel @Inject constructor(
     private val totalDistance = route?.distanceMeters ?: 1500
     private val totalDuration = _naviRoute.value?.totalDurationMin ?: route?.durationMin ?: 5
 
-    private val destinationLat = PLACE_COORDINATES[placeId]?.first ?: 37.5700
-    private val destinationLng = PLACE_COORDINATES[placeId]?.second ?: 126.9990
+    val destLat = detail?.place?.lat?.takeIf { it != 0.0 }
+        ?: PLACE_COORDINATES[placeId]?.first ?: 37.5700
+    val destLng = detail?.place?.lng?.takeIf { it != 0.0 }
+        ?: PLACE_COORDINATES[placeId]?.second ?: 126.9990
+    private val destinationLat = destLat
+    private val destinationLng = destLng
 
     private val _uiState = MutableStateFlow(NaviUiState())
     val uiState: StateFlow<NaviUiState> = _uiState.asStateFlow()
@@ -141,6 +162,10 @@ class NaviViewModel @Inject constructor(
             "p3" to (35.0850 to 128.9200),
             "p4" to (35.0530 to 128.9580),
             "p5" to (35.0470 to 128.9660),
+            // Course spots
+            "dh1" to (37.5265 to 127.0405),
+            "dh2" to (37.5563 to 126.9236),
+            "dh3" to (37.5586 to 126.9267),
         )
         private const val ARRIVAL_THRESHOLD_METERS = 100.0
 
@@ -187,6 +212,15 @@ class NaviViewModel @Inject constructor(
     }
 
     init {
+        if (isCourseMode) {
+            _uiState.update {
+                it.copy(
+                    course = course,
+                    spotIndex = spotIndex,
+                    totalSpots = course?.spots?.size ?: 0,
+                )
+            }
+        }
         initChat()
         if (mode == "transit") {
             startGpsTracking()
@@ -198,30 +232,55 @@ class NaviViewModel @Inject constructor(
     private fun initChat() {
         val placeName = detail?.place?.name ?: "your destination"
 
+        if (isCourseMode) {
+            val courseName = course?.title ?: ""
+            val total = course?.spots?.size ?: 0
+            addMessage(NaviChatMessage.BotText(
+                "\uD83D\uDCCD $courseName — Spot ${spotIndex + 1}/$total"
+            ))
+        }
+
         // Greeting
         addMessage(NaviChatMessage.BotText(
             "I'll guide you to $placeName! Keep going straight ahead.",
         ))
 
+        // Place introduction from API
+        val overview = guideData?.destination?.overview
+            ?: detail?.desc
+        if (!overview.isNullOrBlank()) {
+            viewModelScope.launch {
+                delay(2000L)
+                addMessage(NaviChatMessage.BotTyping)
+                delay(800L)
+                removeTyping()
+                addMessage(NaviChatMessage.BotText(overview))
+            }
+        }
+
         // Weather — delivered shortly after start
         viewModelScope.launch {
-            delay(1500L)
+            delay(4000L)
             addMessage(NaviChatMessage.BotTyping)
             delay(800L)
             removeTyping()
             fetchWeatherAndShow()
         }
 
-        // Story guide prompt — separate turn
-        viewModelScope.launch {
-            delay(6000L)
-            addMessage(NaviChatMessage.BotTyping)
-            delay(800L)
-            removeTyping()
-            addMessage(NaviChatMessage.BotText(
-                "By the way, I know some interesting stories about $placeName!"
-            ))
-            addMessage(NaviChatMessage.StoryPrompt(placeName = placeName))
+        // Story guide prompt — separate turn (only if TTS text available)
+        val hasTts = !guideData?.destination?.overviewTts.isNullOrBlank()
+            || !overview.isNullOrBlank()
+        if (hasTts) {
+            viewModelScope.launch {
+                delay(8000L)
+                addMessage(NaviChatMessage.BotTyping)
+                delay(800L)
+                removeTyping()
+                addMessage(NaviChatMessage.BotText(
+                    "By the way, I know some interesting stories about $placeName!"
+                ))
+                addMessage(NaviChatMessage.StoryPrompt(placeName = placeName))
+            }
         }
 
         // Transit info — separate turn (only for transit mode)
@@ -386,10 +445,16 @@ class NaviViewModel @Inject constructor(
 
     private fun showNearbyPlaces() {
         nearbyPoiShown = true
-        val nearbyPlaces = SAMPLE_PLACES
-            .filter { it.id != placeId }
-            .shuffled()
-            .take(4)
+        val apiNearby = guideData?.nearbyPlaces
+            ?.filter { it.placeId.toString() != placeId }
+            ?.take(4)
+            ?.map { it.toPlace() }
+
+        val nearbyPlaces = if (!apiNearby.isNullOrEmpty()) {
+            apiNearby
+        } else {
+            SAMPLE_PLACES.filter { it.id != placeId }.shuffled().take(4)
+        }
 
         if (nearbyPlaces.isEmpty()) return
 
@@ -401,6 +466,20 @@ class NaviViewModel @Inject constructor(
             addMessage(NaviChatMessage.NearbyPlaces(places = nearbyPlaces))
         }
     }
+
+    private fun GuidePlaceDto.toPlace(): Place = Place(
+        id = placeId.toString(),
+        name = title ?: "",
+        nameKr = "",
+        rating = 0f,
+        distance = "",
+        tag = "",
+        color = CatAttraction,
+        emoji = "\uD83D\uDCCD",
+        lat = latitude ?: 0.0,
+        lng = longitude ?: 0.0,
+        imageUrl = firstImage1,
+    )
 
     // ── Weather ──
 
@@ -519,10 +598,16 @@ class NaviViewModel @Inject constructor(
             removeTyping()
             addMessage(NaviChatMessage.BotText("Great! Here are some spots nearby you might love:"))
 
-            val nearbyPlaces = SAMPLE_PLACES
-                .filter { it.id != placeId }
-                .shuffled()
-                .take(3)
+            val apiNearby = guideData?.nearbyPlaces
+                ?.filter { it.placeId.toString() != placeId }
+                ?.take(3)
+                ?.map { it.toPlace() }
+
+            val nearbyPlaces = if (!apiNearby.isNullOrEmpty()) {
+                apiNearby
+            } else {
+                SAMPLE_PLACES.filter { it.id != placeId }.shuffled().take(3)
+            }
             addMessage(NaviChatMessage.NearbyRecommendations(nearbyPlaces))
         }
     }

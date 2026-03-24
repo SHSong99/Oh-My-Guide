@@ -18,6 +18,50 @@ import com.ohmyguide.app.ui.theme.CatFood
 import com.ohmyguide.app.ui.theme.CatLeports
 import com.ohmyguide.app.ui.theme.CatShopping
 import com.ohmyguide.app.ui.theme.Success
+import androidx.annotation.RawRes
+import com.ohmyguide.app.R
+
+// ── Featured Theme ──
+
+data class FeaturedTheme(
+    val id: String,
+    val title: String,
+    val subtitle: String,
+    val badge: String,
+    val courseId: String,
+    @RawRes val videoRes: Int,
+    val dominantColor: Long = 0xFF1A1A2E,
+)
+
+val FEATURED_THEMES = listOf(
+    FeaturedTheme(
+        id = "kpop-demon",
+        title = "K-Pop Demon\nHunters",
+        subtitle = "Follow the hottest idol spots in Hongdae & Mapo",
+        badge = "K-POP",
+        courseId = "demon-hunters",
+        videoRes = R.raw.theme_kpop_demon_hunters,
+        dominantColor = 0xFF8B1A1A,
+    ),
+    FeaturedTheme(
+        id = "bts",
+        title = "BTS ARMY\nSeoul Tour",
+        subtitle = "Walk the streets where BTS made history",
+        badge = "BTS",
+        courseId = "demon-hunters",
+        videoRes = R.raw.theme_bts,
+        dominantColor = 0xFF1A2B5E,
+    ),
+    FeaturedTheme(
+        id = "ssafy",
+        title = "SSAFY Lunch\nWalk Course",
+        subtitle = "The best lunch break walking route around SSAFY campus",
+        badge = "SSAFY",
+        courseId = "demon-hunters",
+        videoRes = R.raw.theme_ssafy,
+        dominantColor = 0xFF1A4B8E,
+    ),
+)
 
 // ── Category ──
 
@@ -128,6 +172,28 @@ val SAMPLE_PLACE_DETAILS = mapOf(
         hours = "Open 24h",
         fee = "Free",
         walkTime = "120 min walk",
+    ),
+    // ── Course Spots ──
+    "dh1" to PlaceDetail(
+        place = Place("dh1", "HYBE Insight", "\uD558\uC774\uBE0C \uC778\uC0AC\uC774\uD2B8", 4.9f, "0km", "K-Pop", CatCulture, "\uD83C\uDFB5", 37.5265, 127.0405, "https://images.unsplash.com/photo-1713816821469-6af8114275c5?q=80&w=600&auto=format&fit=crop"),
+        desc = "The official museum of HYBE entertainment. Explore interactive exhibits about BTS, TXT, and more.",
+        hours = "10:00 - 19:00",
+        fee = "22,000 KRW",
+        walkTime = "Start point",
+    ),
+    "dh2" to PlaceDetail(
+        place = Place("dh2", "Hongdae Busking Stage", "\uD64D\uB300 \uBC84\uC2A4\uD0B9 \uBB34\uB300", 4.7f, "1.2km", "K-Pop", CatCulture, "\uD83C\uDFA4", 37.5563, 126.9236, "https://images.unsplash.com/photo-1765375783706-05aeeaf59e5f?q=80&w=600&auto=format&fit=crop"),
+        desc = "The legendary busking area where K-pop idols were first discovered. Watch street performances every weekend.",
+        hours = "Open 24h",
+        fee = "Free",
+        walkTime = "15 min walk",
+    ),
+    "dh3" to PlaceDetail(
+        place = Place("dh3", "SM Entertainment Cafe", "SM \uC5D4\uD130 \uCE74\uD398", 4.6f, "0.8km", "K-Pop", CatCulture, "\u2615", 37.5586, 126.9267, "https://images.unsplash.com/photo-1603685568162-67024e818bec?q=80&w=600&auto=format&fit=crop"),
+        desc = "Official SM cafe with themed drinks and exclusive merchandise. A must-visit for K-pop fans.",
+        hours = "10:00 - 22:00",
+        fee = "Free entry",
+        walkTime = "10 min walk",
     ),
 )
 
@@ -280,6 +346,8 @@ data class Spot(
     val desc: String,
     val walkMin: Int,
     val imageUrl: String? = null,
+    val lat: Double = 0.0,
+    val lng: Double = 0.0,
 )
 
 data class Course(
@@ -304,6 +372,7 @@ data class ExploreCategoryGroup(
     val label: String,
     val sub: String,
     val emoji: String,
+    val icon: ImageVector,
     val color: Color,
     val bgColor: Color,
 )
@@ -319,9 +388,9 @@ val EXPLORE_REGIONS = listOf(
 )
 
 val EXPLORE_CATEGORY_GROUPS = listOf(
-    ExploreCategoryGroup("local", "Local Life", "Markets & food", "\uD83C\uDFEA", Success, Color(0xFFF0FDF4)),
-    ExploreCategoryGroup("kpop", "K-Pop", "Idol hotspots", "\uD83C\uDFB5", Color(0xFF7C3AED), Color(0xFFF5F3FF)),
-    ExploreCategoryGroup("kdrama", "K-Drama", "Filming spots", "\uD83C\uDFAC", Color(0xFFEA580C), Color(0xFFFFF7ED)),
+    ExploreCategoryGroup("local", "Local Life", "Markets & food", "\uD83C\uDFEA", Icons.Filled.Luggage, Success, Color(0xFFF0FDF4)),
+    ExploreCategoryGroup("kpop", "K-Pop", "Idol hotspots", "\uD83C\uDFB5", Icons.Filled.AutoAwesome, Color(0xFF7C3AED), Color(0xFFF5F3FF)),
+    ExploreCategoryGroup("kdrama", "K-Drama", "Filming spots", "\uD83C\uDFAC", Icons.Filled.Favorite, Color(0xFFEA580C), Color(0xFFFFF7ED)),
 )
 
 val EXPLORE_COURSES = listOf(
@@ -337,9 +406,9 @@ val EXPLORE_COURSES = listOf(
         rating = 4.8f,
         tags = listOf("K-Pop", "Hongdae", "Idol"),
         spots = listOf(
-            Spot("dh1", "HYBE Insight", "\uD558\uC774\uBE0C \uC778\uC0AC\uC774\uD2B8", "The official museum of HYBE entertainment.", 0, "https://images.unsplash.com/photo-1713816821469-6af8114275c5?q=80&w=600&auto=format&fit=crop"),
-            Spot("dh2", "Hongdae Busking Stage", "\uD64D\uB300 \uBC84\uC2A4\uD0B9 \uBB34\uB300", "The legendary busking area.", 15, "https://images.unsplash.com/photo-1765375783706-05aeeaf59e5f?q=80&w=600&auto=format&fit=crop"),
-            Spot("dh3", "SM Entertainment Caf\u00E9", "SM \uC5D4\uD130 \uCE74\uD398", "Official SM caf\u00E9 with themed drinks.", 10, "https://images.unsplash.com/photo-1603685568162-67024e818bec?q=80&w=600&auto=format&fit=crop"),
+            Spot("dh1", "HYBE Insight", "\uD558\uC774\uBE0C \uC778\uC0AC\uC774\uD2B8", "The official museum of HYBE entertainment.", 0, "https://images.unsplash.com/photo-1713816821469-6af8114275c5?q=80&w=600&auto=format&fit=crop", 37.5265, 127.0405),
+            Spot("dh2", "Hongdae Busking Stage", "\uD64D\uB300 \uBC84\uC2A4\uD0B9 \uBB34\uB300", "The legendary busking area.", 15, "https://images.unsplash.com/photo-1765375783706-05aeeaf59e5f?q=80&w=600&auto=format&fit=crop", 37.5563, 126.9236),
+            Spot("dh3", "SM Entertainment Caf\u00E9", "SM \uC5D4\uD130 \uCE74\uD398", "Official SM caf\u00E9 with themed drinks.", 10, "https://images.unsplash.com/photo-1603685568162-67024e818bec?q=80&w=600&auto=format&fit=crop", 37.5586, 126.9267),
         ),
         imageUrl = "https://images.unsplash.com/photo-1765375783706-05aeeaf59e5f?q=80&w=600&auto=format&fit=crop",
     ),
@@ -355,8 +424,8 @@ val EXPLORE_COURSES = listOf(
         rating = 4.6f,
         tags = listOf("Local", "Food", "Mukbang"),
         spots = listOf(
-            Spot("cvs1", "CU Flagship Seongsu", "CU \uC131\uC218 \uD50C\uB798\uADF8\uC2ED", "Korea's trendiest CU store.", 0, "https://images.unsplash.com/photo-1760020890915-ca605575b93b?q=80&w=600&auto=format&fit=crop"),
-            Spot("cvs2", "GS25 Hangang Park", "GS25 \uD55C\uAC15\uACF5\uC6D0\uC810", "Ramyeon by the Han River.", 20, "https://images.unsplash.com/photo-1628532431030-3b6d433ed166?q=80&w=600&auto=format&fit=crop"),
+            Spot("cvs1", "CU Flagship Seongsu", "CU \uC131\uC218 \uD50C\uB798\uADF8\uC2ED", "Korea's trendiest CU store.", 0, "https://images.unsplash.com/photo-1760020890915-ca605575b93b?q=80&w=600&auto=format&fit=crop", 37.5446, 127.0566),
+            Spot("cvs2", "GS25 Hangang Park", "GS25 \uD55C\uAC15\uACF5\uC6D0\uC810", "Ramyeon by the Han River.", 20, "https://images.unsplash.com/photo-1628532431030-3b6d433ed166?q=80&w=600&auto=format&fit=crop", 37.5169, 126.9358),
         ),
         imageUrl = "https://images.unsplash.com/photo-1760020890915-ca605575b93b?q=80&w=600&auto=format&fit=crop",
     ),
@@ -372,9 +441,9 @@ val EXPLORE_COURSES = listOf(
         rating = 4.7f,
         tags = listOf("K-Drama", "Goblin", "Filming"),
         spots = listOf(
-            Spot("gb1", "Deoksugung Stone Wall Road", "\uB355\uC218\uAD81 \uB3CC\uB2F4\uAE38", "The romantic stone wall road.", 0, "https://images.unsplash.com/photo-1748835600895-8ff48c51c37f?q=80&w=600&auto=format&fit=crop"),
-            Spot("gb2", "Bukchon Hanok Village", "\uBD81\uCD0C\uD55C\uC625\uB9C8\uC744", "Traditional village from the drama.", 20, "https://images.unsplash.com/photo-1704240699154-da9e9c690373?q=80&w=600&auto=format&fit=crop"),
-            Spot("gb3", "Incheon Open Port Area", "\uC778\uCC9C \uAC1C\uD56D\uC7A5", "The Grim Reaper's tea shop area.", 30, "https://images.unsplash.com/photo-1768711699153-bd696267e52f?q=80&w=600&auto=format&fit=crop"),
+            Spot("gb1", "Deoksugung Stone Wall Road", "\uB355\uC218\uAD81 \uB3CC\uB2F4\uAE38", "The romantic stone wall road.", 0, "https://images.unsplash.com/photo-1748835600895-8ff48c51c37f?q=80&w=600&auto=format&fit=crop", 37.5659, 126.9751),
+            Spot("gb2", "Bukchon Hanok Village", "\uBD81\uCD0C\uD55C\uC625\uB9C8\uC744", "Traditional village from the drama.", 20, "https://images.unsplash.com/photo-1704240699154-da9e9c690373?q=80&w=600&auto=format&fit=crop", 37.5826, 126.9857),
+            Spot("gb3", "Incheon Open Port Area", "\uC778\uCC9C \uAC1C\uD56D\uC7A5", "The Grim Reaper's tea shop area.", 30, "https://images.unsplash.com/photo-1768711699153-bd696267e52f?q=80&w=600&auto=format&fit=crop", 37.4739, 126.6231),
         ),
         imageUrl = "https://images.unsplash.com/photo-1748835600895-8ff48c51c37f?q=80&w=600&auto=format&fit=crop",
     ),
@@ -390,9 +459,9 @@ val EXPLORE_COURSES = listOf(
         rating = 4.9f,
         tags = listOf("BTS", "Busan", "ARMY"),
         spots = listOf(
-            Spot("bts1", "Jimin's Dance School", "\uC9C0\uBBFC \uB304\uC2A4 \uC2A4\uCFE8", "Where BTS Jimin trained.", 0, "https://images.unsplash.com/photo-1762440775708-7dbfe9e10842?q=80&w=600&auto=format&fit=crop"),
-            Spot("bts2", "Gamcheon Culture Village", "\uAC10\uCC9C\uBB38\uD654\uB9C8\uC744", "Colorful hillside village.", 25, "https://images.unsplash.com/photo-1762440775708-7dbfe9e10842?q=80&w=600&auto=format&fit=crop"),
-            Spot("bts3", "Haeundae Beach", "\uD574\uC6B4\uB300 \uD574\uBCC0", "Featured in BTS MVs.", 30, "https://images.unsplash.com/photo-1768081977305-b5db21d91ec1?q=80&w=600&auto=format&fit=crop"),
+            Spot("bts1", "Jimin's Dance School", "\uC9C0\uBBFC \uB304\uC2A4 \uC2A4\uCFE8", "Where BTS Jimin trained.", 0, "https://images.unsplash.com/photo-1762440775708-7dbfe9e10842?q=80&w=600&auto=format&fit=crop", 35.1525, 129.0596),
+            Spot("bts2", "Gamcheon Culture Village", "\uAC10\uCC9C\uBB38\uD654\uB9C8\uC744", "Colorful hillside village.", 25, "https://images.unsplash.com/photo-1762440775708-7dbfe9e10842?q=80&w=600&auto=format&fit=crop", 35.0978, 129.0107),
+            Spot("bts3", "Haeundae Beach", "\uD574\uC6B4\uB300 \uD574\uBCC0", "Featured in BTS MVs.", 30, "https://images.unsplash.com/photo-1768081977305-b5db21d91ec1?q=80&w=600&auto=format&fit=crop", 35.1586, 129.1603),
         ),
         imageUrl = "https://images.unsplash.com/photo-1762440775708-7dbfe9e10842?q=80&w=600&auto=format&fit=crop",
     ),
@@ -408,9 +477,9 @@ val EXPLORE_COURSES = listOf(
         rating = 4.7f,
         tags = listOf("Local", "Market", "Street Food"),
         spots = listOf(
-            Spot("lm1", "Gwangjang Market", "\uAD11\uC7A5\uC2DC\uC7A5", "Seoul's oldest market.", 0, "https://images.unsplash.com/photo-1628532431030-3b6d433ed166?q=80&w=600&auto=format&fit=crop"),
-            Spot("lm2", "Tongin Market", "\uD1B5\uC778\uC2DC\uC7A5", "Build your own dosirak.", 20, "https://images.unsplash.com/photo-1628532429788-c35922b5e6c1?q=80&w=600&auto=format&fit=crop"),
-            Spot("lm3", "Mangwon Market", "\uB9DD\uC6D0\uC2DC\uC7A5", "The hipsters' market.", 25, "https://images.unsplash.com/photo-1540138279543-b3728f037467?q=80&w=600&auto=format&fit=crop"),
+            Spot("lm1", "Gwangjang Market", "\uAD11\uC7A5\uC2DC\uC7A5", "Seoul's oldest market.", 0, "https://images.unsplash.com/photo-1628532431030-3b6d433ed166?q=80&w=600&auto=format&fit=crop", 37.5700, 126.9990),
+            Spot("lm2", "Tongin Market", "\uD1B5\uC778\uC2DC\uC7A5", "Build your own dosirak.", 20, "https://images.unsplash.com/photo-1628532429788-c35922b5e6c1?q=80&w=600&auto=format&fit=crop", 37.5752, 126.9709),
+            Spot("lm3", "Mangwon Market", "\uB9DD\uC6D0\uC2DC\uC7A5", "The hipsters' market.", 25, "https://images.unsplash.com/photo-1540138279543-b3728f037467?q=80&w=600&auto=format&fit=crop", 37.5560, 126.9072),
         ),
         imageUrl = "https://images.unsplash.com/photo-1628532431030-3b6d433ed166?q=80&w=600&auto=format&fit=crop",
     ),

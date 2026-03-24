@@ -197,6 +197,13 @@ API 호출만. 비즈니스 로직 금지.
 ### 21. 빈 상태 및 에러 처리
 - 데이터 없음, 로딩 실패, 네트워크 에러 각각에 대한 빈 상태 화면 필수
 - API 에러 시 사용자에게 재시도 버튼 제공
+
+### 22. BASE_URL (에뮬레이터/실기기 자동 전환)
+- `AppModule.provideRetrofit()`에서 `isEmulator()` 감지로 BASE_URL 자동 분기
+  - 에뮬레이터 → `http://10.0.2.2:8080/` (호스트 PC의 localhost)
+  - 실기기 → `http://localhost:8080/` (`adb reverse` 필요)
+- 실기기 테스트 전 반드시 `adb -s <시리얼> reverse tcp:8080 tcp:8080` 실행 (USB 재연결 시 재실행)
+- `local.properties`의 `BASE_URL`은 더 이상 런타임에 사용되지 않음
 ---
 
 ## 커밋 규칙

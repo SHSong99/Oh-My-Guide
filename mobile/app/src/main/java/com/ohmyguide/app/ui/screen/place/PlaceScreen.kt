@@ -80,20 +80,16 @@ fun PlaceScreen(navController: NavController, placeId: String) {
             .fillMaxSize()
             .background(BgWhite),
     ) {
-        HeroSection(detail = detail)
-
         Column(
             modifier = Modifier
                 .weight(1f)
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
+                .verticalScroll(rememberScrollState()),
         ) {
-            Text(
-                text = detail.place.nameKr,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextCaption,
-            )
-            Spacer(modifier = Modifier.height(8.dp))
+            HeroSection(detail = detail)
+
+            Column(
+                modifier = Modifier.padding(20.dp),
+            ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -176,6 +172,7 @@ fun PlaceScreen(navController: NavController, placeId: String) {
                     bgColor = InfoBlueBg,
                     modifier = Modifier.weight(1f),
                 )
+            }
             }
         }
 

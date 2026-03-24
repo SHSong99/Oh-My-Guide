@@ -10,6 +10,7 @@ import com.ohmyguide.app.fixtures.HOME_RECOMMENDATIONS
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
 import com.ohmyguide.app.fixtures.RecommendationSection
+import com.ohmyguide.app.domain.model.PlaceDetailCache
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.theme.CatAttraction
 import com.ohmyguide.app.ui.theme.CatCulture
@@ -138,6 +139,7 @@ class HomeViewModel @Inject constructor(
                 fee = "",
                 walkTime = place.distance,
             )
+            PlaceDetailCache.put(placeId, detail)
             _uiState.update {
                 it.copy(sheetMode = SheetMode.PLACE_DETAIL, selectedDetail = detail)
             }
@@ -166,7 +168,10 @@ class HomeViewModel @Inject constructor(
             val lng = location?.longitude ?: 128.8510
             val reachLat = place?.lat ?: lat
             val reachLng = place?.lng ?: lng
-            recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
+            val result = recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
+            result.getOrNull()?.let { guide ->
+                PlaceDetailCache.putGuide(placeId, guide)
+            }
         }
     }
 

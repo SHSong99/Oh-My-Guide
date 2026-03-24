@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ohmyguide.app.domain.model.PlaceDetailCache
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.DarkBg
@@ -47,6 +48,13 @@ import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.TextPrimary
 
+private fun splitIntoPages(text: String): List<String> {
+    val sentences = text.split(Regex("(?<=\\.)\\s+")).filter { it.isNotBlank() }
+    if (sentences.size <= 3) return if (sentences.isEmpty()) listOf(text) else sentences.chunked(1) { it.joinToString(" ") }
+    val perPage = (sentences.size + 2) / 3
+    return sentences.chunked(perPage) { it.joinToString(" ") }
+}
+
 private val MOCK_PAGES = listOf(
     "Built in 1394 during the early Joseon Dynasty, Gwangjang Market was originally a textile trading hub. Over six centuries, it evolved into one of Seoul's most beloved food destinations.",
     "The famous bindaetteok (mung bean pancake) vendors have been perfecting their craft for generations. Each vendor has their own secret recipe, passed down through families.",
@@ -55,10 +63,25 @@ private val MOCK_PAGES = listOf(
 
 @Composable
 fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
-    val detail = SAMPLE_PLACE_DETAILS[placeId]
+    val detail = PlaceDetailCache.get(placeId)
+        ?: SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
     val placeName = detail?.place?.name ?: "Place"
     val placeNameKr = detail?.place?.nameKr ?: ""
+
+    val guideData = PlaceDetailCache.getGuide(placeId)
+    val ttsText = guideData?.destination?.overviewTts
+    val overviewText = guideData?.destination?.overview ?: detail?.desc
+
+    // Use API text if available, split into pages; otherwise fallback to MOCK_PAGES
+    val pages = remember(ttsText, overviewText) {
+        val apiText = ttsText ?: overviewText
+        if (!apiText.isNullOrBlank()) {
+            splitIntoPages(apiText)
+        } else {
+            MOCK_PAGES
+        }
+    }
 
     val context = LocalContext.current
     val ttsManager = remember { TtsManager(context) }
@@ -66,7 +89,7 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
 
     val scope = rememberCoroutineScope()
     var currentPage by remember { mutableIntStateOf(0) }
-    val totalPages = MOCK_PAGES.size
+    val totalPages = pages.size
     val isLastPage = currentPage == totalPages - 1
 
     // Cleanup TTS on dismiss
@@ -136,7 +159,7 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
                         } else if (ttsManager.hasPaused()) {
                             ttsManager.resume()
                         } else {
-                            scope.launch { ttsManager.speak(MOCK_PAGES[currentPage]) }
+                            scope.launch { ttsManager.speak(pages[currentPage]) }
                         }
                     },
                 )
@@ -160,7 +183,7 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Text(
-                    text = MOCK_PAGES[currentPage],
+                    text = pages[currentPage],
                     style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 32.sp),
                     color = DarkTextLight,
                 )
