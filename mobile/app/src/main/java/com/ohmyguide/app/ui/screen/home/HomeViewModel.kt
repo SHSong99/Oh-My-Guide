@@ -1,5 +1,6 @@
 package com.ohmyguide.app.ui.screen.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ohmyguide.app.data.model.PlaceCardDto
@@ -9,8 +10,6 @@ import com.ohmyguide.app.fixtures.HOME_RECOMMENDATIONS
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
 import com.ohmyguide.app.fixtures.RecommendationSection
-import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
-import com.ohmyguide.app.fixtures.SAMPLE_PLACES
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.theme.CatAttraction
 import com.ohmyguide.app.ui.theme.CatCulture
@@ -88,12 +87,11 @@ class HomeViewModel @Inject constructor(
         initialLoaded = true
 
         viewModelScope.launch {
-            addMessage(ChatMessage.BotText("Looking for the best spots for you..."))
             addMessage(ChatMessage.BotTyping)
 
-            // TODO: 테스트용 하드코딩 (부산 강서구 녹산동) — 배포 시 GPS로 복원
-            val lat = 35.0946
-            val lng = 128.8564
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.0780
+            val lng = location?.longitude ?: 128.8510
 
             val result = recommendRepository.getRecommendation(category, lat, lng)
             removeTyping()
@@ -101,10 +99,7 @@ class HomeViewModel @Inject constructor(
             val places = result.getOrNull()?.map { it.toPlace() }
 
             if (places.isNullOrEmpty()) {
-                addMessage(ChatMessage.BotText("Based on your choices, I've found perfect matches for you."))
-                HOME_RECOMMENDATIONS.forEach { section ->
-                    addMessage(ChatMessage.BotRecommendation(section))
-                }
+                addMessage(ChatMessage.BotText("No places found nearby. Try a different category!"))
             } else {
                 val section = RecommendationSection(
                     title = "Picks for You",
@@ -113,7 +108,6 @@ class HomeViewModel @Inject constructor(
                     places = places,
                     btnText = "",
                 )
-                addMessage(ChatMessage.BotText("Based on your choices, I've found perfect matches for you."))
                 addMessage(ChatMessage.BotRecommendation(section))
                 _uiState.update { it.copy(spotCount = places.size) }
             }
@@ -132,25 +126,18 @@ class HomeViewModel @Inject constructor(
             .flatMap { it.section.places }
             .find { it.id == placeId }
 
-        if (attrId != null && place != null) {
-            // API로 상세 정보 조회
-            viewModelScope.launch {
-                val result = recommendRepository.getAttractionDetail(attrId)
-                val dto = result.getOrNull()
-                val detail = PlaceDetail(
-                    place = place,
-                    desc = dto?.overview ?: "",
-                    hours = "",
-                    fee = "",
-                    walkTime = place.distance,
-                )
-                _uiState.update {
-                    it.copy(sheetMode = SheetMode.PLACE_DETAIL, selectedDetail = detail)
-                }
-            }
-        } else {
-            // 더미 데이터 폴백
-            val detail = SAMPLE_PLACE_DETAILS[placeId] ?: return
+        if (attrId == null || place == null) return
+
+        viewModelScope.launch {
+            val result = recommendRepository.getAttractionDetail(attrId)
+            val dto = result.getOrNull()
+            val detail = PlaceDetail(
+                place = place,
+                desc = dto?.overview ?: "",
+                hours = "",
+                fee = "",
+                walkTime = place.distance,
+            )
             _uiState.update {
                 it.copy(sheetMode = SheetMode.PLACE_DETAIL, selectedDetail = detail)
             }
@@ -174,8 +161,9 @@ class HomeViewModel @Inject constructor(
             .find { it.id == placeId }
 
         viewModelScope.launch {
-            val lat = 35.0946
-            val lng = 128.8564
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.0780
+            val lng = location?.longitude ?: 128.8510
             val reachLat = place?.lat ?: lat
             val reachLng = place?.lng ?: lng
             recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
@@ -188,20 +176,27 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             addMessage(ChatMessage.UserText("Show more $sectionTitle"))
             addMessage(ChatMessage.BotTyping)
-            delay(1200L)
+
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.0780
+            val lng = location?.longitude ?: 128.8510
+            val result = recommendRepository.getRecommendation(sectionTitle, lat, lng)
             removeTyping()
 
-            val extraPlaces = SAMPLE_PLACES.shuffled().take(4)
-            val extraSection = RecommendationSection(
-                title = sectionTitle,
-                icon = HOME_RECOMMENDATIONS.firstOrNull { it.title == sectionTitle }?.icon
-                    ?: HOME_RECOMMENDATIONS[0].icon,
-                label = "More",
-                places = extraPlaces,
-                btnText = "",
-            )
-            addMessage(ChatMessage.BotText("Here are more $sectionTitle spots!"))
-            addMessage(ChatMessage.BotRecommendation(extraSection))
+            val extraPlaces = result.getOrNull()?.map { it.toPlace() }
+            if (!extraPlaces.isNullOrEmpty()) {
+                val extraSection = RecommendationSection(
+                    title = sectionTitle,
+                    icon = HOME_RECOMMENDATIONS[0].icon,
+                    label = "More",
+                    places = extraPlaces,
+                    btnText = "",
+                )
+                addMessage(ChatMessage.BotText("Here are more $sectionTitle spots!"))
+                addMessage(ChatMessage.BotRecommendation(extraSection))
+            } else {
+                addMessage(ChatMessage.BotText("No more places found nearby."))
+            }
         }
     }
 
@@ -270,9 +265,9 @@ class HomeViewModel @Inject constructor(
             addMessage(ChatMessage.UserText(option))
             addMessage(ChatMessage.BotTyping)
 
-            // TODO: 테스트용 하드코딩 (부산 강서구 녹산동) — 배포 시 GPS로 복원
-            val lat = 35.0946
-            val lng = 128.8564
+            val location = LocationForegroundService.locationFlow.value
+            val lat = location?.latitude ?: 35.0780
+            val lng = location?.longitude ?: 128.8510
 
             val request = RefreshRecommendRequest(
                 latitude = lat,

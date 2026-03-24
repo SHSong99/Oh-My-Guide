@@ -2,6 +2,10 @@ package com.ohmyguide.app.ui.navi
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -9,11 +13,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.screen.auth.AuthScreen
+import com.ohmyguide.app.ui.screen.auth.AuthState
+import com.ohmyguide.app.ui.screen.auth.AuthViewModel
 import com.ohmyguide.app.ui.screen.onboarding.SplashScreen
 import com.ohmyguide.app.ui.screen.onboarding.CategoryScreen
 import com.ohmyguide.app.ui.screen.onboarding.GpsPermissionScreen
 import com.ohmyguide.app.ui.screen.onboarding.LoadingScreen
+import com.ohmyguide.app.ui.screen.onboarding.OnboardingHelper
 import com.ohmyguide.app.ui.screen.onboarding.WelcomeScreen
+import com.ohmyguide.app.data.repository.UserRepository
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.ohmyguide.app.ui.screen.explore.ExploreScreen
 import com.ohmyguide.app.ui.screen.home.HomeScreen
 import com.ohmyguide.app.ui.screen.map.MapScreen
@@ -44,18 +54,35 @@ fun NavGraph(
             )
         }
         composable(Screen.Welcome.route) {
-            WelcomeScreen(
-                onSignIn = {
+            val authViewModel: AuthViewModel = hiltViewModel()
+            val authState by authViewModel.authState.collectAsState()
+            val context = LocalContext.current
+
+            LaunchedEffect(authState) {
+                if (authState is AuthState.Success) {
+                    authViewModel.resetState()
                     navController.navigate(Screen.GpsPermission.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
-                },
+                }
+            }
+
+            WelcomeScreen(
+                onSignIn = { authViewModel.signInWithGoogle(context) },
+                authState = authState,
+                onDismissError = { authViewModel.resetState() },
             )
         }
         composable(Screen.Login.route) { AuthScreen(navController) }
         composable(Screen.GpsPermission.route) {
+            val userRepository: UserRepository = hiltViewModel<OnboardingHelper>().userRepository
+            val scope = rememberCoroutineScope()
+
             GpsPermissionScreen(
-                onAllow = {
+                onAllow = { gender, age, country, companion ->
+                    scope.launch {
+                        userRepository.completeOnboarding(country, age, gender, companion, country)
+                    }
                     navController.navigate(Screen.InterestSelect.route) {
                         popUpTo(Screen.GpsPermission.route) { inclusive = true }
                     }

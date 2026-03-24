@@ -256,9 +256,11 @@ fun HomeScreen(
                         SheetMode.RECOMMENDATIONS -> RecommendationsSheet(
                             state = state,
                             locationName = locationName,
+                            showFindBtn = showFindBtn,
                             onPlaceClick = { placeId -> viewModel.selectPlace(placeId) },
                             onShowMore = { title -> viewModel.onShowMore(title) },
                             onSelectOption = { option -> viewModel.onSelectOption(option) },
+                            onFindOtherPlaces = { viewModel.onFindOtherPlaces() },
                         )
                         SheetMode.PLACE_DETAIL -> {
                             state.selectedDetail?.let { detail ->
@@ -313,18 +315,7 @@ fun HomeScreen(
                 }
             }
 
-            // Find other places — floating at bottom of Box, above sheet
-            if (showFindBtn) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                        .background(BgWhite)
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    FindOtherPlacesButton(onClick = { viewModel.onFindOtherPlaces() })
-                }
-            }
+            // Find other places button removed from here — moved into RecommendationsSheet
         }
 
         BottomNavBar(
@@ -343,9 +334,11 @@ fun HomeScreen(
 private fun RecommendationsSheet(
     state: HomeUiState,
     locationName: String,
+    showFindBtn: Boolean,
     onPlaceClick: (String) -> Unit,
     onShowMore: (String) -> Unit,
     onSelectOption: (String) -> Unit,
+    onFindOtherPlaces: () -> Unit,
 ) {
     val scrollState = rememberScrollState()
 
@@ -412,6 +405,16 @@ private fun RecommendationsSheet(
                     )
                 }
                 else -> {}
+            }
+        }
+
+        if (showFindBtn) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                FindOtherPlacesButton(onClick = onFindOtherPlaces)
             }
         }
     }

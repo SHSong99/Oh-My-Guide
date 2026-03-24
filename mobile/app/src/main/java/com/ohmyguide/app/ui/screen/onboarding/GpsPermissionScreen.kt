@@ -80,7 +80,7 @@ private enum class OnboardStep { LANGUAGE, GENDER, AGE, COUNTRY, COMPANION, GPS 
 
 @Composable
 fun GpsPermissionScreen(
-    onAllow: () -> Unit,
+    onAllow: (gender: String, age: Int, country: String, companion: String) -> Unit,
 ) {
     val context = LocalContext.current
     val strings = LocalStrings.current
@@ -100,7 +100,7 @@ fun GpsPermissionScreen(
             val intent = Intent(context, LocationForegroundService::class.java)
             context.startForegroundService(intent)
         }
-        onAllow()
+        onAllow(genderLabel, ageLabel.toIntOrNull() ?: 25, countryLabel, companionLabel)
     }
 
     val scrollState = rememberScrollState()
@@ -523,6 +523,6 @@ private fun CountrySelector(
 @Composable
 private fun GpsPermissionScreenPreview() {
     OhMyGuideTheme {
-        GpsPermissionScreen(onAllow = {})
+        GpsPermissionScreen(onAllow = { _, _, _, _ -> })
     }
 }
