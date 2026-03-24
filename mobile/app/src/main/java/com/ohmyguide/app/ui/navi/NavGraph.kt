@@ -2,6 +2,10 @@ package com.ohmyguide.app.ui.navi
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -9,6 +13,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.screen.auth.AuthScreen
+import com.ohmyguide.app.ui.screen.auth.AuthState
+import com.ohmyguide.app.ui.screen.auth.AuthViewModel
 import com.ohmyguide.app.ui.screen.onboarding.SplashScreen
 import com.ohmyguide.app.ui.screen.onboarding.CategoryScreen
 import com.ohmyguide.app.ui.screen.onboarding.GpsPermissionScreen
@@ -44,12 +50,23 @@ fun NavGraph(
             )
         }
         composable(Screen.Welcome.route) {
-            WelcomeScreen(
-                onSignIn = {
+            val authViewModel: AuthViewModel = hiltViewModel()
+            val authState by authViewModel.authState.collectAsState()
+            val context = LocalContext.current
+
+            LaunchedEffect(authState) {
+                if (authState is AuthState.Success) {
+                    authViewModel.resetState()
                     navController.navigate(Screen.GpsPermission.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
-                },
+                }
+            }
+
+            WelcomeScreen(
+                onSignIn = { authViewModel.signInWithGoogle(context) },
+                authState = authState,
+                onDismissError = { authViewModel.resetState() },
             )
         }
         composable(Screen.Login.route) { AuthScreen(navController) }
