@@ -71,8 +71,16 @@ fun PhrasesScreen(navController: NavController) {
             activeTab = "phrases",
             onTabChange = { tab ->
                 when (tab) {
-                    "main" -> navController.navigate(Screen.Home.route) { popUpTo(Screen.Home.route) { inclusive = true } }
-                    "explore" -> navController.navigate(Screen.Explore.route)
+                    "main" -> navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    "explore" -> navController.navigate(Screen.Explore.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             },
         )

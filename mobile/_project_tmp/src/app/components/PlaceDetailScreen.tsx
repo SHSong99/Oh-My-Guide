@@ -180,17 +180,6 @@ export function PlaceDetailScreen({ placeId, onBack, onGo }: PlaceDetailScreenPr
       <div className="flex-1 overflow-y-auto hide-scrollbar" style={{ padding: 20 }}>
         {/* Name & Rating */}
         <div className="mb-2">
-          <div
-            style={{
-              fontFamily: "'Pretendard', sans-serif",
-              fontSize: 13,
-              fontWeight: 400,
-              color: "#8892A4",
-              marginBottom: 8,
-            }}
-          >
-            {place.nameKr}
-          </div>
           <div className="flex items-center gap-2 flex-wrap">
             <span
               style={{

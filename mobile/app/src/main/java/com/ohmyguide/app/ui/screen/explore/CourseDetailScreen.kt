@@ -47,6 +47,7 @@ import com.ohmyguide.app.fixtures.Course
 import com.ohmyguide.app.fixtures.EXPLORE_COURSES
 import com.ohmyguide.app.fixtures.Spot
 import com.ohmyguide.app.ui.common.BottomNavBar
+import com.ohmyguide.app.ui.common.OmgTopBar
 import com.ohmyguide.app.ui.common.PrimaryButton
 import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.BgSub
@@ -77,6 +78,11 @@ fun CourseDetailScreen(
             .fillMaxSize()
             .background(BgWhite),
     ) {
+        OmgTopBar(
+            title = course.title,
+            onBack = { navController.popBackStack() },
+        )
+
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -134,8 +140,16 @@ fun CourseDetailScreen(
             activeTab = "explore",
             onTabChange = { tab ->
                 when (tab) {
-                    "main" -> navController.navigate(Screen.Home.route)
-                    "phrases" -> navController.navigate(Screen.Phrases.route)
+                    "main" -> navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    "phrases" -> navController.navigate(Screen.Phrases.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             },
         )
