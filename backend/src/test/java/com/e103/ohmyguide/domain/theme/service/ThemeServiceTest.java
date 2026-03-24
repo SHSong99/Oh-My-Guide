@@ -3,6 +3,7 @@ package com.e103.ohmyguide.domain.theme.service;
 import com.e103.ohmyguide.IntegrationTestSupport;
 import com.e103.ohmyguide.domain.attraction.entity.Attraction;
 import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
+import java.math.BigDecimal;
 import com.e103.ohmyguide.domain.theme.entity.Theme;
 import com.e103.ohmyguide.domain.theme.repository.ThemeRepository;
 import com.e103.ohmyguide.domain.theme.service.response.AttractionSummaryResponse;
@@ -90,6 +91,8 @@ class ThemeServiceTest extends IntegrationTestSupport {
                 .title("한라산")
                 .firstImage1("image_url")
                 .overview("한라산 개요")
+                .latitude(new BigDecimal("33.36160800"))
+                .longitude(new BigDecimal("126.53390800"))
                 .build());
         ThemeAttraction ta = ThemeAttraction.builder().build();
         ta.assignTheme(theme);
@@ -110,6 +113,8 @@ class ThemeServiceTest extends IntegrationTestSupport {
         assertThat(attractionResponse.getTitle()).isEqualTo("한라산");
         assertThat(attractionResponse.getImage()).isEqualTo("image_url");
         assertThat(attractionResponse.getOverview()).isEqualTo("한라산 개요");
+        assertThat(attractionResponse.getLatitude()).isEqualByComparingTo(new BigDecimal("33.36160800"));
+        assertThat(attractionResponse.getLongitude()).isEqualByComparingTo(new BigDecimal("126.53390800"));
     }
 
     @DisplayName("테마에 관광지가 없으면 빈 리스트와 count 0을 반환한다.")
