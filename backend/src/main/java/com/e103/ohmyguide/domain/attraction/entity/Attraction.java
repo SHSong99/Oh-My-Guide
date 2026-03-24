@@ -3,6 +3,7 @@ package com.e103.ohmyguide.domain.attraction.entity;
 import com.e103.ohmyguide.domain.contenttype.entity.ContentType;
 import com.e103.ohmyguide.domain.gugun.entity.Gugun;
 import com.e103.ohmyguide.domain.sido.entity.Sido;
+import com.e103.ohmyguide.domain.themeattraction.entity.ThemeAttraction;
 import com.e103.ohmyguide.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -11,6 +12,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -83,6 +86,9 @@ public class Attraction extends BaseEntity {
 
     @Column(name = "overview_tts", length = 10000)
     private String overviewTts;
+
+    @OneToMany(mappedBy = "attraction")
+    private List<ThemeAttraction> themeAttractions = new ArrayList<>();
 
     @Builder
     private Attraction(Integer contentId, String title, ContentType contentType, Sido sido, Integer gugunCode, Gugun gugun,
