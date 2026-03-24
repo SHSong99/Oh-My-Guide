@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.ohmyguide.app.domain.model.PlaceDetailCache
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.ui.common.OmgButton
 import com.ohmyguide.app.ui.common.OmgTopBar
@@ -62,7 +63,8 @@ fun TransportPickerScreen(
     val strings = LocalStrings.current
     val timeInfo by viewModel.timeInfo.collectAsState()
     val transitPreview by viewModel.transitPreview.collectAsState()
-    val detail = SAMPLE_PLACE_DETAILS[placeId]
+    val detail = PlaceDetailCache.get(placeId)
+        ?: SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
     val placeName = detail?.place?.name ?: strings.destination
     val placeNameKr = detail?.place?.nameKr ?: ""

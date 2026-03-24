@@ -323,8 +323,16 @@ fun HomeScreen(
             activeTab = "main",
             onTabChange = { tab ->
                 when (tab) {
-                    "explore" -> navController.navigate(Screen.Explore.route)
-                    "phrases" -> navController.navigate(Screen.Phrases.route)
+                    "explore" -> navController.navigate(Screen.Explore.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    "phrases" -> navController.navigate(Screen.Phrases.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             },
         )
