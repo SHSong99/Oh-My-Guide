@@ -17,6 +17,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -94,7 +96,7 @@ class ThemeServiceTest extends IntegrationTestSupport {
                 .latitude(new BigDecimal("33.36160800"))
                 .longitude(new BigDecimal("126.53390800"))
                 .build());
-        ThemeAttraction ta = ThemeAttraction.builder().build();
+        ThemeAttraction ta = ThemeAttraction.builder().attractionOrder(1).build();
         ta.assignTheme(theme);
         ta.assignAttraction(attraction);
         themeAttractionRepository.save(ta);
@@ -115,6 +117,7 @@ class ThemeServiceTest extends IntegrationTestSupport {
         assertThat(attractionResponse.getOverview()).isEqualTo("한라산 개요");
         assertThat(attractionResponse.getLatitude()).isEqualByComparingTo(new BigDecimal("33.36160800"));
         assertThat(attractionResponse.getLongitude()).isEqualByComparingTo(new BigDecimal("126.53390800"));
+        assertThat(attractionResponse.getAttractionOrder()).isEqualTo(1);
     }
 
     @DisplayName("테마에 관광지가 없으면 빈 리스트와 count 0을 반환한다.")
@@ -129,6 +132,61 @@ class ThemeServiceTest extends IntegrationTestSupport {
         // then
         assertThat(result.getAttractionCount()).isZero();
         assertThat(result.getAttractions()).isEmpty();
+    }
+
+    @DisplayName("관광지가 attractionOrder 오름차순으로 정렬되어 반환된다.")
+    @Test
+    void getTheme_returnsAttractionsSortedByOrder() {
+        // given
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+        Attraction first = attractionRepository.save(Attraction.builder().title("한라산").build());
+        Attraction second = attractionRepository.save(Attraction.builder().title("성산일출봉").build());
+        Attraction third = attractionRepository.save(Attraction.builder().title("천지연폭포").build());
+
+        ThemeAttraction ta2 = ThemeAttraction.builder().attractionOrder(2).build();
+        ta2.assignTheme(theme);
+        ta2.assignAttraction(second);
+        themeAttractionRepository.save(ta2);
+
+        ThemeAttraction ta3 = ThemeAttraction.builder().attractionOrder(3).build();
+        ta3.assignTheme(theme);
+        ta3.assignAttraction(third);
+        themeAttractionRepository.save(ta3);
+
+        ThemeAttraction ta1 = ThemeAttraction.builder().attractionOrder(1).build();
+        ta1.assignTheme(theme);
+        ta1.assignAttraction(first);
+        themeAttractionRepository.save(ta1);
+
+        // when
+        ThemeDetailResponse result = themeService.getTheme(theme.getId());
+
+        // then
+        assertThat(result.getAttractions())
+                .extracting(AttractionSummaryResponse::getTitle)
+                .containsExactly("한라산", "성산일출봉", "천지연폭포");
+    }
+
+    @DisplayName("같은 테마 내에서 동일한 attractionOrder로 저장하면 예외가 발생한다.")
+    @Test
+    void saveThemeAttraction_throwsExceptionOnDuplicateOrder() {
+        // given
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+        Attraction attraction1 = attractionRepository.save(Attraction.builder().title("한라산").build());
+        Attraction attraction2 = attractionRepository.save(Attraction.builder().title("성산일출봉").build());
+
+        ThemeAttraction ta1 = ThemeAttraction.builder().attractionOrder(1).build();
+        ta1.assignTheme(theme);
+        ta1.assignAttraction(attraction1);
+        themeAttractionRepository.save(ta1);
+
+        // when & then
+        ThemeAttraction ta2 = ThemeAttraction.builder().attractionOrder(1).build();
+        ta2.assignTheme(theme);
+        ta2.assignAttraction(attraction2);
+
+        assertThatThrownBy(() -> themeAttractionRepository.saveAndFlush(ta2))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @DisplayName("존재하지 않는 테마 ID로 조회하면 ResourceNotFoundException이 발생한다.")

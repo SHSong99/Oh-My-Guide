@@ -6,11 +6,13 @@ import com.e103.ohmyguide.domain.theme.service.response.ThemeDetailResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeInfoResponse;
 import com.e103.ohmyguide.domain.theme.service.response.ThemeInfosResponse;
 import com.e103.ohmyguide.domain.theme.repository.ThemeRepository;
+import com.e103.ohmyguide.domain.themeattraction.entity.ThemeAttraction;
 import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -34,7 +36,8 @@ public class ThemeService {
 
         List<AttractionSummaryResponse> attractions = theme.getThemeAttractions()
                 .stream()
-                .map(ta -> AttractionSummaryResponse.from(ta.getAttraction()))
+                .sorted(Comparator.comparingInt(ThemeAttraction::getAttractionOrder))
+                .map(AttractionSummaryResponse::from)
                 .toList();
 
         return ThemeDetailResponse.of(theme, attractions);

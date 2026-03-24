@@ -11,7 +11,12 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Table(name = "theme_attraction")
+@Table(
+        name = "theme_attraction",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"theme_id", "attraction_order"})
+        }
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ThemeAttraction extends BaseEntity {
 
@@ -27,10 +32,14 @@ public class ThemeAttraction extends BaseEntity {
     @JoinColumn(name = "attraction_id")
     private Attraction attraction;
 
+    @Column(name = "attraction_order", nullable = false)
+    private Integer attractionOrder;
+
     @Builder
-    private ThemeAttraction(Theme theme, Attraction attraction) {
+    private ThemeAttraction(Theme theme, Attraction attraction, Integer attractionOrder) {
         this.theme = theme;
         this.attraction = attraction;
+        this.attractionOrder = attractionOrder;
     }
 
     public void assignTheme(Theme theme) {

@@ -80,9 +80,9 @@ class ThemeControllerTest extends ControllerTestSupport {
         // given
         List<AttractionSummaryResponse> attractions = List.of(
                 AttractionSummaryResponse.builder().attractionId(1L).title("한라산").image("image_url").overview("한라산 개요")
-                        .latitude(new BigDecimal("33.36160800")).longitude(new BigDecimal("126.53390800")).build(),
+                        .latitude(new BigDecimal("33.36160800")).longitude(new BigDecimal("126.53390800")).attractionOrder(1).build(),
                 AttractionSummaryResponse.builder().attractionId(2L).title("성산일출봉").image("image_url2").overview("성산 개요")
-                        .latitude(new BigDecimal("33.45840800")).longitude(new BigDecimal("126.94240800")).build()
+                        .latitude(new BigDecimal("33.45840800")).longitude(new BigDecimal("126.94240800")).attractionOrder(2).build()
         );
         ThemeDetailResponse response = ThemeDetailResponse.builder()
                 .themeId(1L)
@@ -106,10 +106,12 @@ class ThemeControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.attractions[0].title").value("한라산"))
                 .andExpect(jsonPath("$.attractions[0].latitude").value(33.36160800))
                 .andExpect(jsonPath("$.attractions[0].longitude").value(126.53390800))
+                .andExpect(jsonPath("$.attractions[0].attractionOrder").value(1))
                 .andExpect(jsonPath("$.attractions[1].attractionId").value(2))
                 .andExpect(jsonPath("$.attractions[1].title").value("성산일출봉"))
                 .andExpect(jsonPath("$.attractions[1].latitude").value(33.45840800))
-                .andExpect(jsonPath("$.attractions[1].longitude").value(126.94240800));
+                .andExpect(jsonPath("$.attractions[1].longitude").value(126.94240800))
+                .andExpect(jsonPath("$.attractions[1].attractionOrder").value(2));
     }
 
     @DisplayName("GET /api/themes/{themeId} - 존재하지 않는 테마 ID 조회 시 404를 반환한다.")
