@@ -3,6 +3,8 @@ package com.e103.ohmyguide.domain.recommend.service;
 import com.e103.ohmyguide.domain.recommend.dto.AiRefreshRequest;
 import com.e103.ohmyguide.domain.recommend.dto.RefreshRequest;
 import com.e103.ohmyguide.domain.recommend.dto.RefreshResponse;
+import com.e103.ohmyguide.domain.user.entity.User;
+import com.e103.ohmyguide.domain.user.repository.UserRepository;
 import com.e103.ohmyguide.domain.uservisit.entity.UserVisit;
 import com.e103.ohmyguide.domain.uservisit.repository.UserVisitRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class RecommendService {
 
     private final RestTemplate restTemplate;
     private final UserVisitRepository userVisitRepository;
+    private final UserRepository userRepository;
 
     @Value("${ai.server.url:http://localhost:8000}")
     private String aiServerUrl;
@@ -31,15 +34,23 @@ public class RecommendService {
         List<Long> visitedIds = userVisitRepository.findAttrIdsByUserId(userId);
         String excludedParam = visitedIds.stream().map(String::valueOf).collect(Collectors.joining(","));
 
-        String url = UriComponentsBuilder.fromHttpUrl(aiServerUrl + "/api/userRecommend")
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(aiServerUrl + "/userRecommend")
                 .queryParam("userId", userId)
                 .queryParam("currentLat", lat)
                 .queryParam("currentLng", lng)
                 .queryParam("category", category != null ? category : "")
-                .queryParam("excludedAttrIds", excludedParam)
-                .toUriString();
+                .queryParam("excludedAttrIds", excludedParam);
 
-        ResponseEntity<RefreshResponse> response = restTemplate.getForEntity(url, RefreshResponse.class);
+        // 사용자 프로필 전달 (리랭킹용)
+        User user = userRepository.findById(userId).orElse(null);
+        if (user != null) {
+            if (user.getAge() != null) builder.queryParam("age", user.getAge());
+            if (user.getGender() != null) builder.queryParam("gender", user.getGender());
+            if (user.getTravelPurpose() != null) builder.queryParam("companion", user.getTravelPurpose());
+            if (user.getNationality() != null) builder.queryParam("country", user.getNationality());
+        }
+
+        ResponseEntity<RefreshResponse> response = restTemplate.getForEntity(builder.toUriString(), RefreshResponse.class);
         return response.getBody();
     }
 
@@ -62,7 +73,7 @@ public class RecommendService {
                 .build();
 
         ResponseEntity<RefreshResponse> response = restTemplate.postForEntity(
-                aiServerUrl + "/api/userRecommend/recommend/refresh",
+                aiServerUrl + "/userRecommend/recommend/refresh",
                 aiRequest,
                 RefreshResponse.class
         );

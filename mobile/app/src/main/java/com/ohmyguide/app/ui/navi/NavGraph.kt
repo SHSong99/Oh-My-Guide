@@ -19,7 +19,11 @@ import com.ohmyguide.app.ui.screen.onboarding.SplashScreen
 import com.ohmyguide.app.ui.screen.onboarding.CategoryScreen
 import com.ohmyguide.app.ui.screen.onboarding.GpsPermissionScreen
 import com.ohmyguide.app.ui.screen.onboarding.LoadingScreen
+import com.ohmyguide.app.ui.screen.onboarding.OnboardingHelper
 import com.ohmyguide.app.ui.screen.onboarding.WelcomeScreen
+import com.ohmyguide.app.data.repository.UserRepository
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import com.ohmyguide.app.ui.screen.explore.ExploreScreen
 import com.ohmyguide.app.ui.screen.home.HomeScreen
 import com.ohmyguide.app.ui.screen.map.MapScreen
@@ -71,8 +75,14 @@ fun NavGraph(
         }
         composable(Screen.Login.route) { AuthScreen(navController) }
         composable(Screen.GpsPermission.route) {
+            val userRepository: UserRepository = hiltViewModel<OnboardingHelper>().userRepository
+            val scope = rememberCoroutineScope()
+
             GpsPermissionScreen(
-                onAllow = {
+                onAllow = { gender, age, country, companion ->
+                    scope.launch {
+                        userRepository.completeOnboarding(country, age, gender, companion, country)
+                    }
                     navController.navigate(Screen.InterestSelect.route) {
                         popUpTo(Screen.GpsPermission.route) { inclusive = true }
                     }
