@@ -91,9 +91,9 @@ class HomeViewModel @Inject constructor(
             addMessage(ChatMessage.BotText("Looking for the best spots for you..."))
             addMessage(ChatMessage.BotTyping)
 
-            val location = LocationForegroundService.locationFlow.value
-            val lat = location?.latitude ?: 37.5665
-            val lng = location?.longitude ?: 126.978
+            // TODO: 테스트용 하드코딩 (부산 강서구 녹산동) — 배포 시 GPS로 복원
+            val lat = 35.0946
+            val lng = 128.8564
 
             val result = recommendRepository.getRecommendation(category, lat, lng)
             removeTyping()
@@ -124,12 +124,36 @@ class HomeViewModel @Inject constructor(
     // ── Place Detail ──
 
     fun selectPlace(placeId: String) {
-        val detail = SAMPLE_PLACE_DETAILS[placeId] ?: return
-        _uiState.update {
-            it.copy(
-                sheetMode = SheetMode.PLACE_DETAIL,
-                selectedDetail = detail,
-            )
+        val attrId = placeId.toLongOrNull()
+
+        // 추천 결과에서 Place 찾기 (카드에 표시된 기본 정보)
+        val place = _uiState.value.chatMessages
+            .filterIsInstance<ChatMessage.BotRecommendation>()
+            .flatMap { it.section.places }
+            .find { it.id == placeId }
+
+        if (attrId != null && place != null) {
+            // API로 상세 정보 조회
+            viewModelScope.launch {
+                val result = recommendRepository.getAttractionDetail(attrId)
+                val dto = result.getOrNull()
+                val detail = PlaceDetail(
+                    place = place,
+                    desc = dto?.overview ?: "",
+                    hours = "",
+                    fee = "",
+                    walkTime = place.distance,
+                )
+                _uiState.update {
+                    it.copy(sheetMode = SheetMode.PLACE_DETAIL, selectedDetail = detail)
+                }
+            }
+        } else {
+            // 더미 데이터 폴백
+            val detail = SAMPLE_PLACE_DETAILS[placeId] ?: return
+            _uiState.update {
+                it.copy(sheetMode = SheetMode.PLACE_DETAIL, selectedDetail = detail)
+            }
         }
     }
 
@@ -237,9 +261,9 @@ class HomeViewModel @Inject constructor(
             addMessage(ChatMessage.UserText(option))
             addMessage(ChatMessage.BotTyping)
 
-            val location = LocationForegroundService.locationFlow.value
-            val lat = location?.latitude ?: 35.1796
-            val lng = location?.longitude ?: 129.0756
+            // TODO: 테스트용 하드코딩 (부산 강서구 녹산동) — 배포 시 GPS로 복원
+            val lat = 35.0946
+            val lng = 128.8564
 
             val request = RefreshRecommendRequest(
                 latitude = lat,

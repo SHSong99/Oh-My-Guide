@@ -1,5 +1,6 @@
 package com.ohmyguide.app.data.api
 
+import com.ohmyguide.app.data.model.AttractionDetailDto
 import com.ohmyguide.app.data.model.AuthResponse
 import com.ohmyguide.app.data.model.GoogleLoginRequest
 import com.ohmyguide.app.data.model.OnboardingRequest
@@ -10,6 +11,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
+import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ApiService {
@@ -37,4 +39,8 @@ interface ApiService {
 
     @POST("userRecommend/visit")
     suspend fun visitPlace(@Body request: Map<String, Long>)
+
+    // Attraction
+    @GET("attraction/{attrId}")
+    suspend fun getAttractionDetail(@Path("attrId") attrId: Long): AttractionDetailDto
 }

@@ -1,6 +1,7 @@
 package com.ohmyguide.app.data.repository
 
 import com.ohmyguide.app.data.api.ApiService
+import com.ohmyguide.app.data.model.AttractionDetailDto
 import com.ohmyguide.app.data.model.PlaceCardDto
 import com.ohmyguide.app.data.model.RefreshRecommendRequest
 import javax.inject.Inject
@@ -33,6 +34,14 @@ class RecommendRepository @Inject constructor(
             apiService.visitPlace(mapOf("attrId" to attrId))
         } catch (_: Exception) {
             // 방문 기록 실패해도 네비게이션은 진행
+        }
+    }
+
+    suspend fun getAttractionDetail(attrId: Long): Result<AttractionDetailDto> {
+        return try {
+            Result.success(apiService.getAttractionDetail(attrId))
+        } catch (e: Exception) {
+            Result.failure(e)
         }
     }
 }
