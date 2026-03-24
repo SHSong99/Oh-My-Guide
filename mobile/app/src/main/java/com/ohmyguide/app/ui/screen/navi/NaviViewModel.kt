@@ -189,7 +189,7 @@ class NaviViewModel @Inject constructor(
     init {
         initChat()
         if (mode == "transit") {
-            startGpsSimulation()
+            startGpsTracking()
         } else {
             fetchDirectionsRoute()
         }
@@ -287,11 +287,11 @@ class NaviViewModel @Inject constructor(
                 )
             }
 
-            startGpsSimulation()
+            startGpsTracking()
         }
     }
 
-    // ── GPS Simulation (5초 간격) ──
+    // ── Real-time GPS Tracking ──
 
     private fun allRouteCoords(): List<RouteCoord>? {
         val nr = _naviRoute.value ?: return null
@@ -299,7 +299,7 @@ class NaviViewModel @Inject constructor(
         return if (all.size >= 2) all else null
     }
 
-    private fun startGpsSimulation() {
+    private fun startGpsTracking() {
         val transitCoords = allRouteCoords()
         val routePoints = if (transitCoords != null) {
             transitCoords.map { com.ohmyguide.app.fixtures.RoutePoint(it.lat, it.lng) }
@@ -309,44 +309,50 @@ class NaviViewModel @Inject constructor(
         if (routePoints.size < 2) return
 
         gpsJob = viewModelScope.launch {
-            val steps = routePoints.size
-            for (i in routePoints.indices) {
-                delay(5000L)
-                if (_uiState.value.arrived) break
+            LocationForegroundService.locationFlow.collect { locationData ->
+                if (_uiState.value.arrived) return@collect
+                val loc = locationData ?: return@collect
 
-                val point = routePoints[i]
-                val progress = (i + 1).toFloat() / steps
+                val userLat = loc.latitude
+                val userLng = loc.longitude
+
+                // Find closest point on route → calculate progress
+                var closestIdx = 0
+                var closestDist = Double.MAX_VALUE
+                routePoints.forEachIndexed { i, pt ->
+                    val d = haversineMeters(userLat, userLng, pt.lat, pt.lng)
+                    if (d < closestDist) {
+                        closestDist = d
+                        closestIdx = i
+                    }
+                }
+                val progress = (closestIdx + 1).toFloat() / routePoints.size
+
                 _uiState.update {
                     it.copy(
-                        userLat = point.lat,
-                        userLng = point.lng,
+                        userLat = userLat,
+                        userLng = userLng,
                         progressPct = progress,
                     )
                 }
 
-                // Update notification with remaining time
+                // Update notification
                 val remainingMin = ((1f - progress) * totalDuration).toInt()
                 val placeName = detail?.place?.name ?: "destination"
                 LocationForegroundService.updateNaviStatus(
                     "$placeName · ${remainingMin}min"
                 )
 
-                // Nearby POI check (halfway point)
+                // Nearby POI check (halfway)
                 if (!nearbyPoiShown && progress > 0.5f) {
                     showNearbyPlaces()
                 }
 
                 // Arrival check
-                val dist = haversineMeters(point.lat, point.lng, destinationLat, destinationLng)
-                if (dist < ARRIVAL_THRESHOLD_METERS) {
+                val distToDest = haversineMeters(userLat, userLng, destinationLat, destinationLng)
+                if (distToDest < ARRIVAL_THRESHOLD_METERS) {
                     onArrival()
-                    break
                 }
-            }
-
-            // Force arrival if route completed
-            if (!_uiState.value.arrived) {
-                onArrival()
             }
         }
     }
