@@ -19,4 +19,8 @@ public class OnboardingRequest {
 
     @NotBlank
     private String gender;
+
+    private String companion;
+
+    private String country;
 }
