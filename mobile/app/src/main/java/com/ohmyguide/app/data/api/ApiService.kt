@@ -41,6 +41,6 @@ interface ApiService {
     suspend fun visitPlace(@Body request: Map<String, Long>)
 
     // Attraction
-    @GET("attraction/{attrId}")
+    @GET("attractions/{attrId}")
     suspend fun getAttractionDetail(@Path("attrId") attrId: Long): AttractionDetailDto
 }
