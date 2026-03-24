@@ -129,7 +129,10 @@ class ThemeControllerTest extends ControllerTestSupport {
 
         // when & then
         mockMvc.perform(get("/themes/999"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Theme not found with themeId : '999'"))
+                .andExpect(jsonPath("$.errors").isEmpty());
     }
 
     @DisplayName("GET /themes/{themeId} - 서비스를 정확히 한 번 호출한다.")
@@ -183,7 +186,10 @@ class ThemeControllerTest extends ControllerTestSupport {
         mockMvc.perform(post("/themes")
                         .contentType(APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("입력값이 올바르지 않습니다."))
+                .andExpect(jsonPath("$.errors[0].field").value("name"));
     }
 
     @DisplayName("PUT /themes/{themeId} - 테마를 수정하면 200을 반환한다.")
@@ -222,7 +228,10 @@ class ThemeControllerTest extends ControllerTestSupport {
         mockMvc.perform(put("/themes/1")
                         .contentType(APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("입력값이 올바르지 않습니다."))
+                .andExpect(jsonPath("$.errors[0].field").value("description"));
     }
 
     @DisplayName("DELETE /themes/{themeId} - 테마를 삭제하면 204를 반환한다.")
@@ -245,7 +254,10 @@ class ThemeControllerTest extends ControllerTestSupport {
 
         // when & then
         mockMvc.perform(delete("/themes/999"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("Theme not found with themeId : '999'"))
+                .andExpect(jsonPath("$.errors").isEmpty());
     }
 
     @DisplayName("POST /themes/{themeId}/attractions - 테마에 관광지를 추가하면 200을 반환한다.")
@@ -283,7 +295,10 @@ class ThemeControllerTest extends ControllerTestSupport {
         mockMvc.perform(post("/themes/1/attractions")
                         .contentType(APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("입력값이 올바르지 않습니다."))
+                .andExpect(jsonPath("$.errors[0].field").value("attractionId"));
     }
 
     @DisplayName("POST /themes/{themeId}/attractions - attractionOrder가 없으면 400을 반환한다.")
@@ -300,7 +315,10 @@ class ThemeControllerTest extends ControllerTestSupport {
         mockMvc.perform(post("/themes/1/attractions")
                         .contentType(APPLICATION_JSON)
                         .content(body))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").value("입력값이 올바르지 않습니다."))
+                .andExpect(jsonPath("$.errors[0].field").value("attractionOrder"));
     }
 
     @DisplayName("DELETE /themes/{themeId}/attractions/{attractionId} - 관광지를 제거하면 204를 반환한다.")
@@ -323,6 +341,9 @@ class ThemeControllerTest extends ControllerTestSupport {
 
         // when & then
         mockMvc.perform(delete("/themes/1/attractions/999"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.message").value("ThemeAttraction not found with attractionId : '999'"))
+                .andExpect(jsonPath("$.errors").isEmpty());
     }
 }
