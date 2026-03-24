@@ -166,10 +166,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun visitPlace(placeId: String) {
+    fun startGuide(placeId: String) {
         val attrId = placeId.toLongOrNull() ?: return
+        val place = _uiState.value.chatMessages
+            .filterIsInstance<ChatMessage.BotRecommendation>()
+            .flatMap { it.section.places }
+            .find { it.id == placeId }
+
         viewModelScope.launch {
-            recommendRepository.visitPlace(attrId)
+            val lat = 35.0946
+            val lng = 128.8564
+            val reachLat = place?.lat ?: lat
+            val reachLng = place?.lng ?: lng
+            recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
         }
     }
 
