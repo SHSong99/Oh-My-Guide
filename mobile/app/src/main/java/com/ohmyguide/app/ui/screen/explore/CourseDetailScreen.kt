@@ -140,8 +140,16 @@ fun CourseDetailScreen(
             activeTab = "explore",
             onTabChange = { tab ->
                 when (tab) {
-                    "main" -> navController.navigate(Screen.Home.route)
-                    "phrases" -> navController.navigate(Screen.Phrases.route)
+                    "main" -> navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { inclusive = false }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                    "phrases" -> navController.navigate(Screen.Phrases.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
                 }
             },
         )

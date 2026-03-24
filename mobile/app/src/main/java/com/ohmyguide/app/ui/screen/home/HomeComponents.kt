@@ -22,7 +22,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccessTime
@@ -284,7 +286,8 @@ fun PlaceDetailSheet(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxSize(),
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState()),
     ) {
         // Hero image
         if (place.imageUrl != null) {
@@ -358,12 +361,6 @@ fun PlaceDetailSheet(
                     text = place.name,
                     style = MaterialTheme.typography.headlineSmall,
                     color = TextPrimary,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = place.nameKr,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextCaption,
                 )
             }
             Row(

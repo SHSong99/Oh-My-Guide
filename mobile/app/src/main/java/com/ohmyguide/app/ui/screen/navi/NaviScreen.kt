@@ -114,6 +114,8 @@ fun NaviScreen(
     BackHandler { showStopDialog = true }
 
     val detail = viewModel.detail
+    val destLat = viewModel.destLat
+    val destLng = viewModel.destLng
     val placeName = detail?.place?.name ?: strings.destination
     val placeNameKr = detail?.place?.nameKr ?: ""
     val naviRoute by viewModel.naviRoute.collectAsState()
@@ -275,6 +277,8 @@ fun NaviScreen(
                 course = state.course,
                 currentSpotIndex = state.spotIndex,
                 onMinimize = onMinimize,
+                destLat = destLat,
+                destLng = destLng,
             )
         }
 
@@ -308,8 +312,14 @@ private fun MapArea(
     course: com.ohmyguide.app.fixtures.Course? = null,
     currentSpotIndex: Int = 0,
     onMinimize: () -> Unit,
+    destLat: Double = 0.0,
+    destLng: Double = 0.0,
 ) {
-    val destinationPosition = PLACE_COORDINATES[placeId] ?: DEFAULT_USER_POSITION
+    val destinationPosition = if (destLat != 0.0 && destLng != 0.0) {
+        LatLng(destLat, destLng)
+    } else {
+        PLACE_COORDINATES[placeId] ?: DEFAULT_USER_POSITION
+    }
     val route = FALLBACK_ROUTES[placeId to mode]
     val fallbackCoords = route?.points?.map { LatLng(it.lat, it.lng) }
 
