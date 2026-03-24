@@ -13,7 +13,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
 
     properties:
       hibernate:
@@ -76,6 +76,10 @@ management:
 
 server:
 port: 8080
+
+ai:
+  server:
+    url: ${AI_SERVER_URL:http://localhost:8000}
 
 tour-api:
   service-key: ${TOUR_API_KEY}

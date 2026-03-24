@@ -79,9 +79,15 @@ private val DEFAULT_POSITION = LatLng(37.5700, 126.9920)
 @Composable
 fun HomeScreen(
     navController: NavController,
+    category: String = "",
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+
+    // 초기 추천 로드
+    LaunchedEffect(Unit) {
+        viewModel.loadInitialRecommendation(category)
+    }
 
     val context = LocalContext.current
     val locationData by LocationForegroundService.locationFlow.collectAsState()
@@ -260,6 +266,7 @@ fun HomeScreen(
                                     detail = detail,
                                     onBack = { viewModel.clearSelection() },
                                     onGoHere = { placeId ->
+                                        viewModel.startGuide(placeId)
                                         navController.navigate(Screen.Transport.createRoute(placeId))
                                     },
                                 )
