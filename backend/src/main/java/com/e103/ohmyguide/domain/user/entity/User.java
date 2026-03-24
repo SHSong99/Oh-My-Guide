@@ -70,10 +70,12 @@ public class User extends BaseEntity {
         this.onboardingCompleted = false;
     }
 
-    public void completeOnboarding(String nationality, Integer age, String gender) {
+    public void completeOnboarding(String nationality, Integer age, String gender, String travelPurpose, String lifestyle) {
         this.nationality = nationality;
         this.age = age;
         this.gender = gender;
+        this.travelPurpose = travelPurpose;
+        this.lifestyle = lifestyle;
         this.onboardingCompleted = true;
     }
 

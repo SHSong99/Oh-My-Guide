@@ -21,4 +21,6 @@ data class OnboardingRequest(
     val nationality: String,
     val age: Int,
     val gender: String,
+    val companion: String? = null,
+    val country: String? = null,
 )
