@@ -8,17 +8,22 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.ui.common.FloatingNavButton
 import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.navi.NavGraph
 import com.ohmyguide.app.ui.navi.Screen
+import com.ohmyguide.app.ui.screen.auth.LogoutViewModel
 import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
@@ -39,6 +44,8 @@ class MainActivity : ComponentActivity() {
                     val navMinimizedState = remember { NavMinimizedState() }
 
                     Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
+                        val logoutViewModel: LogoutViewModel = hiltViewModel()
+
                         NavGraph(
                             navController = navController,
                             onNaviMinimize = { placeId, mode ->
@@ -60,6 +67,24 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier
                                     .align(Alignment.BottomEnd)
                                     .padding(end = 20.dp, bottom = 80.dp),
+                            )
+                        }
+
+                        TextButton(
+                            onClick = {
+                                logoutViewModel.logout {
+                                    navController.navigate(Screen.Welcome.route) {
+                                        popUpTo(0) { inclusive = true }
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(start = 4.dp, bottom = 4.dp),
+                        ) {
+                            Text(
+                                text = "Logout",
+                                fontSize = 10.sp,
                             )
                         }
                     }
