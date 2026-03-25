@@ -1,16 +1,18 @@
-package com.e103.ohmyguide.domain.userlog.service;
+package com.e103.ohmyguide.domain.guide.consumer.HdfsLog;
 
-import com.e103.ohmyguide.domain.userlog.dto.UserLogRequest;
+import com.e103.ohmyguide.domain.guide.dto.UserGoLogMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.util.List;
 
+@Profile("hdfs-log-consumer")
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -18,7 +20,7 @@ public class HdfsLogWriter {
 
     private final FileSystem fileSystem;
 
-    public void writeLogs(List<UserLogRequest> logs) {
+    public void writeLogs(List<UserGoLogMessage> logs) {
         if (logs.isEmpty()) {
             return;
         }
@@ -28,7 +30,7 @@ public class HdfsLogWriter {
         Path path = new Path("/user-logs/" + date + "/" + fileName);
 
         try (FSDataOutputStream outputStream = fileSystem.create(path, true)) {
-            for (UserLogRequest logEntry : logs) {
+            for (UserGoLogMessage logEntry : logs) {
                 String csvLine = String.join(",",
                         logEntry.getUserId().toString(),
                         logEntry.getNationality(),
