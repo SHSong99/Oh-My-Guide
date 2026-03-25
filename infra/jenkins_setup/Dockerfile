@@ -16,6 +16,16 @@ RUN apt-get update && \
     apt-get install -y docker-ce-cli docker-compose-plugin rsync && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# JDK 17 설치 (Gradle 테스트 실행용)
+RUN apt-get update && \
+    apt-get install -y wget apt-transport-https gnupg && \
+    wget -O - https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor -o /etc/apt/keyrings/adoptium.gpg && \
+    echo "deb [signed-by=/etc/apt/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo "$VERSION_CODENAME") main" | \
+    tee /etc/apt/sources.list.d/adoptium.list > /dev/null && \
+    apt-get update && \
+    apt-get install -y temurin-17-jdk && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # 1단계: docker 그룹 생성 시도 (이미 존재하면 무시)
 RUN groupadd -g ${DOCKER_GID} docker 2>/dev/null || true
 
