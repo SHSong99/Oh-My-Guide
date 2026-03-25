@@ -158,7 +158,7 @@ fun PhraseSectionCard(
     isOpen: Boolean,
     savedPhrases: Set<String>,
     onToggle: () -> Unit,
-    onSaveToggle: (String) -> Unit,
+    onSaveToggle: (String, KoreanPhrase) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -232,7 +232,7 @@ fun PhraseSectionCard(
                         phrase = phrase,
                         sectionColor = section.color,
                         isSaved = isSaved,
-                        onSaveToggle = { onSaveToggle(key) },
+                        onSaveToggle = { onSaveToggle(key, phrase) },
                         showDivider = index < section.phrases.size - 1,
                     )
                 }

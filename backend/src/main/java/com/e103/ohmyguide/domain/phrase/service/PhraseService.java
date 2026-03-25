@@ -1,5 +1,6 @@
 package com.e103.ohmyguide.domain.phrase.service;
 
+import com.e103.ohmyguide.domain.phrase.dto.PhraseResponse;
 import com.e103.ohmyguide.domain.phrase.entity.Phrase;
 import com.e103.ohmyguide.domain.phrase.repository.PhraseRepository;
 import com.e103.ohmyguide.domain.user.entity.User;
@@ -11,6 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
@@ -19,6 +23,15 @@ public class PhraseService {
     private final PhraseRepository phraseRepository;
     private final UserRepository userRepository;
     private final UserPhraseRepository userPhraseRepository;
+
+    public List<PhraseResponse> getBookmarks(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        return userPhraseRepository.findByUser(user).stream()
+                .map(userPhrase -> PhraseResponse.from(userPhrase.getPhrase()))
+                .collect(Collectors.toList());
+    }
 
     @Transactional
     public void addBookmark(Long phraseId, Long userId) {

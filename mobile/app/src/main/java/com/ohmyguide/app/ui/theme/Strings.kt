@@ -150,6 +150,17 @@ interface AppStrings {
     val food: String
     val culture: String
     val signOut: String
+    val ageUnit: String
+    val pickRecommendTitle: String
+    val pickRecommendDesc: String
+    val pickRecommendEmpty: String
+    val editProfile: String
+    val nationality: String
+    val age: String
+    val gender: String
+    val save: String
+    val bookmarkEmpty: String
+    val viewAllPhrases: String
 
     // ── Map ──
     val locating: String

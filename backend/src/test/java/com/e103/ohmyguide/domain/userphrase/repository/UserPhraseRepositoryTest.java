@@ -90,6 +90,60 @@ class UserPhraseRepositoryTest extends IntegrationTestSupport {
                 .containsOnly(user.getId());
     }
 
+    @DisplayName("User로 UserPhrase 목록을 조회한다.")
+    @Test
+    void findByUser_returnsUserPhrases() {
+        // given
+        Phrase phrase2 = phraseRepository.save(Phrase.builder()
+                .content("감사합니다")
+                .language(PhraseLanguage.KOR)
+                .build());
+
+        userPhraseRepository.save(UserPhrase.builder().user(user).phrase(phrase).build());
+        userPhraseRepository.save(UserPhrase.builder().user(user).phrase(phrase2).build());
+
+        // when
+        List<UserPhrase> result = userPhraseRepository.findByUser(user);
+
+        // then
+        assertThat(result).hasSize(2);
+        assertThat(result).extracting(up -> up.getPhrase().getContent())
+                .containsExactlyInAnyOrder("화장실이 어디예요?", "감사합니다");
+    }
+
+    @DisplayName("북마크가 없는 User로 조회하면 빈 목록을 반환한다.")
+    @Test
+    void findByUser_noBookmarks_returnsEmptyList() {
+        // when
+        List<UserPhrase> result = userPhraseRepository.findByUser(user);
+
+        // then
+        assertThat(result).isEmpty();
+    }
+
+    @DisplayName("다른 User의 북마크는 조회되지 않는다.")
+    @Test
+    void findByUser_onlyReturnsOwnBookmarks() {
+        // given
+        User anotherUser = userRepository.save(User.oauth2Builder()
+                .email("another@test.com")
+                .name("다른사용자")
+                .imageUrl("https://image.url")
+                .provider(AuthProvider.google)
+                .providerId("google-id-789")
+                .build());
+
+        userPhraseRepository.save(UserPhrase.builder().user(user).phrase(phrase).build());
+        userPhraseRepository.save(UserPhrase.builder().user(anotherUser).phrase(phrase).build());
+
+        // when
+        List<UserPhrase> result = userPhraseRepository.findByUser(user);
+
+        // then
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getUser().getId()).isEqualTo(user.getId());
+    }
+
     @DisplayName("동일한 (user, phrase) 조합으로 중복 저장 시 예외가 발생한다.")
     @Test
     void duplicateUserPhrasethrowsException() {

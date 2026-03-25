@@ -1,16 +1,65 @@
 package com.e103.ohmyguide.domain.phrase.controller;
 
 import com.e103.ohmyguide.ControllerTestSupport;
+import com.e103.ohmyguide.domain.phrase.dto.PhraseResponse;
+import com.e103.ohmyguide.domain.phrase.entity.PhraseLanguage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.mockito.BDDMockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class PhraseControllerTest extends ControllerTestSupport {
+
+    @DisplayName("GET /phrases/bookmarks - 북마크 목록 조회 성공 시 200을 반환한다.")
+    @Test
+    void getBookmarks_returns200() throws Exception {
+        // given
+        List<PhraseResponse> bookmarks = List.of(
+                PhraseResponse.builder().phraseId(1L).content("안녕하세요").language(PhraseLanguage.KOR).build(),
+                PhraseResponse.builder().phraseId(2L).content("감사합니다").language(PhraseLanguage.KOR).build()
+        );
+        given(phraseService.getBookmarks(isNull())).willReturn(bookmarks);
+
+        // when & then
+        mockMvc.perform(get("/phrases/bookmarks"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].phraseId").value(1))
+                .andExpect(jsonPath("$[0].content").value("안녕하세요"));
+    }
+
+    @DisplayName("GET /phrases/bookmarks - 서비스를 정확히 한 번 호출한다.")
+    @Test
+    void getBookmarks_callsServiceOnce() throws Exception {
+        // given
+        given(phraseService.getBookmarks(isNull())).willReturn(List.of());
+
+        // when
+        mockMvc.perform(get("/phrases/bookmarks"));
+
+        // then
+        then(phraseService).should(times(1)).getBookmarks(isNull());
+    }
+
+    @DisplayName("GET /phrases/bookmarks - 북마크가 없으면 빈 목록을 반환한다.")
+    @Test
+    void getBookmarks_empty_returnsEmptyList() throws Exception {
+        // given
+        given(phraseService.getBookmarks(isNull())).willReturn(List.of());
+
+        // when & then
+        mockMvc.perform(get("/phrases/bookmarks"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
 
     @DisplayName("POST /phrases/{phraseId}/bookmark - 북마크 추가 성공 시 200을 반환한다.")
     @Test
