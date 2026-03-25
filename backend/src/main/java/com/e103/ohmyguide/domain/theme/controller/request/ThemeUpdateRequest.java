@@ -15,7 +15,11 @@ public class ThemeUpdateRequest {
     @NotBlank
     private String description;
 
+    private String category;
+
+    private String region;
+
     public ThemeUpdateServiceRequest toServiceRequest() {
-        return ThemeUpdateServiceRequest.of(name, description);
+        return ThemeUpdateServiceRequest.of(name, description, category, region);
     }
 }

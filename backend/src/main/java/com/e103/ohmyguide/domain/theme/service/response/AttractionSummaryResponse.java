@@ -15,6 +15,7 @@ public class AttractionSummaryResponse {
     private String image;
     private String title;
     private String overview;
+    private String overviewTts;
     private BigDecimal latitude;
     private BigDecimal longitude;
     private Integer attractionOrder;
@@ -26,6 +27,7 @@ public class AttractionSummaryResponse {
                 .image(attraction.getFirstImage1())
                 .title(attraction.getTitle())
                 .overview(attraction.getOverview())
+                .overviewTts(attraction.getOverviewTts())
                 .latitude(attraction.getLatitude())
                 .longitude(attraction.getLongitude())
                 .attractionOrder(themeAttraction.getAttractionOrder())

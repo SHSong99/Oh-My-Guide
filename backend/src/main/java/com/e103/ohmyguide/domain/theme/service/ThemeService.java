@@ -35,6 +35,8 @@ public class ThemeService {
         Theme theme = Theme.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .category(request.getCategory())
+                .region(request.getRegion())
                 .build();
         themeRepository.save(theme);
     }
@@ -43,7 +45,7 @@ public class ThemeService {
     public void updateTheme(Long themeId, ThemeUpdateServiceRequest request) {
         Theme theme = themeRepository.findById(themeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Theme", "themeId", themeId));
-        theme.update(request.getName(), request.getDescription());
+        theme.update(request.getName(), request.getDescription(), request.getCategory(), request.getRegion());
     }
 
     @Transactional
