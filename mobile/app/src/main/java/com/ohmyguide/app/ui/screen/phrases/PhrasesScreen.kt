@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -17,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.ohmyguide.app.domain.model.PhraseBookmarkStore
 import com.ohmyguide.app.fixtures.PHRASE_SECTIONS
 import com.ohmyguide.app.ui.common.BottomNavBar
 import com.ohmyguide.app.ui.navi.Screen
@@ -33,7 +35,8 @@ sealed class PhrasesUiState {
 @Composable
 fun PhrasesScreen(navController: NavController) {
     var expandedSection by remember { mutableStateOf<String?>(null) }
-    var savedPhrases by remember { mutableStateOf(setOf<String>()) }
+    val bookmarkMap by PhraseBookmarkStore.bookmarks.collectAsState()
+    val savedPhrases = bookmarkMap.keys
 
     Column(
         modifier = Modifier
@@ -60,8 +63,8 @@ fun PhrasesScreen(navController: NavController) {
                     onToggle = {
                         expandedSection = if (expandedSection == section.title) null else section.title
                     },
-                    onSaveToggle = { key ->
-                        savedPhrases = if (key in savedPhrases) savedPhrases - key else savedPhrases + key
+                    onSaveToggle = { key, phrase ->
+                        PhraseBookmarkStore.toggle(key, phrase, section.title)
                     },
                 )
             }
