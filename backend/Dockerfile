@@ -12,7 +12,7 @@ COPY src src
 RUN chmod +x gradlew && ./gradlew bootJar --no-daemon -x test
 
 # Stage 2: Runtime
-FROM amazoncorretto:17-alpine
+FROM eclipse-temurin:17-jre
 
 WORKDIR /app
 
