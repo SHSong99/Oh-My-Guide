@@ -44,7 +44,7 @@ class ThemeServiceTest extends IntegrationTestSupport {
     @Test
     void createTheme_savedSuccessfully() {
         // given
-        ThemeCreateServiceRequest request = ThemeCreateServiceRequest.of("자연", "자연 경관 테마");
+        ThemeCreateServiceRequest request = ThemeCreateServiceRequest.of("자연", "자연 경관 테마", null, null);
 
         // when
         themeService.createTheme(request);
@@ -61,7 +61,7 @@ class ThemeServiceTest extends IntegrationTestSupport {
     void updateTheme_updatedSuccessfully() {
         // given
         Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
-        ThemeUpdateServiceRequest request = ThemeUpdateServiceRequest.of("역사", "역사 유적 테마");
+        ThemeUpdateServiceRequest request = ThemeUpdateServiceRequest.of("역사", "역사 유적 테마", null, null);
 
         // when
         themeService.updateTheme(theme.getId(), request);
@@ -76,7 +76,7 @@ class ThemeServiceTest extends IntegrationTestSupport {
     @Test
     void updateTheme_throwsExceptionWhenNotFound() {
         // given
-        ThemeUpdateServiceRequest request = ThemeUpdateServiceRequest.of("역사", "역사 유적 테마");
+        ThemeUpdateServiceRequest request = ThemeUpdateServiceRequest.of("역사", "역사 유적 테마", null, null);
 
         // when & then
         assertThatThrownBy(() -> themeService.updateTheme(999L, request))
@@ -213,11 +213,11 @@ class ThemeServiceTest extends IntegrationTestSupport {
         assertThat(result.getThemes()).isEmpty();
     }
 
-    @DisplayName("테마의 themeId, name, description이 DTO에 올바르게 매핑된다.")
+    @DisplayName("테마의 themeId, name, description, category, region이 DTO에 올바르게 매핑된다.")
     @Test
     void getThemes_entityMappedCorrectlyToDto() {
         // given
-        Theme saved = themeRepository.save(Theme.builder().name("문화").description("문화 예술 테마").build());
+        Theme saved = themeRepository.save(Theme.builder().name("문화").description("문화 예술 테마").category("역사/문화").region("서울").build());
 
         // when
         ThemeInfosResponse result = themeService.getThemes();
@@ -228,13 +228,15 @@ class ThemeServiceTest extends IntegrationTestSupport {
         assertThat(response.getThemeId()).isEqualTo(saved.getId());
         assertThat(response.getName()).isEqualTo("문화");
         assertThat(response.getDescription()).isEqualTo("문화 예술 테마");
+        assertThat(response.getCategory()).isEqualTo("역사/문화");
+        assertThat(response.getRegion()).isEqualTo("서울");
     }
 
     @DisplayName("테마 ID로 조회하면 테마 정보와 관광지 목록을 반환한다.")
     @Test
     void getTheme_returnsThemeDetailWithAttractions() {
         // given
-        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").category("자연/생태").region("제주").build());
         Attraction attraction = attractionRepository.save(Attraction.builder()
                 .title("한라산")
                 .firstImage1("image_url")
@@ -254,6 +256,8 @@ class ThemeServiceTest extends IntegrationTestSupport {
         assertThat(result.getThemeId()).isEqualTo(theme.getId());
         assertThat(result.getName()).isEqualTo("자연");
         assertThat(result.getDescription()).isEqualTo("자연 경관 테마");
+        assertThat(result.getCategory()).isEqualTo("자연/생태");
+        assertThat(result.getRegion()).isEqualTo("제주");
         assertThat(result.getAttractionCount()).isEqualTo(1);
         assertThat(result.getAttractions()).hasSize(1);
         AttractionSummaryResponse attractionResponse = result.getAttractions().get(0);
@@ -261,6 +265,7 @@ class ThemeServiceTest extends IntegrationTestSupport {
         assertThat(attractionResponse.getTitle()).isEqualTo("한라산");
         assertThat(attractionResponse.getImage()).isEqualTo("image_url");
         assertThat(attractionResponse.getOverview()).isEqualTo("한라산 개요");
+        assertThat(attractionResponse.getOverviewTts()).isNull();
         assertThat(attractionResponse.getLatitude()).isEqualByComparingTo(new BigDecimal("33.36160800"));
         assertThat(attractionResponse.getLongitude()).isEqualByComparingTo(new BigDecimal("126.53390800"));
         assertThat(attractionResponse.getAttractionOrder()).isEqualTo(1);

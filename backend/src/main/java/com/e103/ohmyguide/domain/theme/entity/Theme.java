@@ -27,17 +27,27 @@ public class Theme extends BaseEntity {
     @Column(length = 255)
     private String description;
 
+    @Column(length = 100)
+    private String category;
+
+    @Column(length = 100)
+    private String region;
+
     @OneToMany(mappedBy = "theme")
     private List<ThemeAttraction> themeAttractions = new ArrayList<>();
 
     @Builder
-    private Theme(String name, String description) {
+    private Theme(String name, String description, String category, String region) {
         this.name = name;
         this.description = description;
+        this.category = category;
+        this.region = region;
     }
 
-    public void update(String name, String description) {
+    public void update(String name, String description, String category, String region) {
         this.name = name;
         this.description = description;
+        this.category = category;
+        this.region = region;
     }
 }

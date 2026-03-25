@@ -33,8 +33,8 @@ class ThemeControllerTest extends ControllerTestSupport {
     void getThemes_returns200() throws Exception {
         // given
         List<ThemeInfoResponse> themes = List.of(
-                ThemeInfoResponse.builder().themeId(1L).name("자연").description("자연 경관 테마").build(),
-                ThemeInfoResponse.builder().themeId(2L).name("역사").description("역사 유적 테마").build()
+                ThemeInfoResponse.builder().themeId(1L).name("자연").description("자연 경관 테마").category("자연/생태").region("제주").build(),
+                ThemeInfoResponse.builder().themeId(2L).name("역사").description("역사 유적 테마").category("역사/문화").region("경주").build()
         );
         given(themeService.getThemes())
                 .willReturn(ThemeInfosResponse.of(themes));
@@ -48,8 +48,12 @@ class ThemeControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.themes[0].themeId").value(1))
                 .andExpect(jsonPath("$.themes[0].name").value("자연"))
                 .andExpect(jsonPath("$.themes[0].description").value("자연 경관 테마"))
+                .andExpect(jsonPath("$.themes[0].category").value("자연/생태"))
+                .andExpect(jsonPath("$.themes[0].region").value("제주"))
                 .andExpect(jsonPath("$.themes[1].themeId").value(2))
-                .andExpect(jsonPath("$.themes[1].name").value("역사"));
+                .andExpect(jsonPath("$.themes[1].name").value("역사"))
+                .andExpect(jsonPath("$.themes[1].category").value("역사/문화"))
+                .andExpect(jsonPath("$.themes[1].region").value("경주"));
     }
 
     @DisplayName("GET /themes - 테마가 없으면 count 0과 빈 리스트를 반환한다.")
@@ -85,15 +89,17 @@ class ThemeControllerTest extends ControllerTestSupport {
     void getTheme_returns200() throws Exception {
         // given
         List<AttractionSummaryResponse> attractions = List.of(
-                AttractionSummaryResponse.builder().attractionId(1L).title("한라산").image("image_url").overview("한라산 개요")
+                AttractionSummaryResponse.builder().attractionId(1L).title("한라산").image("image_url").overview("한라산 개요").overviewTts("한라산 TTS")
                         .latitude(new BigDecimal("33.36160800")).longitude(new BigDecimal("126.53390800")).attractionOrder(1).build(),
-                AttractionSummaryResponse.builder().attractionId(2L).title("성산일출봉").image("image_url2").overview("성산 개요")
+                AttractionSummaryResponse.builder().attractionId(2L).title("성산일출봉").image("image_url2").overview("성산 개요").overviewTts("성산 TTS")
                         .latitude(new BigDecimal("33.45840800")).longitude(new BigDecimal("126.94240800")).attractionOrder(2).build()
         );
         ThemeDetailResponse response = ThemeDetailResponse.builder()
                 .themeId(1L)
                 .name("자연")
                 .description("자연 경관 테마")
+                .category("자연/생태")
+                .region("제주")
                 .attractionCount(2)
                 .attractions(attractions)
                 .build();
@@ -106,15 +112,20 @@ class ThemeControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.themeId").value(1))
                 .andExpect(jsonPath("$.name").value("자연"))
                 .andExpect(jsonPath("$.description").value("자연 경관 테마"))
+                .andExpect(jsonPath("$.category").value("자연/생태"))
+                .andExpect(jsonPath("$.region").value("제주"))
                 .andExpect(jsonPath("$.attractionCount").value(2))
                 .andExpect(jsonPath("$.attractions.length()").value(2))
                 .andExpect(jsonPath("$.attractions[0].attractionId").value(1))
                 .andExpect(jsonPath("$.attractions[0].title").value("한라산"))
+                .andExpect(jsonPath("$.attractions[0].overview").value("한라산 개요"))
+                .andExpect(jsonPath("$.attractions[0].overviewTts").value("한라산 TTS"))
                 .andExpect(jsonPath("$.attractions[0].latitude").value(33.36160800))
                 .andExpect(jsonPath("$.attractions[0].longitude").value(126.53390800))
                 .andExpect(jsonPath("$.attractions[0].attractionOrder").value(1))
                 .andExpect(jsonPath("$.attractions[1].attractionId").value(2))
                 .andExpect(jsonPath("$.attractions[1].title").value("성산일출봉"))
+                .andExpect(jsonPath("$.attractions[1].overviewTts").value("성산 TTS"))
                 .andExpect(jsonPath("$.attractions[1].latitude").value(33.45840800))
                 .andExpect(jsonPath("$.attractions[1].longitude").value(126.94240800))
                 .andExpect(jsonPath("$.attractions[1].attractionOrder").value(2));
@@ -142,6 +153,7 @@ class ThemeControllerTest extends ControllerTestSupport {
         given(themeService.getTheme(1L))
                 .willReturn(ThemeDetailResponse.builder()
                         .themeId(1L).name("자연").description("자연 경관 테마")
+                        .category(null).region(null)
                         .attractionCount(0).attractions(List.of())
                         .build());
 
