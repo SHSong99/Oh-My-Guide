@@ -11,6 +11,7 @@ import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
 import com.ohmyguide.app.fixtures.RecommendationSection
 import com.ohmyguide.app.domain.model.PlaceDetailCache
+import com.ohmyguide.app.service.LocationData
 import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.theme.CatAttraction
 import com.ohmyguide.app.ui.theme.CatCulture
@@ -25,8 +26,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 
 // ── Chat Message Types ──
@@ -83,6 +87,15 @@ class HomeViewModel @Inject constructor(
     private var selectedFocus: String? = null
     private var initialLoaded = false
 
+    private suspend fun getLatestLocation(): LocationData {
+        // 이미 값이 있으면 즉시 반환
+        LocationForegroundService.locationFlow.value?.let { return it }
+        // 없으면 최대 5초 대기 후 fallback
+        return withTimeoutOrNull(5000L) {
+            LocationForegroundService.locationFlow.filterNotNull().first()
+        } ?: LocationData(DEFAULT_LAT, DEFAULT_LNG)
+    }
+
     fun loadInitialRecommendation(category: String) {
         if (initialLoaded) return
         initialLoaded = true
@@ -90,9 +103,9 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             addMessage(ChatMessage.BotTyping)
 
-            val location = LocationForegroundService.locationFlow.value
-            val lat = location?.latitude ?: 35.0780
-            val lng = location?.longitude ?: 128.8510
+            val location = getLatestLocation()
+            val lat = location.latitude
+            val lng = location.longitude
 
             val result = recommendRepository.getRecommendation(category, lat, lng)
             removeTyping()
@@ -182,9 +195,9 @@ class HomeViewModel @Inject constructor(
             addMessage(ChatMessage.UserText("Show more $sectionTitle"))
             addMessage(ChatMessage.BotTyping)
 
-            val location = LocationForegroundService.locationFlow.value
-            val lat = location?.latitude ?: 35.0780
-            val lng = location?.longitude ?: 128.8510
+            val location = getLatestLocation()
+            val lat = location.latitude
+            val lng = location.longitude
             val result = recommendRepository.getRecommendation(sectionTitle, lat, lng)
             removeTyping()
 
@@ -270,9 +283,9 @@ class HomeViewModel @Inject constructor(
             addMessage(ChatMessage.UserText(option))
             addMessage(ChatMessage.BotTyping)
 
-            val location = LocationForegroundService.locationFlow.value
-            val lat = location?.latitude ?: 35.0780
-            val lng = location?.longitude ?: 128.8510
+            val location = getLatestLocation()
+            val lat = location.latitude
+            val lng = location.longitude
 
             val request = RefreshRecommendRequest(
                 latitude = lat,
@@ -308,6 +321,9 @@ class HomeViewModel @Inject constructor(
     }
 
     companion object {
+        private const val DEFAULT_LAT = 35.0780
+        private const val DEFAULT_LNG = 128.8510
+
         private val TAG_COLOR_MAP = mapOf(
             "Nature" to CatAttraction,
             "Culture" to CatCulture,

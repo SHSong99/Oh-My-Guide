@@ -2,6 +2,8 @@ package com.ohmyguide.app.service
 
 import android.content.Context
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import com.ohmyguide.app.BuildConfig
@@ -22,17 +24,43 @@ class TtsManager(private val context: Context) {
     private var mediaPlayer: MediaPlayer? = null
     private var isPaused = false
     private var currentText: String? = null
+    private var speakGeneration = 0
 
     private val _isSpeaking = MutableStateFlow(false)
     val isSpeaking: StateFlow<Boolean> = _isSpeaking.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _progress = MutableStateFlow(0f)
+    val progress: StateFlow<Float> = _progress.asStateFlow()
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val progressUpdater = object : Runnable {
+        override fun run() {
+            mediaPlayer?.let { mp ->
+                try {
+                    if (mp.isPlaying) {
+                        _progress.value = mp.currentPosition.toFloat() / mp.duration.coerceAtLeast(1)
+                    }
+                } catch (_: Exception) {}
+            }
+            handler.postDelayed(this, PROGRESS_INTERVAL)
+        }
+    }
 
     private val client = OkHttpClient()
 
     suspend fun speak(text: String) {
         stop()
+        val gen = ++speakGeneration
         currentText = text
         isPaused = false
-        val audioBytes = fetchAudio(text) ?: return
+        _isLoading.value = true
+        val audioBytes = fetchAudio(text)
+        if (gen != speakGeneration) return
+        _isLoading.value = false
+        if (audioBytes == null) return
         playAudio(audioBytes)
     }
 
@@ -59,6 +87,8 @@ class TtsManager(private val context: Context) {
     fun hasPaused(): Boolean = isPaused && mediaPlayer != null
 
     fun stop() {
+        speakGeneration++
+        handler.removeCallbacks(progressUpdater)
         mediaPlayer?.apply {
             try {
                 if (isPlaying) stop()
@@ -68,6 +98,8 @@ class TtsManager(private val context: Context) {
         mediaPlayer = null
         isPaused = false
         _isSpeaking.value = false
+        _isLoading.value = false
+        _progress.value = 0f
     }
 
     fun shutdown() {
@@ -75,19 +107,26 @@ class TtsManager(private val context: Context) {
         currentText = null
     }
 
+    private fun isKoreanText(text: String): Boolean =
+        text.any { it in '\uAC00'..'\uD7A3' || it in '\u3131'..'\u318E' }
+
     private suspend fun fetchAudio(text: String): ByteArray? = withContext(Dispatchers.IO) {
         try {
+            val isKorean = isKoreanText(text)
+            val lang = if (isKorean) LANGUAGE_KO else LANGUAGE_EN
+            val voice = if (isKorean) VOICE_NAME_KO else VOICE_NAME_EN
+
             val json = JSONObject().apply {
                 put("input", JSONObject().put("text", text))
                 put("voice", JSONObject().apply {
-                    put("languageCode", LANGUAGE)
-                    put("name", VOICE_NAME)
+                    put("languageCode", lang)
+                    put("name", voice)
                     put("ssmlGender", "FEMALE")
                 })
                 put("audioConfig", JSONObject().apply {
                     put("audioEncoding", "MP3")
                     put("speakingRate", RATE)
-                    put("pitch", PITCH)
+                    if (!isKorean) put("pitch", PITCH)
                 })
             }
 
@@ -122,13 +161,19 @@ class TtsManager(private val context: Context) {
                     setOnPreparedListener {
                         start()
                         _isSpeaking.value = true
+                        _progress.value = 0f
+                        handler.post(progressUpdater)
                     }
                     setOnCompletionListener {
+                        handler.removeCallbacks(progressUpdater)
+                        _progress.value = 1f
                         _isSpeaking.value = false
                         isPaused = false
                         tempFile.delete()
                     }
                     setOnErrorListener { _, _, _ ->
+                        handler.removeCallbacks(progressUpdater)
+                        _progress.value = 0f
                         _isSpeaking.value = false
                         isPaused = false
                         tempFile.delete()
@@ -146,9 +191,12 @@ class TtsManager(private val context: Context) {
     companion object {
         private const val TAG = "TtsManager"
         private const val BASE_URL = "https://texttospeech.googleapis.com/v1/text:synthesize"
-        private const val LANGUAGE = "en-US"
-        private const val VOICE_NAME = "en-US-Neural2-F"
+        private const val LANGUAGE_EN = "en-US"
+        private const val VOICE_NAME_EN = "en-US-Neural2-F"
+        private const val LANGUAGE_KO = "ko-KR"
+        private const val VOICE_NAME_KO = "ko-KR-Chirp3-HD-Leda"
         private const val RATE = 1.1
         private const val PITCH = 5.0
+        private const val PROGRESS_INTERVAL = 150L
     }
 }
