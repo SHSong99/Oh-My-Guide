@@ -31,6 +31,7 @@ public class AttractionService {
                 .longitude(request.getLongitude())
                 .firstImage1(request.getFirstImage1())
                 .overview(request.getOverview())
+                .overviewTts(request.getOverviewTts())
                 .build();
         return AttractionDetailResponse.from(attractionRepository.save(attraction));
     }
