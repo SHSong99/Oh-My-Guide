@@ -1,4 +1,5 @@
-FROM amazoncorretto:17-alpine
+# Stage 1: Build
+FROM amazoncorretto:17-alpine AS builder
 
 WORKDIR /app
 
@@ -10,6 +11,13 @@ COPY src src
 
 RUN chmod +x gradlew && ./gradlew bootJar --no-daemon -x test
 
+# Stage 2: Runtime
+FROM amazoncorretto:17-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/build/libs/oh-my-guide-*.jar app.jar
+
 EXPOSE 8080
 
-ENTRYPOINT ["sh", "-c", "java -jar build/libs/oh-my-guide-*.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
