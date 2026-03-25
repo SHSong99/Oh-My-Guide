@@ -25,7 +25,9 @@ public class AttractionCreateRequest {
 
     private String overview;
 
+    private String overviewTts;
+
     public AttractionCreateServiceRequest toServiceRequest() {
-        return AttractionCreateServiceRequest.of(title, latitude, longitude, firstImage1, overview);
+        return AttractionCreateServiceRequest.of(title, latitude, longitude, firstImage1, overview, overviewTts);
     }
 }
