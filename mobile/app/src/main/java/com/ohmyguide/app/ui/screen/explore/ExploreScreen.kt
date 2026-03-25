@@ -314,7 +314,7 @@ fun ExploreScreen(
                         launchSingleTop = true
                         restoreState = true
                     }
-                    "phrases" -> navController.navigate(Screen.Phrases.route) {
+                    "mypage" -> navController.navigate(Screen.MyPage.route) {
                         popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
