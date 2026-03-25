@@ -39,6 +39,21 @@ pipeline {
             }
         }
 
+
+        stage('Test Backend') {
+            when {
+                environment name: 'BACKEND_CHANGED', value: 'true'
+            }
+            steps {
+                sh 'cd backend && ./gradlew test --no-daemon'
+            }
+            post {
+                always {
+                    junit 'backend/build/test-results/test/*.xml'
+                }
+            }
+        }
+
         stage('Build Backend Image') {
             when {
                 environment name: 'BACKEND_CHANGED', value: 'true'
