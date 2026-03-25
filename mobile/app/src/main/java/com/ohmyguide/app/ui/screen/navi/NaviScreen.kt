@@ -27,10 +27,13 @@ import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -51,7 +54,7 @@ import com.naver.maps.map.compose.Marker
 import com.naver.maps.map.compose.NaverMap
 import com.naver.maps.map.compose.PathOverlay
 import com.naver.maps.map.compose.rememberCameraPositionState
-import com.naver.maps.map.compose.rememberFusedLocationSource
+
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
 import com.ohmyguide.app.R
@@ -106,10 +109,17 @@ fun NaviScreen(
     viewModel: NaviViewModel = hiltViewModel(),
 ) {
     val strings = LocalStrings.current
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val ttsManager = remember { com.ohmyguide.app.service.TtsManager(context) }
+    val scope = androidx.compose.runtime.rememberCoroutineScope()
     var storyPlaceId by remember { mutableStateOf<String?>(null) }
     var showStopDialog by remember { mutableStateOf(false) }
     var showStorySpotlight by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsState()
+
+    androidx.compose.runtime.DisposableEffect(Unit) {
+        onDispose { ttsManager.shutdown() }
+    }
 
     BackHandler { showStopDialog = true }
 
@@ -134,10 +144,24 @@ fun NaviScreen(
         }
     }
 
+    val sheetPeek by androidx.compose.animation.core.animateDpAsState(
+        targetValue = if (state.guideReady) 220.dp else 80.dp,
+        animationSpec = androidx.compose.animation.core.tween(800),
+        label = "sheetPeek",
+    )
+
+    // 줌인 완료 후 바텀시트를 화면 끝까지 올림
+    LaunchedEffect(state.guideReady) {
+        if (state.guideReady) {
+            delay(2800L) // 줌인 애니메이션(2.5s) 끝난 직후
+            scaffoldState.bottomSheetState.expand()
+        }
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         BottomSheetScaffold(
             scaffoldState = scaffoldState,
-            sheetPeekHeight = 220.dp,
+            sheetPeekHeight = sheetPeek,
             sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             sheetContainerColor = BgWhite,
             sheetDragHandle = {
@@ -230,9 +254,18 @@ fun NaviScreen(
                                         onPlaceClick = { id -> storyPlaceId = id },
                                     )
                                 }
+                                is NaviChatMessage.NearbySpotCard -> {
+                                    NearbySpotDashboard(
+                                        spot = msg.spot,
+                                        onClick = { storyPlaceId = msg.spot.placeId },
+                                    )
+                                }
                                 is NaviChatMessage.Phrases -> {
                                     PhrasesDashboard(
                                         items = msg.items,
+                                        onSpeak = { text ->
+                                            scope.launch { ttsManager.speak(text) }
+                                        },
                                     )
                                 }
                                 is NaviChatMessage.ArrivalConfirm -> {
@@ -279,6 +312,7 @@ fun NaviScreen(
                 onMinimize = onMinimize,
                 destLat = destLat,
                 destLng = destLng,
+                guideReady = state.guideReady,
             )
         }
 
@@ -314,6 +348,7 @@ private fun MapArea(
     onMinimize: () -> Unit,
     destLat: Double = 0.0,
     destLng: Double = 0.0,
+    guideReady: Boolean = false,
 ) {
     val destinationPosition = if (destLat != 0.0 && destLng != 0.0) {
         LatLng(destLat, destLng)
@@ -323,31 +358,55 @@ private fun MapArea(
     val route = FALLBACK_ROUTES[placeId to mode]
     val fallbackCoords = route?.points?.map { LatLng(it.lat, it.lng) }
 
-    // GPS 실시간 위치 가져오기
+    // GPS 실시간 위치 가져오기 (GPS/Mock only)
     val locationData by LocationForegroundService.locationFlow.collectAsState()
     val userPosition = locationData?.let { LatLng(it.latitude, it.longitude) }
         ?: DEFAULT_USER_POSITION
 
-    val locationSource = rememberFusedLocationSource()
-
+    // 시작 시 전체 경로가 보이도록 줌아웃
+    val midLat = (userPosition.latitude + destinationPosition.latitude) / 2
+    val midLng = (userPosition.longitude + destinationPosition.longitude) / 2
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition(userPosition, 15.0)
+        position = CameraPosition(LatLng(midLat, midLng), 10.0)
+    }
+
+    // guideReady=true 시 GPS 위치로 깊게 줌인
+    var zoomedIn by remember { mutableStateOf(false) }
+    LaunchedEffect(guideReady) {
+        if (guideReady && !zoomedIn) {
+            zoomedIn = true
+            cameraPositionState.animate(
+                com.naver.maps.map.CameraUpdate.scrollAndZoomTo(userPosition, 19.0),
+                animation = com.naver.maps.map.CameraAnimation.Fly,
+                durationMs = 2500,
+            )
+        }
+    }
+
+    // 줌인 완료 후 GPS 위치 변경 시 카메라 따라가기
+    LaunchedEffect(userPosition, zoomedIn) {
+        if (zoomedIn) {
+            cameraPositionState.animate(
+                com.naver.maps.map.CameraUpdate.scrollTo(userPosition),
+                animation = com.naver.maps.map.CameraAnimation.Easing,
+                durationMs = 500,
+            )
+        }
     }
 
     val mapProperties = remember {
         MapProperties(
-            locationTrackingMode = LocationTrackingMode.Follow,
+            locationTrackingMode = LocationTrackingMode.NoFollow,
         )
     }
     val mapUiSettings = remember {
-        MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = true)
+        MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = false)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
         NaverMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            locationSource = locationSource,
             properties = mapProperties,
             uiSettings = mapUiSettings,
         ) {
@@ -401,9 +460,13 @@ private fun MapArea(
                 )
             }
 
-            // 출발지 마커
+            // 현재 위치 마커 (실시간 추적)
+            val currentMarkerState = rememberMarkerState(key = "current_pos")
+            LaunchedEffect(userPosition) {
+                currentMarkerState.position = userPosition
+            }
             Marker(
-                state = rememberMarkerState(key = "start", position = userPosition),
+                state = currentMarkerState,
                 icon = OverlayImage.fromResource(R.drawable.ic_marker_startpoint),
                 width = 30.dp,
                 height = 45.dp,

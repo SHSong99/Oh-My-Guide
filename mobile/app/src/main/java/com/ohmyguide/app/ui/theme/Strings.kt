@@ -120,9 +120,11 @@ interface AppStrings {
     val prices: String
 
     // ── Story ──
+    val loading: String
     val nowPlaying: String
     val paused: String
     val backToGuide: String
+    val listenToGuide: String
 
     // ── Phrases ──
     val koreanPhrasesTitle: String
@@ -148,6 +150,17 @@ interface AppStrings {
     val food: String
     val culture: String
     val signOut: String
+    val ageUnit: String
+    val pickRecommendTitle: String
+    val pickRecommendDesc: String
+    val pickRecommendEmpty: String
+    val editProfile: String
+    val nationality: String
+    val age: String
+    val gender: String
+    val save: String
+    val bookmarkEmpty: String
+    val viewAllPhrases: String
 
     // ── Map ──
     val locating: String
