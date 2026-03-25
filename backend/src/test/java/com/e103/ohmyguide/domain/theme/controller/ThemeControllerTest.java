@@ -33,8 +33,8 @@ class ThemeControllerTest extends ControllerTestSupport {
     void getThemes_returns200() throws Exception {
         // given
         List<ThemeInfoResponse> themes = List.of(
-                ThemeInfoResponse.builder().themeId(1L).name("자연").description("자연 경관 테마").build(),
-                ThemeInfoResponse.builder().themeId(2L).name("역사").description("역사 유적 테마").build()
+                ThemeInfoResponse.builder().themeId(1L).name("자연").description("자연 경관 테마").category("자연/생태").region("제주").build(),
+                ThemeInfoResponse.builder().themeId(2L).name("역사").description("역사 유적 테마").category("역사/문화").region("경주").build()
         );
         given(themeService.getThemes())
                 .willReturn(ThemeInfosResponse.of(themes));
@@ -48,8 +48,12 @@ class ThemeControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.themes[0].themeId").value(1))
                 .andExpect(jsonPath("$.themes[0].name").value("자연"))
                 .andExpect(jsonPath("$.themes[0].description").value("자연 경관 테마"))
+                .andExpect(jsonPath("$.themes[0].category").value("자연/생태"))
+                .andExpect(jsonPath("$.themes[0].region").value("제주"))
                 .andExpect(jsonPath("$.themes[1].themeId").value(2))
-                .andExpect(jsonPath("$.themes[1].name").value("역사"));
+                .andExpect(jsonPath("$.themes[1].name").value("역사"))
+                .andExpect(jsonPath("$.themes[1].category").value("역사/문화"))
+                .andExpect(jsonPath("$.themes[1].region").value("경주"));
     }
 
     @DisplayName("GET /themes - 테마가 없으면 count 0과 빈 리스트를 반환한다.")

@@ -15,7 +15,11 @@ public class ThemeCreateRequest {
     @NotBlank
     private String description;
 
+    private String category;
+
+    private String region;
+
     public ThemeCreateServiceRequest toServiceRequest() {
-        return ThemeCreateServiceRequest.of(name, description);
+        return ThemeCreateServiceRequest.of(name, description, category, region);
     }
 }

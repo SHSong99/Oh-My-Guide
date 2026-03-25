@@ -52,7 +52,7 @@ class UserRepositoryTest extends IntegrationTestSupport {
         User user = userRepository.save(buildUser("test@test.com"));
 
         // when
-        user.completeOnboarding("KR", 25, "M");
+        user.completeOnboarding("KR", 25, "M", null, null);
 
         // then
         assertThat(user.getOnboardingCompleted()).isTrue();
