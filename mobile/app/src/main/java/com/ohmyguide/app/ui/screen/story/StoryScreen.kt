@@ -33,7 +33,11 @@ import com.ohmyguide.app.service.TtsManager
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -46,7 +50,9 @@ import com.ohmyguide.app.ui.theme.DarkSurface
 import com.ohmyguide.app.ui.theme.DarkTextLight
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
+import com.ohmyguide.app.ui.theme.PrimaryLight
 import com.ohmyguide.app.ui.theme.TextPrimary
+import coil.compose.AsyncImage
 
 private fun splitIntoPages(text: String): List<String> {
     val sentences = text.split(Regex("(?<=\\.)\\s+")).filter { it.isNotBlank() }
@@ -86,6 +92,8 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
     val context = LocalContext.current
     val ttsManager = remember { TtsManager(context) }
     val isSpeaking by ttsManager.isSpeaking.collectAsState()
+    val isLoadingTts by ttsManager.isLoading.collectAsState()
+    val ttsProgress by ttsManager.progress.collectAsState()
 
     val scope = rememberCoroutineScope()
     var currentPage by remember { mutableIntStateOf(0) }
@@ -153,6 +161,7 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
 
                 AudioPlayerBar(
                     isPlaying = isSpeaking,
+                    isLoading = isLoadingTts,
                     onToggle = {
                         if (isSpeaking) {
                             ttsManager.pause()
@@ -166,6 +175,7 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(20.dp))
 
+                val imageUrl = guideData?.destination?.firstImage1 ?: detail?.place?.imageUrl
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -174,19 +184,66 @@ fun StoryOverlay(placeId: String, onDismiss: () -> Unit) {
                         .background(DarkSurface),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = detail?.place?.emoji ?: "\uD83C\uDFDE\uFE0F",
-                        fontSize = 48.sp,
-                    )
+                    if (!imageUrl.isNullOrBlank()) {
+                        AsyncImage(
+                            model = imageUrl,
+                            contentDescription = placeName,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop,
+                        )
+                    } else {
+                        Text(
+                            text = detail?.place?.emoji ?: "\uD83C\uDFDE\uFE0F",
+                            fontSize = 48.sp,
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                Text(
-                    text = pages[currentPage],
-                    style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 32.sp),
-                    color = DarkTextLight,
-                )
+                // Split page text into sentences for highlight
+                val pageText = pages[currentPage]
+                val sentences = remember(pageText) {
+                    pageText.split(Regex("(?<=[.!?。,])(\\s+)")).filter { it.isNotBlank() }
+                        .let { if (it.size <= 1) pageText.chunked((pageText.length / 3).coerceAtLeast(1)) else it }
+                }
+
+                if (!isSpeaking && ttsProgress == 0f) {
+                    Text(
+                        text = pageText,
+                        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 32.sp),
+                        color = if (isSpeaking) BgWhite else DarkTextLight,
+                    )
+                } else {
+                    // Calculate cumulative character weights for each sentence
+                    val totalChars = sentences.sumOf { it.length }
+                    val cumWeights = remember(sentences) {
+                        var cum = 0f
+                        sentences.map { s ->
+                            cum += s.length.toFloat() / totalChars
+                            cum
+                        }
+                    }
+                    val activeSentenceIndex = cumWeights.indexOfFirst { it > ttsProgress }
+                        .let { if (it == -1) sentences.lastIndex else it }
+
+                    val annotated = buildAnnotatedString {
+                        sentences.forEachIndexed { i, sentence ->
+                            val style = when {
+                                i < activeSentenceIndex -> SpanStyle(color = DarkTextLight.copy(alpha = 0.45f))
+                                i == activeSentenceIndex -> SpanStyle(color = PrimaryLight, fontWeight = FontWeight.SemiBold)
+                                else -> SpanStyle(color = DarkTextLight.copy(alpha = 0.65f))
+                            }
+                            withStyle(style) { append(sentence) }
+                            if (i < sentences.lastIndex) append(" ")
+                        }
+                    }
+
+                    Text(
+                        text = annotated,
+                        style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 32.sp),
+                    )
+                }
             }
         }
 

@@ -24,6 +24,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -99,7 +100,7 @@ fun StoryTopBar(currentPage: Int, totalPages: Int, onBack: () -> Unit) {
 }
 
 @Composable
-fun AudioPlayerBar(isPlaying: Boolean, onToggle: () -> Unit) {
+fun AudioPlayerBar(isPlaying: Boolean, isLoading: Boolean = false, onToggle: () -> Unit) {
     // Pulse for play button when paused
     val pulseScale = if (!isPlaying) {
         val pulseTransition = rememberInfiniteTransition(label = "playPulse")
@@ -148,20 +149,32 @@ fun AudioPlayerBar(isPlaying: Boolean, onToggle: () -> Unit) {
                     if (isPlaying) Brush.linearGradient(listOf(Primary, PrimaryLight))
                     else Brush.linearGradient(listOf(Primary.copy(alpha = 0.6f), PrimaryLight.copy(alpha = 0.6f)))
                 )
-                .clickable(onClick = onToggle),
+                .clickable(enabled = !isLoading, onClick = onToggle),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                contentDescription = null,
-                modifier = Modifier.size(20.dp),
-                tint = BgWhite,
-            )
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = BgWhite,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Icon(
+                    imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = BgWhite,
+                )
+            }
         }
         Spacer(modifier = Modifier.width(14.dp))
         Column {
             Text(
-                text = if (isPlaying) LocalStrings.current.nowPlaying else LocalStrings.current.paused,
+                text = when {
+                    isLoading -> LocalStrings.current.loading
+                    isPlaying -> LocalStrings.current.nowPlaying
+                    else -> LocalStrings.current.paused
+                },
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                 color = if (isPlaying) Primary else DarkText,
             )
