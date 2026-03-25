@@ -8,10 +8,3 @@ services:
     environment:
       - GF_SERVER_ROOT_URL=http://localhost:3000
       - GF_SERVER_SERVE_FROM_SUB_PATH=false
-
-  # macOS(Docker Desktop)에서는 /var/lib/docker/containers가 VM 내부에 있어
-  # 호스트 마운트 불가 → promtail 비활성화
-  # 대신 Loki Docker Driver 방식 사용 (아래 로컬 실행 가이드 참고)
-  promtail:
-    profiles:
-      - disabled
