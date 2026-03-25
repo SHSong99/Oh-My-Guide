@@ -110,9 +110,11 @@ object KoStrings : AppStrings {
     override val photo = "사진"
     override val prices = "가격"
 
+    override val loading = "불러오는 중\u2026"
     override val nowPlaying = "재생 중\u2026"
     override val paused = "일시정지"
     override val backToGuide = "가이드로 돌아가기"
+    override val listenToGuide = "가이드 듣기"
 
     override val koreanPhrasesTitle = "한국어 구문"
     override val koreanPhrasesSubtitle = "여행자를 위한 한국어 표현"

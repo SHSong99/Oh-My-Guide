@@ -110,9 +110,11 @@ object ZhTwStrings : AppStrings {
     override val photo = "照片"
     override val prices = "價格"
 
+    override val loading = "載入中\u2026"
     override val nowPlaying = "播放中\u2026"
     override val paused = "已暫停"
     override val backToGuide = "返回導覽"
+    override val listenToGuide = "收聽導覽"
 
     override val koreanPhrasesTitle = "韓語短語"
     override val koreanPhrasesSubtitle = "旅客韓語常用語"

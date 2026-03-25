@@ -110,9 +110,11 @@ object EnStrings : AppStrings {
     override val photo = "Photo"
     override val prices = "Prices"
 
+    override val loading = "Loading\u2026"
     override val nowPlaying = "Now playing\u2026"
     override val paused = "Paused"
     override val backToGuide = "Back to Guide"
+    override val listenToGuide = "Listen to Guide"
 
     override val koreanPhrasesTitle = "\uD55C\uAD6D\uC5B4 \uAD6C\uBB38"
     override val koreanPhrasesSubtitle = "Korean Phrases for Travelers"

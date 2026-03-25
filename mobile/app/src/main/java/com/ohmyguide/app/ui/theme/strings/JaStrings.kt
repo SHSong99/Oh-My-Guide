@@ -110,9 +110,11 @@ object JaStrings : AppStrings {
     override val photo = "写真"
     override val prices = "料金"
 
+    override val loading = "読み込み中\u2026"
     override val nowPlaying = "再生中\u2026"
     override val paused = "一時停止"
     override val backToGuide = "ガイドに戻る"
+    override val listenToGuide = "ガイドを聞く"
 
     override val koreanPhrasesTitle = "韓国語フレーズ"
     override val koreanPhrasesSubtitle = "旅行者のための韓国語フレーズ"

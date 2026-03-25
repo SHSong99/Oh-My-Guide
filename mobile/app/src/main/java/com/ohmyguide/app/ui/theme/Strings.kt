@@ -120,9 +120,11 @@ interface AppStrings {
     val prices: String
 
     // ── Story ──
+    val loading: String
     val nowPlaying: String
     val paused: String
     val backToGuide: String
+    val listenToGuide: String
 
     // ── Phrases ──
     val koreanPhrasesTitle: String

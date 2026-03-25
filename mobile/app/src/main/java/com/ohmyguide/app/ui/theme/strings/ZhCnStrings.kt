@@ -110,9 +110,11 @@ object ZhCnStrings : AppStrings {
     override val photo = "照片"
     override val prices = "价格"
 
+    override val loading = "加载中\u2026"
     override val nowPlaying = "播放中\u2026"
     override val paused = "已暂停"
     override val backToGuide = "返回导览"
+    override val listenToGuide = "收听导览"
 
     override val koreanPhrasesTitle = "韩语短语"
     override val koreanPhrasesSubtitle = "旅客韩语常用语"

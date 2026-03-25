@@ -14,6 +14,8 @@ import com.ohmyguide.app.fixtures.Course
 import com.ohmyguide.app.fixtures.EXPLORE_COURSES
 import com.ohmyguide.app.fixtures.Spot
 import com.ohmyguide.app.service.LocationForegroundService
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import com.ohmyguide.app.ui.theme.CourseLeg1
 import com.ohmyguide.app.ui.theme.CourseLeg2
 import com.ohmyguide.app.ui.theme.CourseLeg3
@@ -59,6 +61,9 @@ class CourseNaviViewModel @Inject constructor(
 
         viewModelScope.launch {
             val location = LocationForegroundService.locationFlow.value
+                ?: kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                    LocationForegroundService.locationFlow.filterNotNull().first()
+                }
             val rawLat = location?.latitude
             val rawLng = location?.longitude
             val inKorea = rawLat != null && rawLng != null

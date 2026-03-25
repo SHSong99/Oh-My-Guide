@@ -88,7 +88,8 @@ class AttractionServiceTest extends IntegrationTestSupport {
                 new BigDecimal("33.36160800"),
                 new BigDecimal("126.53390800"),
                 "http://image.url/hallasan.jpg",
-                "한라산 개요"
+                "한라산 개요",
+                "한라산 TTS 개요"
         );
 
         // when
@@ -102,6 +103,7 @@ class AttractionServiceTest extends IntegrationTestSupport {
         assertThat(saved.getLongitude()).isEqualByComparingTo(new BigDecimal("126.53390800"));
         assertThat(saved.getFirstImage1()).isEqualTo("http://image.url/hallasan.jpg");
         assertThat(saved.getOverview()).isEqualTo("한라산 개요");
+        assertThat(saved.getOverviewTts()).isEqualTo("한라산 TTS 개요");
         assertThat(response.getAttrId()).isEqualTo(saved.getId());
         assertThat(response.getTitle()).isEqualTo("한라산");
     }
@@ -115,6 +117,7 @@ class AttractionServiceTest extends IntegrationTestSupport {
                 new BigDecimal("33.45840800"),
                 new BigDecimal("126.94240800"),
                 null,
+                null,
                 null
         );
 
@@ -126,6 +129,7 @@ class AttractionServiceTest extends IntegrationTestSupport {
         assertThat(saved.getTitle()).isEqualTo("성산일출봉");
         assertThat(saved.getFirstImage1()).isNull();
         assertThat(saved.getOverview()).isNull();
+        assertThat(saved.getOverviewTts()).isNull();
     }
 
     @DisplayName("관광지 title을 수정하면 DB에 반영된다.")

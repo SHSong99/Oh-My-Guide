@@ -3,8 +3,16 @@ package com.ohmyguide.app.ui.screen.navi
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.content.Context
+import android.media.AudioManager
+import android.media.ToneGenerator
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.util.Log
 import com.ohmyguide.app.BuildConfig
+import dagger.hilt.android.qualifiers.ApplicationContext
 import com.ohmyguide.app.data.model.ApiResult
 import com.ohmyguide.app.data.repository.NaverDirectionsRepository
 import com.ohmyguide.app.data.repository.TmapRepository
@@ -33,8 +41,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -75,6 +86,15 @@ data class HourForecast(
     val precipProb: Int,
 )
 
+data class NearbySpotInfo(
+    val placeId: String,
+    val name: String,
+    val imageUrl: String?,
+    val overview: String?,
+    val lat: Double,
+    val lng: Double,
+)
+
 sealed class NaviChatMessage {
     data class BotText(val text: String) : NaviChatMessage()
     object BotTyping : NaviChatMessage()
@@ -84,6 +104,7 @@ sealed class NaviChatMessage {
     data class NearbyPlaces(
         val places: List<Place>,
     ) : NaviChatMessage()
+    data class NearbySpotCard(val spot: NearbySpotInfo) : NaviChatMessage()
     data class Phrases(val items: List<PhraseItem>) : NaviChatMessage()
     object ArrivalConfirm : NaviChatMessage()
     data class NearbyRecommendations(val places: List<Place>) : NaviChatMessage()
@@ -99,6 +120,7 @@ data class NaviUiState(
     val progressPct: Float = 0f,
     val userLat: Double = 35.0950,
     val userLng: Double = 128.8560,
+    val guideReady: Boolean = false,
     // Course mode
     val course: Course? = null,
     val spotIndex: Int = 0,
@@ -107,6 +129,7 @@ data class NaviUiState(
 
 @HiltViewModel
 class NaviViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     savedStateHandle: SavedStateHandle,
     private val naviRouteCache: NaviRouteCache,
     private val directionsRepository: NaverDirectionsRepository,
@@ -148,7 +171,47 @@ class NaviViewModel @Inject constructor(
     val uiState: StateFlow<NaviUiState> = _uiState.asStateFlow()
 
     private var gpsJob: Job? = null
-    private var nearbyPoiShown = false
+    private val shownNearbySpotIds = mutableSetOf<String>()
+    private var nearbySpotCount = 0
+    private var lastRecommendLat = 0.0
+    private var lastRecommendLng = 0.0
+    private var nearbyRecommendEnabled = false
+    private var arrivalPromptShown = false
+
+    private val nearbySpots: List<NearbySpotInfo> = guideData?.nearbyPlaces
+        ?.filter { it.placeId.toString() != placeId && it.latitude != null && it.longitude != null }
+        ?.map { dto ->
+            NearbySpotInfo(
+                placeId = dto.placeId.toString(),
+                name = dto.title ?: "",
+                imageUrl = dto.firstImage1,
+                overview = dto.overview,
+                lat = dto.latitude ?: 0.0,
+                lng = dto.longitude ?: 0.0,
+            )
+        } ?: emptyList()
+
+    private fun notifyUser() {
+        try {
+            // 비프음
+            val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60)
+            tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+            // 약한 진동
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vm = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vm.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(100)
+            }
+        } catch (_: Exception) {}
+    }
 
     companion object {
         private const val DEFAULT_LAT = 35.0950
@@ -167,7 +230,12 @@ class NaviViewModel @Inject constructor(
             "dh2" to (37.5563 to 126.9236),
             "dh3" to (37.5586 to 126.9267),
         )
-        private const val ARRIVAL_THRESHOLD_METERS = 100.0
+        private const val ARRIVAL_THRESHOLD_METERS = 50.0
+        private const val NEARBY_WALK_RADIUS = 30.0        // 도보: 30m 이내
+        private const val NEARBY_VEHICLE_RADIUS = 200.0    // 차/대중교통: 200m 이내
+        private const val COOLDOWN_WALK_METERS = 300.0     // 도보: 300m 이동 후 다음 추천
+        private const val COOLDOWN_VEHICLE_METERS = 1000.0 // 차/대중교통: 1km 이동 후 다음 추천
+        private const val MAX_NEARBY_RECOMMENDATIONS = 5
 
         private val USEFUL_PHRASES = listOf(
             PhraseItem("이거 주세요", "i-geo ju-se-yo", "This one, please"),
@@ -240,39 +308,59 @@ class NaviViewModel @Inject constructor(
             ))
         }
 
-        // Greeting
-        addMessage(NaviChatMessage.BotText(
-            "I'll guide you to $placeName! Keep going straight ahead.",
-        ))
-
-        // Place introduction from API
-        val overview = guideData?.destination?.overview
-            ?: detail?.desc
-        if (!overview.isNullOrBlank()) {
-            viewModelScope.launch {
-                delay(2000L)
-                addMessage(NaviChatMessage.BotTyping)
-                delay(800L)
-                removeTyping()
-                addMessage(NaviChatMessage.BotText(overview))
-            }
-        }
-
-        // Weather — delivered shortly after start
         viewModelScope.launch {
+            // t=0s — 전체 경로 보여주는 시간 (지도 줌아웃 상태)
+
+            // t=2s — 줌인 시작 타이밍에 맞춰 guideReady
+            delay(2000L)
+            _uiState.update { it.copy(guideReady = true) }
+
+            // t=4s — Greeting
+            delay(2000L)
+            addMessage(NaviChatMessage.BotText(
+                "I'll guide you to $placeName! Keep going straight ahead.",
+            ))
+            notifyUser()
+
+            // t=8s — 날씨
             delay(4000L)
             addMessage(NaviChatMessage.BotTyping)
             delay(800L)
             removeTyping()
             fetchWeatherAndShow()
-        }
+            notifyUser()
 
-        // Story guide prompt — separate turn (only if TTS text available)
-        val hasTts = !guideData?.destination?.overviewTts.isNullOrBlank()
-            || !overview.isNullOrBlank()
-        if (hasTts) {
-            viewModelScope.launch {
-                delay(8000L)
+            // t=13s — 이동 방법 안내
+            delay(5000L)
+            addMessage(NaviChatMessage.BotTyping)
+            delay(800L)
+            removeTyping()
+            when (mode) {
+                "transit" -> {
+                    addMessage(NaviChatMessage.BotText("Here's your transit info:"))
+                    addMessage(NaviChatMessage.TransitInfo(
+                        info = TRANSIT_STOPS[placeId] ?: TRANSIT_STOPS.values.first(),
+                    ))
+                }
+                "car" -> {
+                    addMessage(NaviChatMessage.BotText(
+                        "🚗 Estimated drive time: about $totalDuration min. Follow the route on the map!"
+                    ))
+                }
+                else -> {
+                    addMessage(NaviChatMessage.BotText(
+                        "🚶 Estimated walk time: about $totalDuration min. Enjoy the walk!"
+                    ))
+                }
+            }
+            notifyUser()
+
+            // t=18s — 목적지 가이드 유도
+            val hasTts = !guideData?.destination?.overviewTts.isNullOrBlank()
+                || !guideData?.destination?.overview.isNullOrBlank()
+                || !detail?.desc.isNullOrBlank()
+            if (hasTts) {
+                delay(5000L)
                 addMessage(NaviChatMessage.BotTyping)
                 delay(800L)
                 removeTyping()
@@ -280,21 +368,12 @@ class NaviViewModel @Inject constructor(
                     "By the way, I know some interesting stories about $placeName!"
                 ))
                 addMessage(NaviChatMessage.StoryPrompt(placeName = placeName))
+                notifyUser()
             }
-        }
 
-        // Transit info — separate turn (only for transit mode)
-        if (mode == "transit") {
-            viewModelScope.launch {
-                delay(10000L)
-                addMessage(NaviChatMessage.BotTyping)
-                delay(800L)
-                removeTyping()
-                addMessage(NaviChatMessage.BotText("Here's your transit info:"))
-                addMessage(NaviChatMessage.TransitInfo(
-                    info = TRANSIT_STOPS[placeId] ?: TRANSIT_STOPS.values.first(),
-                ))
-            }
+            // t=30s — 근처 장소 추천 활성화
+            delay(if (hasTts) 12000L else 17000L)
+            nearbyRecommendEnabled = true
         }
     }
 
@@ -303,6 +382,9 @@ class NaviViewModel @Inject constructor(
     private fun fetchDirectionsRoute() {
         viewModelScope.launch {
             val location = LocationForegroundService.locationFlow.value
+                ?: withTimeoutOrNull(5000L) {
+                    LocationForegroundService.locationFlow.filterNotNull().first()
+                }
             val rawLat = location?.latitude
             val rawLng = location?.longitude
             val inKorea = rawLat != null && rawLng != null
@@ -402,31 +484,28 @@ class NaviViewModel @Inject constructor(
                     "$placeName · ${remainingMin}min"
                 )
 
-                // Nearby POI check (halfway)
-                if (!nearbyPoiShown && progress > 0.5f) {
-                    showNearbyPlaces()
-                }
+                // Nearby spot proximity check (mode-based threshold)
+                checkNearbySpotProximity(userLat, userLng)
 
-                // Arrival check
+                // Arrival proximity — show confirm button (once)
                 val distToDest = haversineMeters(userLat, userLng, destinationLat, destinationLng)
-                if (distToDest < ARRIVAL_THRESHOLD_METERS) {
-                    onArrival()
+                if (distToDest < ARRIVAL_THRESHOLD_METERS && !arrivalPromptShown) {
+                    arrivalPromptShown = true
+                    viewModelScope.launch {
+                        addMessage(NaviChatMessage.BotTyping)
+                        delay(800L)
+                        removeTyping()
+                        addMessage(NaviChatMessage.BotText(
+                            "📍 You're close to ${detail?.place?.name ?: "your destination"}! Have you arrived?"
+                        ))
+                        addMessage(NaviChatMessage.ArrivalConfirm)
+                        notifyUser()
+                    }
                 }
             }
         }
     }
 
-    private fun onArrival() {
-        LocationForegroundService.updateNaviStatus(null)
-        _uiState.update { it.copy(arrived = true, progressPct = 1f) }
-        viewModelScope.launch {
-            addMessage(NaviChatMessage.BotTyping)
-            delay(1000L)
-            removeTyping()
-            addMessage(NaviChatMessage.BotText("You've arrived at ${detail?.place?.name ?: "your destination"}!"))
-            addMessage(NaviChatMessage.ArrivalConfirm)
-        }
-    }
 
     // ── Action Button Handlers ──
 
@@ -441,29 +520,64 @@ class NaviViewModel @Inject constructor(
     }
 
 
-    // ── Nearby POI ──
+    // ── Nearby Spot Proximity ──
 
-    private fun showNearbyPlaces() {
-        nearbyPoiShown = true
-        val apiNearby = guideData?.nearbyPlaces
-            ?.filter { it.placeId.toString() != placeId }
-            ?.take(4)
-            ?.map { it.toPlace() }
+    private fun checkNearbySpotProximity(userLat: Double, userLng: Double) {
+        // 초기 가이드 완료 전에는 추천 비활성
+        if (!nearbyRecommendEnabled) return
+        // 최대 추천 횟수 초과
+        if (nearbySpotCount >= MAX_NEARBY_RECOMMENDATIONS) return
 
-        val nearbyPlaces = if (!apiNearby.isNullOrEmpty()) {
-            apiNearby
-        } else {
-            SAMPLE_PLACES.filter { it.id != placeId }.shuffled().take(4)
+        // 쿨다운: 마지막 추천 위치에서 일정 거리 이동해야 다음 추천
+        val cooldown = if (mode == "walk") COOLDOWN_WALK_METERS else COOLDOWN_VEHICLE_METERS
+        if (lastRecommendLat != 0.0 && lastRecommendLng != 0.0) {
+            val movedDist = haversineMeters(lastRecommendLat, lastRecommendLng, userLat, userLng)
+            if (movedDist < cooldown) return
         }
 
-        if (nearbyPlaces.isEmpty()) return
+        // 반경 내 장소 중 가장 가까운 1개 선정 (overview 있는 장소 우선)
+        val radius = if (mode == "walk") NEARBY_WALK_RADIUS else NEARBY_VEHICLE_RADIUS
+        val candidate = nearbySpots
+            .filter { it.placeId !in shownNearbySpotIds }
+            .map { spot -> spot to haversineMeters(userLat, userLng, spot.lat, spot.lng) }
+            .filter { (_, dist) -> dist < radius }
+            .sortedWith(compareByDescending<Pair<NearbySpotInfo, Double>> { (spot, _) ->
+                !spot.overview.isNullOrBlank()  // overview 있는 장소 우선
+            }.thenBy { (_, dist) -> dist })     // 그 다음 거리순
+            .firstOrNull()
 
-        viewModelScope.launch {
-            addMessage(NaviChatMessage.BotTyping)
-            delay(800L)
-            removeTyping()
-            addMessage(NaviChatMessage.BotText("Here are some interesting places along your route:"))
-            addMessage(NaviChatMessage.NearbyPlaces(places = nearbyPlaces))
+        if (candidate != null) {
+            val (spot, _) = candidate
+            shownNearbySpotIds.add(spot.placeId)
+            nearbySpotCount++
+            lastRecommendLat = userLat
+            lastRecommendLng = userLng
+
+            // Cache guide data for StoryOverlay
+            PlaceDetailCache.putGuide(spot.placeId, com.ohmyguide.app.data.model.GuideNavigationResponse(
+                startLocation = com.ohmyguide.app.data.model.StartLocationDto(userLat, userLng),
+                destination = com.ohmyguide.app.data.model.GuidePlaceDto(
+                    placeId = spot.placeId.toLongOrNull() ?: 0L,
+                    title = spot.name,
+                    addr1 = null,
+                    latitude = spot.lat,
+                    longitude = spot.lng,
+                    firstImage1 = spot.imageUrl,
+                    overview = spot.overview,
+                    overviewTts = null,
+                ),
+                nearbyPlaces = emptyList(),
+            ))
+            viewModelScope.launch {
+                addMessage(NaviChatMessage.BotTyping)
+                delay(800L)
+                removeTyping()
+                addMessage(NaviChatMessage.BotText(
+                    "📍 There's a place called ${spot.name} nearby! Want to hear about it?"
+                ))
+                addMessage(NaviChatMessage.NearbySpotCard(spot = spot))
+                notifyUser()
+            }
         }
     }
 
@@ -591,24 +705,14 @@ class NaviViewModel @Inject constructor(
     // ── Arrival Confirmation ──
 
     fun onArrivalConfirm() {
+        LocationForegroundService.updateNaviStatus(null)
+        _uiState.update { it.copy(arrived = true, progressPct = 1f) }
         viewModelScope.launch {
             removeArrivalConfirm()
-            addMessage(NaviChatMessage.BotTyping)
-            delay(1200L)
-            removeTyping()
-            addMessage(NaviChatMessage.BotText("Great! Here are some spots nearby you might love:"))
-
-            val apiNearby = guideData?.nearbyPlaces
-                ?.filter { it.placeId.toString() != placeId }
-                ?.take(3)
-                ?.map { it.toPlace() }
-
-            val nearbyPlaces = if (!apiNearby.isNullOrEmpty()) {
-                apiNearby
-            } else {
-                SAMPLE_PLACES.filter { it.id != placeId }.shuffled().take(3)
-            }
-            addMessage(NaviChatMessage.NearbyRecommendations(nearbyPlaces))
+            addMessage(NaviChatMessage.BotText(
+                "🎉 You've arrived at ${detail?.place?.name ?: "your destination"}! Enjoy your visit!"
+            ))
+            notifyUser()
         }
     }
 
