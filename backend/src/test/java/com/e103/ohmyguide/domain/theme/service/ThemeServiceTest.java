@@ -236,7 +236,7 @@ class ThemeServiceTest extends IntegrationTestSupport {
     @Test
     void getTheme_returnsThemeDetailWithAttractions() {
         // given
-        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").build());
+        Theme theme = themeRepository.save(Theme.builder().name("자연").description("자연 경관 테마").category("자연/생태").region("제주").build());
         Attraction attraction = attractionRepository.save(Attraction.builder()
                 .title("한라산")
                 .firstImage1("image_url")
@@ -256,6 +256,8 @@ class ThemeServiceTest extends IntegrationTestSupport {
         assertThat(result.getThemeId()).isEqualTo(theme.getId());
         assertThat(result.getName()).isEqualTo("자연");
         assertThat(result.getDescription()).isEqualTo("자연 경관 테마");
+        assertThat(result.getCategory()).isEqualTo("자연/생태");
+        assertThat(result.getRegion()).isEqualTo("제주");
         assertThat(result.getAttractionCount()).isEqualTo(1);
         assertThat(result.getAttractions()).hasSize(1);
         AttractionSummaryResponse attractionResponse = result.getAttractions().get(0);
@@ -263,6 +265,7 @@ class ThemeServiceTest extends IntegrationTestSupport {
         assertThat(attractionResponse.getTitle()).isEqualTo("한라산");
         assertThat(attractionResponse.getImage()).isEqualTo("image_url");
         assertThat(attractionResponse.getOverview()).isEqualTo("한라산 개요");
+        assertThat(attractionResponse.getOverviewTts()).isNull();
         assertThat(attractionResponse.getLatitude()).isEqualByComparingTo(new BigDecimal("33.36160800"));
         assertThat(attractionResponse.getLongitude()).isEqualByComparingTo(new BigDecimal("126.53390800"));
         assertThat(attractionResponse.getAttractionOrder()).isEqualTo(1);
