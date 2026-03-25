@@ -50,6 +50,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -677,7 +678,9 @@ fun PhrasesDashboard(items: List<PhraseItem>, onSpeak: (String) -> Unit) {
 
 @Composable
 private fun PhraseCard(phrase: PhraseItem, onSpeak: (String) -> Unit) {
-    var bookmarked by remember { mutableStateOf(false) }
+    val key = "navi-${phrase.korean}"
+    val bookmarkMap by com.ohmyguide.app.domain.model.PhraseBookmarkStore.bookmarks.collectAsState()
+    val bookmarked = bookmarkMap.containsKey(key)
 
     Row(
         modifier = Modifier
@@ -714,7 +717,13 @@ private fun PhraseCard(phrase: PhraseItem, onSpeak: (String) -> Unit) {
                 .size(36.dp)
                 .clip(CircleShape)
                 .background(if (bookmarked) Primary.copy(alpha = 0.1f) else BgSub)
-                .clickable { bookmarked = !bookmarked },
+                .clickable {
+                    com.ohmyguide.app.domain.model.PhraseBookmarkStore.toggle(
+                        key,
+                        com.ohmyguide.app.fixtures.KoreanPhrase(phrase.korean, phrase.romanization, phrase.english),
+                        "Navi Phrases",
+                    )
+                },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
