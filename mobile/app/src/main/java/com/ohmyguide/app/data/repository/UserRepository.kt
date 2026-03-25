@@ -1,7 +1,9 @@
 package com.ohmyguide.app.data.repository
 
 import com.ohmyguide.app.data.api.ApiService
+import com.ohmyguide.app.data.model.AttractionDetailDto
 import com.ohmyguide.app.data.model.OnboardingRequest
+import com.ohmyguide.app.data.model.PickRecommendResponse
 import com.ohmyguide.app.data.model.UserResponse
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -22,6 +24,28 @@ class UserRepository @Inject constructor(
         return try {
             val response = apiService.completeOnboarding(OnboardingRequest(nationality, age, gender, companion, country))
             Result.success(response)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getPickRecommend(
+        nationality: String,
+        ageGroup: String,
+        gender: String,
+        travelPurpose: String,
+        lifestyle: String,
+    ): Result<List<PickRecommendResponse>> {
+        return try {
+            Result.success(apiService.getPickRecommend(nationality, ageGroup, gender, travelPurpose, lifestyle))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAttractionDetail(attrId: Long): Result<AttractionDetailDto> {
+        return try {
+            Result.success(apiService.getAttractionDetail(attrId))
         } catch (e: Exception) {
             Result.failure(e)
         }

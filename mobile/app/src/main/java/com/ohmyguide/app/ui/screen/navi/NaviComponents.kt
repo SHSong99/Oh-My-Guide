@@ -50,8 +50,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -85,6 +88,7 @@ import com.ohmyguide.app.ui.theme.Secondary
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
+import coil.compose.AsyncImage
 
 // ── Sheet Header (unified: place info + progress + stop) ──
 
@@ -661,19 +665,23 @@ fun NaviQuickActions(
 // ── Phrases Dashboard ──
 
 @Composable
-fun PhrasesDashboard(items: List<PhraseItem>) {
+fun PhrasesDashboard(items: List<PhraseItem>, onSpeak: (String) -> Unit) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items.forEach { phrase ->
-            PhraseCard(phrase = phrase)
+            PhraseCard(phrase = phrase, onSpeak = onSpeak)
         }
     }
 }
 
 @Composable
-private fun PhraseCard(phrase: PhraseItem) {
+private fun PhraseCard(phrase: PhraseItem, onSpeak: (String) -> Unit) {
+    val key = "navi-${phrase.korean}"
+    val bookmarkMap by com.ohmyguide.app.domain.model.PhraseBookmarkStore.bookmarks.collectAsState()
+    val bookmarked = bookmarkMap.containsKey(key)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -702,13 +710,37 @@ private fun PhraseCard(phrase: PhraseItem) {
                 color = TextCaption,
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        // Bookmark button
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(if (bookmarked) Primary.copy(alpha = 0.1f) else BgSub)
+                .clickable {
+                    com.ohmyguide.app.domain.model.PhraseBookmarkStore.toggle(
+                        key,
+                        com.ohmyguide.app.fixtures.KoreanPhrase(phrase.korean, phrase.romanization, phrase.english),
+                        "Navi Phrases",
+                    )
+                },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                if (bookmarked) Icons.Filled.CheckCircle else Icons.Filled.LocalOffer,
+                contentDescription = "Bookmark",
+                modifier = Modifier.size(18.dp),
+                tint = if (bookmarked) Primary else TextCaption,
+            )
+        }
+        Spacer(modifier = Modifier.width(8.dp))
+        // TTS play button
         Box(
             modifier = Modifier
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(PrimaryGradient)
-                .clickable { /* TODO: TTS playback */ },
+                .clickable { onSpeak(phrase.korean) },
             contentAlignment = Alignment.Center,
         ) {
             Icon(
@@ -1070,5 +1102,89 @@ private fun WeatherInfoChip(
             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
             color = textColor,
         )
+    }
+}
+
+// ── Nearby Spot Dashboard Card ──
+
+@Composable
+fun NearbySpotDashboard(spot: NearbySpotInfo, onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .background(BgWhite)
+            .border(1.dp, Primary.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+            .clickable(onClick = onClick),
+    ) {
+        // Image area — full width
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
+                .background(BgSub),
+        ) {
+            if (!spot.imageUrl.isNullOrBlank()) {
+                AsyncImage(
+                    model = spot.imageUrl,
+                    contentDescription = spot.name,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+            } else {
+                Text(
+                    "📍",
+                    fontSize = 48.sp,
+                    modifier = Modifier.align(Alignment.Center),
+                )
+            }
+            // More button — top right overlay
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(BgWhite.copy(alpha = 0.85f))
+                    .clickable(onClick = onClick)
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = "More",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = Primary,
+                    )
+                    Spacer(modifier = Modifier.width(2.dp))
+                    Icon(
+                        Icons.Filled.PlayArrow,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = Primary,
+                    )
+                }
+            }
+        }
+        // Title + description
+        Column(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+        ) {
+            Text(
+                text = spot.name,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = spot.overview?.take(60)?.plus("…") ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }

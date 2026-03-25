@@ -39,6 +39,9 @@ class LocationForegroundService : Service() {
         startLocationUpdates()
     }
 
+    private fun isGpsOrMock(location: android.location.Location): Boolean =
+        location.isFromMockProvider || location.provider == "gps"
+
     private fun startLocationUpdates() {
         try {
             fusedLocationClient.lastLocation
@@ -47,12 +50,12 @@ class LocationForegroundService : Service() {
                         if (location != null) {
                             Log.d(TAG, "lastLocation: provider=${location.provider}, " +
                                 "lat=${location.latitude}, lng=${location.longitude}, " +
-                                "accuracy=${location.accuracy}m, source=${classifySource(location.accuracy)}")
+                                "accuracy=${location.accuracy}m, mock=${location.isFromMockProvider}")
                         } else {
-                            Log.d(TAG, "lastLocation: null (캐시된 위치 없음)")
+                            Log.d(TAG, "lastLocation: null")
                         }
                     }
-                    if (location != null && _locationFlow.value == null) {
+                    if (location != null && _locationFlow.value == null && isGpsOrMock(location)) {
                         _locationFlow.value = LocationData(location.latitude, location.longitude)
                     }
                 }
@@ -74,9 +77,12 @@ class LocationForegroundService : Service() {
                     if (BuildConfig.DEBUG) {
                         Log.d(TAG, "onLocationResult: provider=${location.provider}, " +
                             "lat=${location.latitude}, lng=${location.longitude}, " +
-                            "accuracy=${location.accuracy}m, source=${classifySource(location.accuracy)}")
+                            "accuracy=${location.accuracy}m, mock=${location.isFromMockProvider}")
                     }
-                    _locationFlow.value = LocationData(location.latitude, location.longitude)
+                    // GPS 또는 Mock 위치만 수용, 네트워크 위치는 무시
+                    if (isGpsOrMock(location)) {
+                        _locationFlow.value = LocationData(location.latitude, location.longitude)
+                    }
                 }
             }
         }
@@ -134,12 +140,6 @@ class LocationForegroundService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
-
-    private fun classifySource(accuracyMeters: Float): String = when {
-        accuracyMeters <= 10f -> "GPS (위성)"
-        accuracyMeters <= 50f -> "Wi-Fi (무선랜)"
-        else -> "Cell (기지국)"
-    }
 
     companion object {
         private const val TAG = "LocationService"

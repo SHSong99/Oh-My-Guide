@@ -13,6 +13,8 @@ import com.ohmyguide.app.domain.model.RouteCoord
 import com.ohmyguide.app.domain.model.RouteSegmentGeo
 import com.ohmyguide.app.domain.usecase.GetBusArrivalUseCase
 import com.ohmyguide.app.service.LocationForegroundService
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import androidx.compose.ui.graphics.Color
 import com.ohmyguide.app.ui.theme.BusDefault
 import com.ohmyguide.app.ui.theme.BusExpress
@@ -114,6 +116,10 @@ class TransitDetailViewModel @Inject constructor(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             val location = LocationForegroundService.locationFlow.value
+                ?: kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                    LocationForegroundService.locationFlow
+                        .filterNotNull().first()
+                }
             val rawLat = location?.latitude
             val rawLng = location?.longitude
             val inKorea = rawLat != null && rawLng != null
