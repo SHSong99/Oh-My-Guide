@@ -14,8 +14,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +49,7 @@ fun BottomNavBar(
     val tabs = listOf(
         NavTab("main", strings.navHome),
         NavTab("explore", strings.navExplore),
-        NavTab("phrases", strings.navPhrases),
+        NavTab("mypage", strings.myPage),
     )
     Row(
         modifier = modifier
@@ -89,7 +89,7 @@ fun BottomNavBar(
                         imageVector = when (tab.id) {
                             "main" -> Icons.Filled.Home
                             "explore" -> Icons.Filled.Star
-                            "phrases" -> Icons.AutoMirrored.Filled.Chat
+                            "mypage" -> Icons.Filled.Person
                             else -> Icons.Filled.Home
                         },
                         contentDescription = tab.label,

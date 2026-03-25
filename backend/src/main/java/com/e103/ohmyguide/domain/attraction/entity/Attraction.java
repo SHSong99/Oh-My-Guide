@@ -95,7 +95,7 @@ public class Attraction extends BaseEntity {
                        String addr1, String addr2, String tel,
                        BigDecimal latitude, BigDecimal longitude,
                        String firstImage1, String firstImage2,
-                       String homepage, String overview) {
+                       String homepage, String overview, String overviewTts) {
         this.contentId = contentId;
         this.title = title;
         this.contentType = contentType;
@@ -111,6 +111,7 @@ public class Attraction extends BaseEntity {
         this.firstImage2 = firstImage2;
         this.homepage = homepage;
         this.overview = overview;
+        this.overviewTts = overviewTts;
     }
 
     public void fillImageAndOverview(String firstImage1, String firstImage2, String overview) {

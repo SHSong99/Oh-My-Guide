@@ -123,6 +123,7 @@ class AttractionControllerTest extends ControllerTestSupport {
                     put("longitude", new BigDecimal("126.53390800"));
                     put("firstImage1", "http://image.url/hallasan.jpg");
                     put("overview", "한라산 개요");
+                    put("overviewTts", "한라산 TTS 개요");
                 }}
         );
 

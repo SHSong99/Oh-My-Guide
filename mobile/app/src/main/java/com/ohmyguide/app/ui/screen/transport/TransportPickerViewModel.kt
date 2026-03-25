@@ -9,6 +9,8 @@ import com.ohmyguide.app.data.repository.OdsayRepository
 import com.ohmyguide.app.domain.usecase.GetBusArrivalUseCase
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.service.LocationForegroundService
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -67,31 +69,35 @@ class TransportPickerViewModel @Inject constructor(
         val destLng = place.lng
         if (destLat == 0.0 || destLng == 0.0) return
 
-        val location = LocationForegroundService.locationFlow.value
-        val rawLat = location?.latitude
-        val rawLng = location?.longitude
-        val inKorea = rawLat != null && rawLng != null
-            && rawLat in 33.0..39.0 && rawLng in 124.0..132.0
-        val startLat = if (inKorea) rawLat!! else DEFAULT_LAT
-        val startLng = if (inKorea) rawLng!! else DEFAULT_LNG
-
-        val distMeters = haversineMeters(startLat, startLng, destLat, destLng)
-        val walkMin = (distMeters / 80.0).roundToInt() // ~80m/min walking
-        val carMin = maxOf(1, (distMeters / 500.0).roundToInt()) // ~30km/h city driving
-        val now = LocalTime.now()
-        val s = LanguageManager.current.value.strings
-        val fmt = DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH)
-
-        _timeInfo.update {
-            it.copy(
-                walkTime = "$walkMin ${s.minSuffix}",
-                walkEta = "${s.etaPrefix} ${now.plusMinutes(walkMin.toLong()).format(fmt)}",
-                carTime = "$carMin ${s.minSuffix}",
-                carEta = "${s.etaPrefix} ${now.plusMinutes(carMin.toLong()).format(fmt)}",
-            )
-        }
-
         viewModelScope.launch {
+            val location = LocationForegroundService.locationFlow.value
+                ?: kotlinx.coroutines.withTimeoutOrNull(5000L) {
+                    LocationForegroundService.locationFlow
+                        .filterNotNull().first()
+                }
+            val rawLat = location?.latitude
+            val rawLng = location?.longitude
+            val inKorea = rawLat != null && rawLng != null
+                && rawLat in 33.0..39.0 && rawLng in 124.0..132.0
+            val startLat = if (inKorea) rawLat!! else DEFAULT_LAT
+            val startLng = if (inKorea) rawLng!! else DEFAULT_LNG
+
+            val distMeters = haversineMeters(startLat, startLng, destLat, destLng)
+            val walkMin = (distMeters / 80.0).roundToInt()
+            val carMin = maxOf(1, (distMeters / 500.0).roundToInt())
+            val now = LocalTime.now()
+            val s = LanguageManager.current.value.strings
+            val fmt = DateTimeFormatter.ofPattern("h:mm a", java.util.Locale.ENGLISH)
+
+            _timeInfo.update {
+                it.copy(
+                    walkTime = "$walkMin ${s.minSuffix}",
+                    walkEta = "${s.etaPrefix} ${now.plusMinutes(walkMin.toLong()).format(fmt)}",
+                    carTime = "$carMin ${s.minSuffix}",
+                    carEta = "${s.etaPrefix} ${now.plusMinutes(carMin.toLong()).format(fmt)}",
+                )
+            }
+
             when (val result = odsayRepository.searchTransitPath(startLat, startLng, destLat, destLng)) {
                 is ApiResult.Success -> {
                     val fastest = result.data.result?.path?.minByOrNull { it.info.totalTime }

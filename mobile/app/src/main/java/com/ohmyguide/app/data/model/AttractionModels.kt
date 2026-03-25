@@ -16,3 +16,16 @@ data class AttractionDetailDto(
     val homepage: String?,
     @SerializedName("content_type_id") val contentTypeId: Long?,
 )
+
+data class PhraseBookmarkDto(
+    val phraseId: Long,
+    val content: String,
+    val language: String,
+)
+
+data class PickRecommendResponse(
+    val placeId: Long,
+    val visitCount: Long?,
+    val totalScore: Long?,
+    val placeRank: Int?,
+)
