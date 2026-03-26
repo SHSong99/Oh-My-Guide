@@ -86,7 +86,7 @@ fun NavGraph(
             GpsPermissionScreen(
                 onAllow = { gender, age, country, companion ->
                     scope.launch {
-                        userRepository.completeOnboarding(country, age, gender, companion, country)
+                        userRepository.completeOnboarding(country, age, gender, companion, "active")
                     }
                     navController.navigate(Screen.InterestSelect.route) {
                         popUpTo(Screen.GpsPermission.route) { inclusive = true }

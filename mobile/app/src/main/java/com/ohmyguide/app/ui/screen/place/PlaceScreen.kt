@@ -90,89 +90,43 @@ fun PlaceScreen(navController: NavController, placeId: String) {
             Column(
                 modifier = Modifier.padding(20.dp),
             ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Star)
-                    Spacer(modifier = Modifier.width(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Star)
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Text(
+                            text = "${detail.place.rating}",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Star,
+                        )
+                    }
                     Text(
-                        text = "${detail.place.rating}",
-                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = Star,
+                        text = detail.place.distance,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = TextCaption,
+                    )
+                    Text(
+                        text = detail.place.tag,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                        color = detail.place.color,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(detail.place.color.copy(alpha = 0.08f))
+                            .padding(horizontal = 10.dp, vertical = 2.dp),
                     )
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    text = detail.place.distance,
-                    style = MaterialTheme.typography.labelMedium,
-                    color = TextCaption,
+                    text = detail.desc,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    lineHeight = 22.sp,
                 )
-                Text(
-                    text = detail.place.tag,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
-                    color = detail.place.color,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(detail.place.color.copy(alpha = 0.08f))
-                        .padding(horizontal = 10.dp, vertical = 2.dp),
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Text(
-                text = detail.desc,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
-                lineHeight = 22.sp,
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                InfoCard(
-                    icon = Icons.Filled.AccessTime,
-                    iconTint = InfoPurple,
-                    label = strings.hours,
-                    value = detail.hours,
-                    bgColor = InfoPurpleBg,
-                    modifier = Modifier.weight(1f),
-                )
-                InfoCard(
-                    icon = Icons.Filled.AttachMoney,
-                    iconTint = InfoGreen,
-                    label = strings.fee,
-                    value = detail.fee,
-                    bgColor = InfoGreenBg,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-            Spacer(modifier = Modifier.height(12.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                InfoCard(
-                    icon = Icons.AutoMirrored.Filled.DirectionsWalk,
-                    iconTint = InfoRose,
-                    label = strings.distance,
-                    value = detail.walkTime,
-                    bgColor = InfoRoseBg,
-                    modifier = Modifier.weight(1f),
-                )
-                InfoCard(
-                    icon = Icons.Filled.Map,
-                    iconTint = InfoBlue,
-                    label = strings.map,
-                    value = strings.preview,
-                    bgColor = InfoBlueBg,
-                    modifier = Modifier.weight(1f),
-                )
-            }
             }
         }
 

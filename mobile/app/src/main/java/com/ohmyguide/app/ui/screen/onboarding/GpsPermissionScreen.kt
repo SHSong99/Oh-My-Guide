@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -88,7 +89,9 @@ fun GpsPermissionScreen(
     var languageLabel by remember { mutableStateOf("") }
     var genderLabel by remember { mutableStateOf("") }
     var ageLabel by remember { mutableStateOf("") }
+    var ageValue by remember { mutableIntStateOf(25) }
     var countryLabel by remember { mutableStateOf("") }
+    var countryValue by remember { mutableStateOf("") }
     var companionLabel by remember { mutableStateOf("") }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -100,7 +103,7 @@ fun GpsPermissionScreen(
             val intent = Intent(context, LocationForegroundService::class.java)
             context.startForegroundService(intent)
         }
-        onAllow(genderLabel, ageLabel.toIntOrNull() ?: 25, countryLabel, companionLabel)
+        onAllow(genderLabel, ageValue, countryValue, companionLabel)
     }
 
     val scrollState = rememberScrollState()
@@ -161,6 +164,7 @@ fun GpsPermissionScreen(
             if (step == OnboardStep.AGE) {
                 AgeWheelPicker(
                     onConfirm = { age ->
+                        ageValue = age
                         ageLabel = "$age ${strings.yearsOld}"
                         step = OnboardStep.COUNTRY
                     },
@@ -178,8 +182,9 @@ fun GpsPermissionScreen(
 
             if (step == OnboardStep.COUNTRY) {
                 CountrySelector(
-                    onSelect = { label ->
+                    onSelect = { label, name ->
                         countryLabel = label
+                        countryValue = name
                         step = OnboardStep.COMPANION
                     },
                 )
@@ -441,7 +446,7 @@ private fun CompanionButtons(
 
 @Composable
 private fun CountrySelector(
-    onSelect: (String) -> Unit,
+    onSelect: (label: String, name: String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -498,7 +503,7 @@ private fun CountrySelector(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = ripple(),
-                            ) { onSelect("${country.flag} ${country.name}") }
+                            ) { onSelect("${country.flag} ${country.name}", country.name) }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

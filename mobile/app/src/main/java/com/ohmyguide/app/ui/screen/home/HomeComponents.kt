@@ -2,6 +2,7 @@ package com.ohmyguide.app.ui.screen.home
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -283,13 +284,25 @@ fun PlaceDetailSheet(
 ) {
     val place = detail.place
 
+    // 텍스트 스크롤이 시트를 당기지 않도록 nestedScroll 차단
+    val consumeNestedScroll = remember {
+        object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
+            override fun onPreScroll(
+                available: androidx.compose.ui.geometry.Offset,
+                source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
+            ) = available.copy(x = 0f) // 세로 스크롤 소비하여 시트 전파 차단
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState()),
+            .fillMaxSize(),
     ) {
-        // Hero image
+        // 드래그 핸들 영역 — 이 부분으로만 시트를 당길 수 있음
+        // (BottomSheetScaffold의 dragHandle이 이미 처리)
+
+        // Hero image (스크롤 밖, 고정)
         if (place.imageUrl != null) {
             Box(
                 modifier = Modifier
@@ -323,12 +336,10 @@ fun PlaceDetailSheet(
             }
         }
 
-        Column(
-            modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-        ) {
-        // Back button
+        // Back button (고정)
         Row(
             modifier = Modifier
+                .padding(horizontal = 20.dp, vertical = 8.dp)
                 .clip(RoundedCornerShape(100.dp))
                 .clickable(onClick = onBack)
                 .padding(vertical = 4.dp, horizontal = 4.dp),
@@ -348,119 +359,106 @@ fun PlaceDetailSheet(
             )
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Place name & rating
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+        // 텍스트 영역만 독립 스크롤 (시트 당기기 차단)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .nestedScroll(consumeNestedScroll)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp),
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = place.name,
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = TextPrimary,
-                )
-            }
+            // Place name & rating
             Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(PrimaryBgLight)
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Star)
-                Spacer(modifier = Modifier.width(4.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = place.name,
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = TextPrimary,
+                    )
+                }
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(PrimaryBgLight)
+                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Star)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "${place.rating}",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = TextPrimary,
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            // Tag & distance
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    text = "${place.rating}",
-                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary,
+                    text = "#${place.tag}",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                    color = Primary,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(PrimaryBgLight)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = TextCaption)
+                Spacer(modifier = Modifier.width(2.dp))
+                Text(
+                    text = place.distance,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TextCaption,
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(6.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-        // Tag & distance
-        Row(verticalAlignment = Alignment.CenterVertically) {
+            // Description
             Text(
-                text = "#${place.tag}",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = Primary,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(PrimaryBgLight)
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
+                text = detail.desc,
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextSecondary,
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(12.dp), tint = TextCaption)
-            Spacer(modifier = Modifier.width(2.dp))
-            Text(
-                text = place.distance,
-                style = MaterialTheme.typography.labelMedium,
-                color = TextCaption,
-            )
+
+            Spacer(modifier = Modifier.height(16.dp))
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Description
-        Text(
-            text = detail.desc,
-            style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary,
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Info cards
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            InfoChip(
-                icon = Icons.Filled.AccessTime,
-                label = detail.hours,
-                modifier = Modifier.weight(1f),
-            )
-            InfoChip(
-                icon = Icons.Filled.ConfirmationNumber,
-                label = detail.fee,
-                modifier = Modifier.weight(1f),
-            )
-            InfoChip(
-                icon = Icons.Filled.DirectionsWalk,
-                label = detail.walkTime,
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Go here button
+        // Go here button — fixed at bottom
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .shadow(4.dp, RoundedCornerShape(100.dp), ambientColor = Primary.copy(alpha = 0.3f))
-                .clip(RoundedCornerShape(100.dp))
-                .background(PrimaryGradient)
-                .clickable { onGoHere(place.id) }
-                .padding(vertical = 16.dp),
-            contentAlignment = Alignment.Center,
+                .background(BgWhite)
+                .padding(horizontal = 20.dp, vertical = 12.dp),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Navigation, contentDescription = null, modifier = Modifier.size(20.dp), tint = BgWhite)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = LocalStrings.current.goHere,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = BgWhite,
-                )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(100.dp), ambientColor = Primary.copy(alpha = 0.3f))
+                    .clip(RoundedCornerShape(100.dp))
+                    .background(PrimaryGradient)
+                    .clickable { onGoHere(place.id) }
+                    .padding(vertical = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Navigation, contentDescription = null, modifier = Modifier.size(20.dp), tint = BgWhite)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = LocalStrings.current.goHere,
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = BgWhite,
+                    )
+                }
             }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

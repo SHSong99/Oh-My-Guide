@@ -38,6 +38,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -57,6 +64,10 @@ import com.naver.maps.map.compose.rememberCameraPositionState
 
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.ui.platform.LocalDensity
+import coil.imageLoader
+import coil.request.ImageRequest
 import com.ohmyguide.app.R
 import com.ohmyguide.app.domain.model.NaviRouteData
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
@@ -64,6 +75,7 @@ import com.ohmyguide.app.service.LocationForegroundService
 import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.common.ConfirmDialog
 import com.ohmyguide.app.ui.common.TypingIndicator
+import com.ohmyguide.app.ui.common.buildCircleMarker
 import com.ohmyguide.app.ui.screen.story.StoryOverlay
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.DragHandle
@@ -153,7 +165,7 @@ fun NaviScreen(
     // 줌인 완료 후 바텀시트를 화면 끝까지 올림
     LaunchedEffect(state.guideReady) {
         if (state.guideReady) {
-            delay(2800L) // 줌인 애니메이션(2.5s) 끝난 직후
+            delay(6000L) // 깨비 인사(3s) + 줌인(2.5s) + 여유
             scaffoldState.bottomSheetState.expand()
         }
     }
@@ -181,14 +193,8 @@ fun NaviScreen(
                 }
             },
             sheetContent = {
-                // Unified header: place info + progress + stop
+                // Action buttons header
                 NaviSheetHeader(
-                    placeName = placeName,
-                    placeNameKr = placeNameKr,
-                    distance = distance,
-                    eta = eta,
-                    modeLabel = modeLabel,
-                    progressPct = state.progressPct,
                     onStop = { showStopDialog = true },
                     onStory = {
                         showStorySpotlight = false
@@ -313,6 +319,9 @@ fun NaviScreen(
                 destLat = destLat,
                 destLng = destLng,
                 guideReady = state.guideReady,
+                nearbySpots = state.pickedNearbySpots,
+                progressPct = state.progressPct,
+                onStop = { showStopDialog = true },
             )
         }
 
@@ -349,7 +358,37 @@ private fun MapArea(
     destLat: Double = 0.0,
     destLng: Double = 0.0,
     guideReady: Boolean = false,
+    nearbySpots: List<NearbySpotInfo> = emptyList(),
+    progressPct: Float = 0f,
+    onStop: () -> Unit = {},
 ) {
+    // 근처 장소 원형 이미지 마커 로드
+    val mapContext = androidx.compose.ui.platform.LocalContext.current
+    val density = LocalDensity.current
+    val nearbyMarkerSizeDp = 44.dp
+    val nearbyMarkerSizePx = with(density) { nearbyMarkerSizeDp.toPx().toInt() }
+    val nearbyBorderPx = with(density) { 3.dp.toPx() }
+    val nearbyMarkerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
+
+    LaunchedEffect(nearbySpots) {
+        nearbySpots.forEach { spot ->
+            if (!spot.imageUrl.isNullOrBlank() && spot.placeId !in nearbyMarkerIcons) {
+                val request = ImageRequest.Builder(mapContext)
+                    .data(spot.imageUrl)
+                    .size(nearbyMarkerSizePx)
+                    .allowHardware(false)
+                    .build()
+                val result = mapContext.imageLoader.execute(request)
+                val bitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                if (bitmap != null) {
+                    nearbyMarkerIcons[spot.placeId] = buildCircleMarker(
+                        bitmap, nearbyMarkerSizePx, nearbyBorderPx, android.graphics.Color.WHITE
+                    )
+                }
+            }
+        }
+    }
+
     val destinationPosition = if (destLat != 0.0 && destLng != 0.0) {
         LatLng(destLat, destLng)
     } else {
@@ -370,22 +409,26 @@ private fun MapArea(
         position = CameraPosition(LatLng(midLat, midLng), 10.0)
     }
 
-    // guideReady=true 시 GPS 위치로 깊게 줌인
-    var zoomedIn by remember { mutableStateOf(false) }
+    // 줌인 상태 관리
+    var zoomPhase by remember { mutableStateOf(0) } // 0=줌아웃, 1=줌인중, 2=줌인완료
+
+    // guideReady 후 3초 대기(깨비 인사 보여준 뒤) → 줌인 시작
     LaunchedEffect(guideReady) {
-        if (guideReady && !zoomedIn) {
-            zoomedIn = true
+        if (guideReady && zoomPhase == 0) {
+            delay(3000L) // 깨비 인사 보여주는 시간
+            zoomPhase = 1
             cameraPositionState.animate(
-                com.naver.maps.map.CameraUpdate.scrollAndZoomTo(userPosition, 19.0),
+                com.naver.maps.map.CameraUpdate.scrollAndZoomTo(userPosition, 17.0),
                 animation = com.naver.maps.map.CameraAnimation.Fly,
                 durationMs = 2500,
             )
+            zoomPhase = 2
         }
     }
 
-    // 줌인 완료 후 GPS 위치 변경 시 카메라 따라가기
-    LaunchedEffect(userPosition, zoomedIn) {
-        if (zoomedIn) {
+    // 줌인 완료 후에만 GPS 따라가기
+    LaunchedEffect(userPosition, zoomPhase) {
+        if (zoomPhase == 2) {
             cameraPositionState.animate(
                 com.naver.maps.map.CameraUpdate.scrollTo(userPosition),
                 animation = com.naver.maps.map.CameraAnimation.Easing,
@@ -481,6 +524,35 @@ private fun MapArea(
                 height = 54.dp,
             )
 
+            // 근처 추천 장소 마커 (원형 이미지)
+            nearbySpots.forEachIndexed { index, spot ->
+                val icon = nearbyMarkerIcons[spot.placeId]
+                if (icon != null) {
+                    Marker(
+                        state = rememberMarkerState(
+                            key = "nearby_$index",
+                            position = LatLng(spot.lat, spot.lng),
+                        ),
+                        icon = icon,
+                        captionText = spot.name,
+                        width = nearbyMarkerSizeDp,
+                        height = nearbyMarkerSizeDp,
+                    )
+                } else {
+                    Marker(
+                        state = rememberMarkerState(
+                            key = "nearby_$index",
+                            position = LatLng(spot.lat, spot.lng),
+                        ),
+                        icon = OverlayImage.fromResource(R.drawable.ic_marker_waypoint),
+                        captionText = spot.name,
+                        width = 24.dp,
+                        height = 36.dp,
+                        alpha = 0.8f,
+                    )
+                }
+            }
+
             // 코스 스팟 마커 (코스 모드일 때)
             if (course != null) {
                 course.spots.forEachIndexed { index, spot ->
@@ -506,6 +578,18 @@ private fun MapArea(
                     }
                 }
             }
+        }
+
+        // 상단 네비게이션 바 (줌인 완료 후 표시)
+        if (zoomPhase == 2) {
+            val route = FALLBACK_ROUTES[placeId to mode]
+            MapNavBar(
+                distance = route?.let { "${it.distanceMeters}m" } ?: "350m",
+                eta = route?.let { "${it.durationMin} min" } ?: "5 min",
+                placeName = placeName,
+                progressPct = progressPct,
+                onStop = onStop,
+            )
         }
 
         // 코스 이동 중 배지 (좌측 상단)
@@ -536,18 +620,71 @@ private fun MapArea(
             }
         }
 
-        // Minimize 버튼 (우측 상단)
-        Box(
-            modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(12.dp)
-                .size(36.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(BgWhite.copy(alpha = 0.9f))
-                .clickable(onClick = onMinimize),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Minimize", modifier = Modifier.size(20.dp), tint = TextPrimary)
+
+        // 깨비 인사 오버레이 — guideReady 시 등장, 줌인 완료 후 사라짐
+        var showGreeting by remember { mutableStateOf(false) }
+        LaunchedEffect(guideReady) {
+            if (guideReady) {
+                showGreeting = true   // 즉시 등장
+                delay(6000L)          // 줌인(3초 대기 + 2.5초 애니메이션) 완료 후
+                showGreeting = false  // 페이드아웃
+            }
+        }
+        val greetingAlpha by androidx.compose.animation.core.animateFloatAsState(
+            targetValue = if (showGreeting) 1f else 0f,
+            animationSpec = androidx.compose.animation.core.tween(600),
+            label = "greetingAlpha",
+        )
+        if (greetingAlpha > 0f) {
+            // 펄스 애니메이션
+            val pulseTransition = rememberInfiniteTransition(label = "greetPulse")
+            val pulseScale by pulseTransition.animateFloat(
+                initialValue = 1f,
+                targetValue = 1.05f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(800),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "pulseScale",
+            )
+
+            androidx.compose.foundation.layout.Column(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 60.dp)
+                    .graphicsLayer {
+                        alpha = greetingAlpha
+                        scaleX = pulseScale
+                        scaleY = pulseScale
+                    }
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(com.ohmyguide.app.ui.theme.Primary.copy(alpha = 0.85f))
+                    .padding(horizontal = 28.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                androidx.compose.foundation.Image(
+                    painter = androidx.compose.ui.res.painterResource(R.drawable.masot),
+                    contentDescription = "Kkaebi",
+                    modifier = Modifier
+                        .size(72.dp)
+                        .clip(androidx.compose.foundation.shape.CircleShape)
+                        .background(BgWhite),
+                )
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(10.dp))
+                androidx.compose.material3.Text(
+                    text = "안녕하세요! 👋",
+                    style = androidx.compose.material3.MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                    ),
+                    color = BgWhite,
+                )
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.height(4.dp))
+                androidx.compose.material3.Text(
+                    text = "도착까지 친절하게 안내해 드릴게요!",
+                    style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,
+                    color = BgWhite.copy(alpha = 0.9f),
+                )
+            }
         }
     }
 }
