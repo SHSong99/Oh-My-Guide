@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.kafka.annotation.RetryableTopic;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,11 @@ public class UserVisitedConsumer {
     private final AttractionVectorRepository attractionVectorRepository;
     private final ObjectMapper objectMapper;
 
+    @RetryableTopic(
+        attempts = "5",
+        backoff = @Backoff(delay = 1000, multiplier = 2),
+        dltTopicSuffix = ".dlt"
+    )
     @KafkaListener(topics = "user-go-log", groupId = "user-visited-group")
     @Transactional
     public void consume(String message) {

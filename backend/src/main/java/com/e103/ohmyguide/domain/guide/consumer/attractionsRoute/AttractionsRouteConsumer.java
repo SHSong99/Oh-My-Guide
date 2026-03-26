@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.RetryableTopic;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -29,6 +31,11 @@ public class AttractionsRouteConsumer {
     private final ObjectMapper objectMapper;
     private final SseEmitterManager sseEmitterManager;
 
+    @RetryableTopic(
+        attempts = "5",
+        backoff = @Backoff(delay = 1000, multiplier = 2),
+        dltTopicSuffix = ".dlt"
+    )
     @KafkaListener(topics = "user-go-log", groupId = "attractions-route-group")
     public void consume(String message) {
         UserGoLogMessage logMessage;

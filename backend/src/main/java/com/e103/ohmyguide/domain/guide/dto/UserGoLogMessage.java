@@ -90,4 +90,18 @@ public class UserGoLogMessage {
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }
+
+    public static UserGoLogMessage toViewMessage(User user, Long placeId) {
+        return UserGoLogMessage.builder()
+                .userId(user.getId())
+                .nationality(user.getNationality())
+                .age(user.getAge() != null ? user.getAge() : 0)
+                .gender(user.getGender() != null ? user.getGender() : "unknown")
+                .travelPurpose(user.getTravelPurpose() != null ? user.getTravelPurpose() : "general")
+                .lifestyle(user.getLifestyle() != null ? user.getLifestyle() : "standard")
+                .action("VIEW")
+                .placeId(placeId)
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+    }
 }

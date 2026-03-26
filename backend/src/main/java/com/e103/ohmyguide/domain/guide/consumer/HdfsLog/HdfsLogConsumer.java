@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.RetryableTopic;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +28,12 @@ public class HdfsLogConsumer {
 
     private final List<UserGoLogMessage> buffer = new ArrayList<>();
 
-    @KafkaListener(topics = "user-go-log", groupId = "hdfs-log-group")
+    @RetryableTopic(
+        attempts = "5",
+        backoff = @Backoff(delay = 1000, multiplier = 2),
+        dltTopicSuffix = ".dlt"
+    )
+    @KafkaListener(topics = {"user-go-log", "user-view-log"}, groupId = "hdfs-log-group")
     public synchronized void consume(String message) {
         try {
             UserGoLogMessage logRequest = objectMapper.readValue(message, UserGoLogMessage.class);
