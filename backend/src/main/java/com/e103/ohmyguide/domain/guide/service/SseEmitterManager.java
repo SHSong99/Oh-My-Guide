@@ -13,7 +13,7 @@ public class SseEmitterManager {
 
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-    private static final long SSE_TIMEOUT = 60_0000L; // 600초
+    private static final long SSE_TIMEOUT = 6000000L; // 600초
 
     public SseEmitter create(Long userId) {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);

@@ -5,8 +5,6 @@ import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
 import com.e103.ohmyguide.domain.guide.dto.*;
 import com.e103.ohmyguide.domain.user.entity.User;
 import com.e103.ohmyguide.domain.user.repository.UserRepository;
-import com.e103.ohmyguide.domain.uservisited.entity.UserVisited;
-import com.e103.ohmyguide.domain.uservisited.repository.UserVisitedRepository;
 import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,7 +26,6 @@ public class GuideService {
 
     private final UserRepository userRepository;
     private final AttractionRepository attractionRepository;
-    private final UserVisitedRepository userVisitedRepository;
 
     private static final String TOPIC = "user-go-log";
 
@@ -63,16 +60,5 @@ public class GuideService {
                         .build())
                 .destination(GuideResponse.from(attraction))
                 .build();
-    }
-
-
-    private void saveUserVisitedIfNotExists(User user, Attraction attraction) {
-        if (!userVisitedRepository.existsByUserAndAttraction(user, attraction)) {
-            UserVisited userVisited = UserVisited.builder()
-                    .user(user)
-                    .attraction(attraction)
-                    .build();
-            userVisitedRepository.save(userVisited);
-        }
     }
 }

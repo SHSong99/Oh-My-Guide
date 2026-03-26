@@ -11,14 +11,16 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import java.math.BigDecimal;
+import java.util.List;
+
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class GuideControllerTest extends ControllerTestSupport {
 
@@ -107,5 +109,19 @@ class GuideControllerTest extends ControllerTestSupport {
                         .param("reachLat", "35.10")
                         .param("reachLng", "129.03"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @DisplayName("GET /guide/sse - SSE 스트림 연결에 성공하면 200을 반환한다.")
+    @Test
+    void connectSse_returns200() throws Exception {
+        // given
+        given(sseEmitterManager.create(any())).willReturn(new SseEmitter());
+
+        // when & then
+        mockMvc.perform(get("/guide/sse")
+                        .with(authentication(mockAuth()))
+                        .accept("text/event-stream"))
+                .andDo(print())
+                .andExpect(status().isOk());
     }
 }

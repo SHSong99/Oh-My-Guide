@@ -3,7 +3,6 @@ package com.e103.ohmyguide.domain.guide.controller;
 import com.e103.ohmyguide.domain.auth.security.CurrentUser;
 import com.e103.ohmyguide.domain.auth.security.UserPrincipal;
 import com.e103.ohmyguide.domain.guide.dto.GuideGoResponse;
-import com.e103.ohmyguide.domain.guide.dto.GuideNavigationResponse;
 import com.e103.ohmyguide.domain.guide.service.GuideService;
 import com.e103.ohmyguide.domain.guide.service.SseEmitterManager;
 import lombok.RequiredArgsConstructor;
@@ -35,12 +34,16 @@ public class GuideController {
     ) {
         Long userId = userPrincipal.getId();
 
-        // 1. SSE 연결 생성
-        SseEmitter emitter = sseEmitterManager.create(userId);
-
         GuideGoResponse response = guideService.startNavigation(userId, placeId,
                 currentLat, currentLng, reachLat, reachLng);
 
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PreAuthorize("hasRole('USER')")
+    public SseEmitter connectSse(@CurrentUser UserPrincipal userPrincipal) {
+        Long userId = userPrincipal.getId();
+        return sseEmitterManager.create(userId);
     }
 }

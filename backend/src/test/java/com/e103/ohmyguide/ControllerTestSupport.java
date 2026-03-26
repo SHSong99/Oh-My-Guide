@@ -7,6 +7,7 @@ import com.e103.ohmyguide.domain.auth.security.TokenProvider;
 import com.e103.ohmyguide.domain.auth.service.OAuth2UserProcessingService;
 import com.e103.ohmyguide.domain.guide.controller.GuideController;
 import com.e103.ohmyguide.domain.guide.service.GuideService;
+import com.e103.ohmyguide.domain.guide.service.SseEmitterManager;
 import com.e103.ohmyguide.domain.phrase.controller.PhraseController;
 import com.e103.ohmyguide.domain.phrase.service.PhraseService;
 import com.e103.ohmyguide.domain.popularplace.controller.PopularPlaceController;
@@ -59,6 +60,9 @@ public abstract class ControllerTestSupport {
 
     @MockitoBean
     protected GuideService guideService;
+
+    @MockitoBean
+    protected SseEmitterManager sseEmitterManager;
 
     @MockitoBean
     protected TokenProvider tokenProvider;
