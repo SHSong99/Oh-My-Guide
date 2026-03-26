@@ -21,16 +21,15 @@ public class PopularPlaceService {
             String nationality,
             String ageGroup,
             String gender,
-            String travelPurpose,
-            String lifestyle
+            String travelPurpose
     ) {
-        List<PopularPlaceResponse> popularPlaces = popularPlaceRepository.findByCluster(nationality, ageGroup, gender, travelPurpose, lifestyle)
+        List<PopularPlaceResponse> popularPlaces = popularPlaceRepository.findByCluster(nationality, ageGroup, gender, travelPurpose)
                 .stream()                              // Entity 리스트를 스트림으로
                 .map(PopularPlaceResponse::from)        // 각 Entity를 Response DTO로 변환
                 .toList();// 다시 리스트로
 
-        log.info("PopularPlaceService.getRecommendations: query by nationality = {} age group = {} gender = {} travelPurpose = {} lifestyle = {}",
-                nationality, ageGroup, gender, travelPurpose, lifestyle);
+        log.info("PopularPlaceService.getRecommendations: query by nationality = {} age group = {} gender = {} travelPurpose = {}",
+                nationality, ageGroup, gender, travelPurpose);
         log.info("PopularPlaceService.getRecommendations: result size = {}",  popularPlaces.size());
 
         return popularPlaces;
