@@ -78,9 +78,8 @@ interface ApiService {
     @GET("pickRecommend")
     suspend fun getPickRecommend(
         @Query("nationality") nationality: String,
-        @Query("ageGroup") ageGroup: String,
+        @Query("age") age: Int,
         @Query("gender") gender: String,
         @Query("travelPurpose") travelPurpose: String,
-        @Query("lifestyle") lifestyle: String,
     ): List<PickRecommendResponse>
 }

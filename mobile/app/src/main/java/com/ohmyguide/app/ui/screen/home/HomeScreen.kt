@@ -116,19 +116,24 @@ fun HomeScreen(
         }
     }
 
-    val initialPosition = locationData?.let { LatLng(it.latitude, it.longitude) }
-        ?: DEFAULT_POSITION
+    // GPS 위치를 화면 상단 절반의 중심에 배치하기 위해 약간 남쪽으로 오프셋
+    val offsetLat = 0.025 // 줌 11 기준으로 바텀시트 절반 보정
+    val initialPosition = locationData?.let {
+        LatLng(it.latitude - offsetLat, it.longitude)
+    } ?: DEFAULT_POSITION
 
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition(initialPosition, 14.0)
+        position = CameraPosition(initialPosition, 11.0)
     }
 
-    // 첫 GPS 위치가 들어오면 카메라를 내 위치로 이동
+    // 첫 GPS 위치가 들어오면 카메라를 보정된 위치로 이동
     LaunchedEffect(locationData) {
         val loc = locationData ?: return@LaunchedEffect
         if (cameraPositionState.position.target == DEFAULT_POSITION) {
             cameraPositionState.animate(
-                CameraUpdate.scrollAndZoomTo(LatLng(loc.latitude, loc.longitude), 14.0),
+                CameraUpdate.scrollAndZoomTo(
+                    LatLng(loc.latitude - offsetLat, loc.longitude), 11.0
+                ),
             )
         }
     }
