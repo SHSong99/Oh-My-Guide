@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.ohmyguide.app.data.model.ApiResult
 import com.ohmyguide.app.data.model.OdsayPath
 import com.ohmyguide.app.data.repository.OdsayRepository
+import com.ohmyguide.app.domain.model.PlaceDetailCache
+import com.ohmyguide.app.domain.model.ThemeCourseCache
 import com.ohmyguide.app.domain.usecase.GetBusArrivalUseCase
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.service.LocationForegroundService
@@ -30,6 +32,7 @@ import kotlin.math.sqrt
 data class TransportTimeInfo(
     val walkTime: String = "...",
     val walkEta: String = "",
+    val walkMinutes: Int = 0,
     val transitTime: String = "...",
     val transitEta: String = "",
     val carTime: String = "...",
@@ -52,6 +55,7 @@ class TransportPickerViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val placeId: String = savedStateHandle["placeId"] ?: ""
+    private val courseId: String? = savedStateHandle.get<String>("courseId")?.ifEmpty { null }
 
     private val _timeInfo = MutableStateFlow(TransportTimeInfo())
     val timeInfo: StateFlow<TransportTimeInfo> = _timeInfo.asStateFlow()
@@ -64,9 +68,22 @@ class TransportPickerViewModel @Inject constructor(
     }
 
     private fun fetchTimes() {
-        val place = SAMPLE_PLACE_DETAILS[placeId]?.place ?: return
-        val destLat = place.lat
-        val destLng = place.lng
+        // Try theme course first
+        val themeCourse = courseId?.let { ThemeCourseCache.get(it) }
+        val destLat: Double
+        val destLng: Double
+
+        if (themeCourse != null && themeCourse.spots.isNotEmpty()) {
+            // For theme course: use last spot as destination for total time estimation
+            val lastSpot = themeCourse.spots.last()
+            destLat = lastSpot.lat
+            destLng = lastSpot.lng
+        } else {
+            val place = PlaceDetailCache.get(placeId)?.place
+                ?: SAMPLE_PLACE_DETAILS[placeId]?.place ?: return
+            destLat = place.lat
+            destLng = place.lng
+        }
         if (destLat == 0.0 || destLng == 0.0) return
 
         viewModelScope.launch {
@@ -91,8 +108,9 @@ class TransportPickerViewModel @Inject constructor(
 
             _timeInfo.update {
                 it.copy(
-                    walkTime = "$walkMin ${s.minSuffix}",
-                    walkEta = "${s.etaPrefix} ${now.plusMinutes(walkMin.toLong()).format(fmt)}",
+                    walkTime = if (walkMin >= 200) s.notAvailable else "$walkMin ${s.minSuffix}",
+                    walkEta = if (walkMin >= 200) "" else "${s.etaPrefix} ${now.plusMinutes(walkMin.toLong()).format(fmt)}",
+                    walkMinutes = walkMin,
                     carTime = "$carMin ${s.minSuffix}",
                     carEta = "${s.etaPrefix} ${now.plusMinutes(carMin.toLong()).format(fmt)}",
                 )

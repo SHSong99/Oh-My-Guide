@@ -23,7 +23,7 @@ import com.ohmyguide.app.domain.model.PlaceDetailCache
 import com.ohmyguide.app.domain.model.RouteCoord
 import com.ohmyguide.app.domain.model.RouteSegmentGeo
 import com.ohmyguide.app.fixtures.Course
-import com.ohmyguide.app.fixtures.EXPLORE_COURSES
+import com.ohmyguide.app.domain.model.ThemeCourseCache
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
@@ -142,7 +142,7 @@ class NaviViewModel @Inject constructor(
     val courseId: String? = savedStateHandle.get<String>("courseId")?.ifEmpty { null }
     val spotIndex: Int = savedStateHandle.get<String>("spotIndex")?.toIntOrNull() ?: 0
 
-    val course: Course? = courseId?.let { id -> EXPLORE_COURSES.find { it.id == id } }
+    val course: Course? = courseId?.let { ThemeCourseCache.get(it) }
     val isCourseMode: Boolean = course != null
 
     val detail: PlaceDetail? = PlaceDetailCache.get(placeId)
@@ -192,25 +192,7 @@ class NaviViewModel @Inject constructor(
         } ?: emptyList()
 
     private fun notifyUser() {
-        try {
-            // 비프음
-            val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60)
-            tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
-            // 약한 진동
-            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vm = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                vm.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator.vibrate(100)
-            }
-        } catch (_: Exception) {}
+        com.ohmyguide.app.service.NotificationSoundPlayer.play(appContext)
     }
 
     companion object {

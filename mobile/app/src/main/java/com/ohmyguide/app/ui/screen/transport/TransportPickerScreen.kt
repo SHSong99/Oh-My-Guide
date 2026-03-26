@@ -37,6 +37,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.ohmyguide.app.domain.model.PlaceDetailCache
+import com.ohmyguide.app.domain.model.ThemeCourseCache
 import com.ohmyguide.app.fixtures.SAMPLE_PLACE_DETAILS
 import com.ohmyguide.app.ui.common.OmgButton
 import com.ohmyguide.app.ui.common.OmgTopBar
@@ -63,11 +64,12 @@ fun TransportPickerScreen(
     val strings = LocalStrings.current
     val timeInfo by viewModel.timeInfo.collectAsState()
     val transitPreview by viewModel.transitPreview.collectAsState()
+    val themeCourse = courseId?.let { ThemeCourseCache.get(it) }
     val detail = PlaceDetailCache.get(placeId)
         ?: SAMPLE_PLACE_DETAILS[placeId]
         ?: SAMPLE_PLACE_DETAILS.values.firstOrNull()
-    val placeName = detail?.place?.name ?: strings.destination
-    val placeNameKr = detail?.place?.nameKr ?: ""
+    val placeName = themeCourse?.title ?: detail?.place?.name ?: strings.destination
+    val placeNameKr = if (themeCourse != null) "${themeCourse.spots.size}개 장소" else detail?.place?.nameKr ?: ""
 
     var selectedMode by remember { mutableStateOf(TransportMode.Walk) }
 
@@ -91,7 +93,7 @@ fun TransportPickerScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        text = detail?.place?.emoji ?: "\uD83D\uDCCD",
+                        text = themeCourse?.emoji?.ifEmpty { null } ?: detail?.place?.emoji ?: "\uD83D\uDCCD",
                         fontSize = 22.sp,
                     )
                 }
@@ -107,12 +109,14 @@ fun TransportPickerScreen(
                         style = MaterialTheme.typography.labelSmall,
                         color = TextCaption,
                     )
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = "${detail?.place?.distance ?: "350m"} \u00B7 ${detail?.walkTime ?: "5 min walk"}",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary,
-                    )
+                    if (themeCourse == null) {
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "${detail?.place?.distance ?: "350m"} \u00B7 ${detail?.walkTime ?: "5 min walk"}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextSecondary,
+                        )
+                    }
                 }
             }
         }
@@ -131,12 +135,14 @@ fun TransportPickerScreen(
                     TransportMode.Transit -> timeInfo.transitTime to timeInfo.transitEta
                     TransportMode.Car -> timeInfo.carTime to timeInfo.carEta
                 }
+                val isDisabled = mode == TransportMode.Walk && timeInfo.walkMinutes >= 200
                 TransportModeCard(
                     mode = mode,
                     selected = selectedMode == mode,
                     time = time,
-                    eta = eta,
-                    onClick = { selectedMode = mode },
+                    eta = if (isDisabled) strings.notAvailable else eta,
+                    enabled = !isDisabled,
+                    onClick = { if (!isDisabled) selectedMode = mode },
                 )
             }
 
@@ -166,11 +172,20 @@ fun TransportPickerScreen(
             else strings.startNavigation,
             onClick = {
                 if (selectedMode == TransportMode.Transit) {
+                    val firstSpot = themeCourse?.spots?.firstOrNull()
                     navController.navigate(
                         Screen.TransitDetail.createRoute(
                             placeId,
-                            detail?.place?.lat ?: 0.0,
-                            detail?.place?.lng ?: 0.0,
+                            firstSpot?.lat ?: detail?.place?.lat ?: 0.0,
+                            firstSpot?.lng ?: detail?.place?.lng ?: 0.0,
+                        )
+                    )
+                } else if (!courseId.isNullOrEmpty()) {
+                    // 테마코스: CourseNavi로 이동
+                    navController.navigate(
+                        Screen.CourseNavi.createRoute(
+                            courseId = courseId,
+                            mode = selectedMode.name.lowercase(),
                         )
                     )
                 } else {
