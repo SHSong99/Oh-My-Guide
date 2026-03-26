@@ -15,8 +15,9 @@ public class AttractionUpdateRequest {
     private BigDecimal longitude;
     private String firstImage1;
     private String overview;
+    private String overviewTts;
 
     public AttractionUpdateServiceRequest toServiceRequest() {
-        return AttractionUpdateServiceRequest.of(title, latitude, longitude, firstImage1, overview);
+        return AttractionUpdateServiceRequest.of(title, latitude, longitude, firstImage1, overview, overviewTts);
     }
 }
