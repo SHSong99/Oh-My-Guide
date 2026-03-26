@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -63,8 +64,10 @@ internal fun TransportModeCard(
     selected: Boolean,
     time: String,
     eta: String,
+    enabled: Boolean = true,
     onClick: () -> Unit,
 ) {
+    val disabledAlpha = if (enabled) 1f else 0.4f
     val animSpec = tween<Color>(300)
     val bgColor by animateColorAsState(
         targetValue = if (selected) PrimaryBg else BgWhite,
@@ -108,11 +111,12 @@ internal fun TransportModeCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(if (selected) 6.dp else 0.dp, RoundedCornerShape(16.dp))
+            .graphicsLayer { alpha = disabledAlpha }
+            .shadow(if (selected && enabled) 6.dp else 0.dp, RoundedCornerShape(16.dp))
             .clip(RoundedCornerShape(16.dp))
             .background(bgColor)
             .border(borderWidth, borderColor, RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
+            .clickable(enabled = enabled, onClick = onClick)
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

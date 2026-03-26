@@ -90,107 +90,67 @@ import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
 import coil.compose.AsyncImage
 
-// ── Sheet Header (unified: place info + progress + stop) ──
+// ── Map Top Navigation Bar ──
 
 @Composable
-fun NaviSheetHeader(
-    placeName: String,
-    placeNameKr: String,
+fun MapNavBar(
     distance: String,
     eta: String,
-    modeLabel: String,
+    placeName: String,
     progressPct: Float,
     onStop: () -> Unit,
-    onStory: () -> Unit = {},
-    onPhrases: () -> Unit = {},
-    storyHighlight: Boolean = false,
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(BgWhite)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .background(Primary)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
-        // Row 1: Direction arrow + distance + action buttons
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            // Direction indicator (arrow with tail)
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(PrimaryBg),
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(BgWhite.copy(alpha = 0.2f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     imageVector = Icons.Filled.ArrowUpward,
                     contentDescription = "Straight",
-                    modifier = Modifier.size(24.dp),
-                    tint = Primary,
+                    modifier = Modifier.size(32.dp),
+                    tint = BgWhite,
                 )
             }
-            Spacer(modifier = Modifier.width(10.dp))
-
-            // Distance + place name
+            Spacer(modifier = Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.Bottom) {
-                    Text(
-                        text = distance,
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = TextPrimary,
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = eta,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TextCaption,
-                        modifier = Modifier.padding(bottom = 1.dp),
-                    )
-                }
                 Text(
-                    text = placeName,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary,
+                    text = distance,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    color = BgWhite,
+                )
+                Text(
+                    text = "$eta · $placeName",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = BgWhite.copy(alpha = 0.8f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-
-            // Story button (wave + mute style) with highlight pulse
-            StoryWaveButton(onClick = onStory, highlight = storyHighlight)
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Phrases button
             Box(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(BgSub)
-                    .clickable(onClick = onPhrases),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.Translate, contentDescription = "Phrases", modifier = Modifier.size(18.dp), tint = TextPrimary)
-            }
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Stop button
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Error.copy(alpha = 0.1f))
+                    .background(BgWhite.copy(alpha = 0.2f))
                     .clickable(onClick = onStop),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Filled.Close, contentDescription = "Stop", modifier = Modifier.size(18.dp), tint = Error)
+                Icon(Icons.Filled.Close, contentDescription = "Stop", modifier = Modifier.size(18.dp), tint = BgWhite)
             }
         }
-
         Spacer(modifier = Modifier.height(8.dp))
-
-        // Row 2: Progress bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -198,14 +158,79 @@ fun NaviSheetHeader(
             LinearProgressIndicator(
                 progress = { progressPct },
                 modifier = Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)),
-                color = Primary,
-                trackColor = Border,
+                color = BgWhite,
+                trackColor = BgWhite.copy(alpha = 0.3f),
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "${(progressPct * 100).toInt()}%",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = TextCaption,
+                color = BgWhite.copy(alpha = 0.8f),
+            )
+        }
+    }
+}
+
+// ── Sheet Header (action buttons) ──
+
+@Composable
+fun NaviSheetHeader(
+    onStop: () -> Unit,
+    onStory: () -> Unit = {},
+    onPhrases: () -> Unit = {},
+    storyHighlight: Boolean = false,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(BgWhite)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(14.dp))
+                .background(Primary.copy(alpha = 0.1f))
+                .clickable(onClick = onStory)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                Icons.Filled.Headphones,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = TextPrimary,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Listen to Place Guide",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary,
+            )
+        }
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .clip(RoundedCornerShape(14.dp))
+                .background(BgSub)
+                .clickable(onClick = onPhrases)
+                .padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center,
+        ) {
+            Icon(
+                Icons.Filled.Translate,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = TextPrimary,
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "Korean Phrases",
+                style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary,
             )
         }
     }
@@ -311,14 +336,10 @@ fun KkaebiHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.masot),
+            painter = painterResource(R.drawable.face),
             contentDescription = "Kkaebi",
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .border(2.dp, Primary, CircleShape)
-                .background(PrimaryBg),
-            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(36.dp),
+            contentScale = ContentScale.Fit,
         )
         Spacer(modifier = Modifier.width(10.dp))
         Text(

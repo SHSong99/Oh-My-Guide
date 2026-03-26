@@ -19,7 +19,7 @@ object ZhCnStrings : AppStrings {
 
     override val splashSubtitle = "您的专属韩国旅游导览服务"
 
-    override val welcomeGreeting = "安妞！\uD83D\uDC4B"
+    override val welcomeGreeting = "安妞！"
     override val welcomeIntro = "我是你的韩国导游"
     override val welcomeDesc = "发现精彩景点，\n像当地人一样导航，\n获得个性化导览。"
     override val signInGoogle = "使用 Google 登录"
@@ -35,20 +35,35 @@ object ZhCnStrings : AppStrings {
     override val allowLocation = "允许位置访问"
     override val enterAge = "请输入年龄"
     override val yearsOld = "岁"
+    override val ageConfirm = "I'm %d years old"
+    override val selectCountry = "Select your country"
     override val female = "女性"
     override val male = "男性"
     override val friends = "朋友"
     override val family = "家人"
     override val solo = "独自"
+    override val partner = "Partner"
 
     override val detectingLocation = "正在检测您的位置..."
     override val yourLocation = "您的位置"
-    override val categoryGreeting = "嗨！我是 Oh My Guide\n我现在就帮你找到附近的完美景点！"
+    override val categoryGreeting = "您好！我是 Kkaebi。\n让我为您找到附近最棒的景点！"
     override val categoryPrompt = "告诉我你感兴趣的东西"
-    override val categoryDone = "很棒的选择！让我为你找到最佳景点... \uD83C\uDFAF"
+    override val categoryDone = "很棒的选择！让我为您找到最佳景点。"
     override val chooseInterests = "选择你感兴趣的！"
     override val addMoreOrSend = "好选择！继续添加或发送"
     override val categoriesSelected = "个类别已选择"
+
+    override val categoryNames = mapOf(
+        "attraction" to "Attraction", "culture" to "Culture", "festival" to "Festival",
+        "course" to "Course", "leports" to "Leports", "cafe" to "Cafes",
+        "shopping" to "Shopping", "food" to "Food",
+    )
+    override val categorySubs = mapOf(
+        "attraction" to "Landmarks & nature", "culture" to "Museums & history",
+        "festival" to "Events & performances", "course" to "Travel routes",
+        "leports" to "Leisure & sports", "cafe" to "Coffee & bakeries",
+        "shopping" to "Markets & malls", "food" to "Dining & street eats",
+    )
 
     override val findingSpots = "正在寻找精彩景点..."
     override val scanningNearby = "根据您的兴趣\n扫描附近的景点"
@@ -75,12 +90,6 @@ object ZhCnStrings : AppStrings {
     override val exploreThisCourse = "探索此路线"
     override val seeAllCourses = "查看所有路线"
     override val swipeToDiscover = "滑动发现更多"
-    override val themeKpopTitle = "K-Pop Demon\nHunters"
-    override val themeKpopSubtitle = "Follow the hottest idol spots in Hongdae & Mapo"
-    override val themeBtsTitle = "BTS ARMY\nSeoul Tour"
-    override val themeBtsSubtitle = "Walk the streets where BTS made history"
-    override val themeSsafyTitle = "SSAFY Lunch\nWalk Course"
-    override val themeSsafySubtitle = "The best lunch break walking route around SSAFY campus"
     override val courseRoute = "路线规划"
     override val startCourseNavi = "开始路线导航"
     override val courseProgress = "路线进度"
@@ -182,6 +191,7 @@ object ZhCnStrings : AppStrings {
     override val endNaviMessage = "确定要停止导航吗？"
     override val confirm = "结束"
     override val cancel = "取消"
+    override val movingToNextCourse = "前往下一个景点！"
 
     override val noRecommendations = "暂无推荐景点"
     override val noRecommendationsDesc = "告诉我们你的兴趣，为你找到专属景点"
