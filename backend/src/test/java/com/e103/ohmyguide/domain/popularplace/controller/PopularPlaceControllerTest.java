@@ -28,17 +28,17 @@ class PopularPlaceControllerTest extends ControllerTestSupport {
                 PopularPlaceResponse.builder().placeId(200L).visitCount(30L).totalScore(120L).placeRank(2).build()
         );
 
-        // stubbing
-        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE", "ACTIVE"))
+        // stubbing (age=25 → "20s")
+        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE"))
                 .willReturn(response);
 
         // when & then
         mockMvc.perform(get("/pickRecommend")
                         .param("nationality", "KOR")
-                        .param("ageGroup", "20s")
+                        .param("age", "25")
                         .param("gender", "M")
                         .param("travelPurpose", "LEISURE")
-                        .param("lifestyle", "ACTIVE"))
+)
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2))
@@ -54,16 +54,16 @@ class PopularPlaceControllerTest extends ControllerTestSupport {
     @Test
     void getRecommendations_returnsEmptyList() throws Exception {
         // given
-        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE", "ACTIVE"))
+        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE"))
                 .willReturn(List.of());
 
         // when & then
         mockMvc.perform(get("/pickRecommend")
                         .param("nationality", "KOR")
-                        .param("ageGroup", "20s")
+                        .param("age", "25")
                         .param("gender", "M")
                         .param("travelPurpose", "LEISURE")
-                        .param("lifestyle", "ACTIVE"))
+)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -73,10 +73,10 @@ class PopularPlaceControllerTest extends ControllerTestSupport {
     void getRecommendations_missingParam_returns400() throws Exception {
         mockMvc.perform(get("/pickRecommend")
                         .param("nationality", "KOR")
-                        // ageGroup 누락
+                        // age 누락
                         .param("gender", "M")
                         .param("travelPurpose", "LEISURE")
-                        .param("lifestyle", "ACTIVE"))
+)
                 .andExpect(status().isBadRequest());
     }
 
@@ -84,20 +84,20 @@ class PopularPlaceControllerTest extends ControllerTestSupport {
     @Test
     void getRecommendations_callsServiceOnce() throws Exception {
         // given
-        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE", "ACTIVE"))
+        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE"))
                 .willReturn(List.of());
 
-        // when
+        // when (age=25 → "20s" 변환 후 서비스 호출)
         mockMvc.perform(get("/pickRecommend")
                 .param("nationality", "KOR")
-                .param("ageGroup", "20s")
+                .param("age", "25")
                 .param("gender", "M")
                 .param("travelPurpose", "LEISURE")
-                .param("lifestyle", "ACTIVE"));
+);
 
         // then
         then(popularPlaceService).should(times(1))
-                .getRecommendations("KOR", "20s", "M", "LEISURE", "ACTIVE");
+                .getRecommendations("KOR", "20s", "M", "LEISURE");
     }
 
     @DisplayName("POST /pickRecommend/calculate - Spark 작업 제출 성공 시 202를 반환한다.")

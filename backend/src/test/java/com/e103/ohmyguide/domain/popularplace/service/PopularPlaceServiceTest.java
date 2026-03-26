@@ -29,7 +29,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE", "ACTIVE"
+                "KOR", "20s", "M", "LEISURE"
         );
 
         // then
@@ -49,7 +49,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE", "ACTIVE"
+                "KOR", "20s", "M", "LEISURE"
         );
 
         // then
@@ -66,7 +66,6 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
                 .ageGroup("30s")
                 .gender("F")
                 .travelPurpose("BUSINESS")
-                .lifestyle("RELAX")
                 .placeId(999L)
                 .visitCount(10L)
                 .totalScore(40L)
@@ -75,7 +74,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE", "ACTIVE"
+                "KOR", "20s", "M", "LEISURE"
         );
 
         // then
@@ -91,7 +90,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE", "ACTIVE"
+                "KOR", "20s", "M", "LEISURE"
         );
 
         // then
@@ -113,7 +112,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE", "ACTIVE"
+                "KOR", "20s", "M", "LEISURE"
         );
 
 //        // then
@@ -132,7 +131,6 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
                 .ageGroup("20s")
                 .gender("M")
                 .travelPurpose("LEISURE")
-                .lifestyle("ACTIVE")
                 .placeId(placeId)
                 .visitCount(visitCount)
                 .totalScore(totalScore)

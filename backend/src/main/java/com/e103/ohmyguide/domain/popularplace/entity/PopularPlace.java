@@ -28,9 +28,6 @@ public class PopularPlace {
     @Column(name = "travel_purpose")
     private String travelPurpose;
 
-    @Column(name = "lifestyle")
-    private String lifestyle;
-
     @Column(name = "place_id")
     private Long placeId;                  // Long 타입 → attractions 테이블의 ID와 매핑 가능
 
@@ -44,12 +41,11 @@ public class PopularPlace {
     private Integer placeRank;             // 군집 내 순위 (1위, 2위, ...)
 
     @Builder
-    private PopularPlace(String nationality, String ageGroup, String gender, String travelPurpose, String lifestyle, Long placeId, Long visitCount, Long totalScore, Integer placeRank) {
+    private PopularPlace(String nationality, String ageGroup, String gender, String travelPurpose, Long placeId, Long visitCount, Long totalScore, Integer placeRank) {
         this.nationality = nationality;
         this.ageGroup = ageGroup;
         this.gender = gender;
         this.travelPurpose = travelPurpose;
-        this.lifestyle = lifestyle;
         this.placeId = placeId;
         this.visitCount = visitCount;
         this.totalScore = totalScore;
