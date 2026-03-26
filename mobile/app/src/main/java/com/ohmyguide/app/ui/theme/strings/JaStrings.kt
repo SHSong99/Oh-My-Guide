@@ -19,7 +19,7 @@ object JaStrings : AppStrings {
 
     override val splashSubtitle = "あなただけの特別な韓国旅行ガイド"
 
-    override val welcomeGreeting = "アンニョン! \uD83D\uDC4B"
+    override val welcomeGreeting = "アンニョン!"
     override val welcomeIntro = "韓国ガイドです"
     override val welcomeDesc = "素敵な場所を見つけ、\n地元の人のように移動し、\nパーソナルガイドを手に入れよう。"
     override val signInGoogle = "Googleでサインイン"
@@ -35,20 +35,35 @@ object JaStrings : AppStrings {
     override val allowLocation = "位置情報のアクセスを許可"
     override val enterAge = "年齢を入力"
     override val yearsOld = "歳"
+    override val ageConfirm = "I'm %d years old"
+    override val selectCountry = "Select your country"
     override val female = "女性"
     override val male = "男性"
     override val friends = "友達"
     override val family = "家族"
     override val solo = "一人"
+    override val partner = "Partner"
 
     override val detectingLocation = "位置を検出中..."
     override val yourLocation = "現在地"
-    override val categoryGreeting = "やあ！Oh My Guideです\n今すぐ近くの最高のスポットを見つけます！"
+    override val categoryGreeting = "こんにちは！ケビです。\n近くの最高のスポットをお探しします！"
     override val categoryPrompt = "興味のあることを教えてください"
-    override val categoryDone = "素晴らしい選択！最高のスポットを探します... \uD83C\uDFAF"
+    override val categoryDone = "素晴らしい選択です！最高のスポットをお探しします。"
     override val chooseInterests = "興味のあるものを選んでください！"
     override val addMoreOrSend = "いい選択！追加するか送信してください"
     override val categoriesSelected = "カテゴリー選択中"
+
+    override val categoryNames = mapOf(
+        "attraction" to "Attraction", "culture" to "Culture", "festival" to "Festival",
+        "course" to "Course", "leports" to "Leports", "cafe" to "Cafes",
+        "shopping" to "Shopping", "food" to "Food",
+    )
+    override val categorySubs = mapOf(
+        "attraction" to "Landmarks & nature", "culture" to "Museums & history",
+        "festival" to "Events & performances", "course" to "Travel routes",
+        "leports" to "Leisure & sports", "cafe" to "Coffee & bakeries",
+        "shopping" to "Markets & malls", "food" to "Dining & street eats",
+    )
 
     override val findingSpots = "素敵なスポットを探しています..."
     override val scanningNearby = "あなたの興味に基づいて\n近くの場所をスキャン中"
@@ -75,12 +90,6 @@ object JaStrings : AppStrings {
     override val exploreThisCourse = "コースを探索"
     override val seeAllCourses = "すべてのコースを見る"
     override val swipeToDiscover = "スワイプしてもっと見る"
-    override val themeKpopTitle = "K-Pop Demon\nHunters"
-    override val themeKpopSubtitle = "Follow the hottest idol spots in Hongdae & Mapo"
-    override val themeBtsTitle = "BTS ARMY\nSeoul Tour"
-    override val themeBtsSubtitle = "Walk the streets where BTS made history"
-    override val themeSsafyTitle = "SSAFY Lunch\nWalk Course"
-    override val themeSsafySubtitle = "The best lunch break walking route around SSAFY campus"
     override val courseRoute = "コースルート"
     override val startCourseNavi = "コースナビを開始"
     override val courseProgress = "コース進捗"
@@ -138,6 +147,17 @@ object JaStrings : AppStrings {
     override val food = "食べ物"
     override val culture = "文化"
     override val signOut = "ログアウト"
+    override val ageUnit = "歳"
+    override val pickRecommendTitle = "似た旅行者に人気のスポット"
+    override val pickRecommendDesc = "ビッグデータに基づくおすすめ"
+    override val pickRecommendEmpty = "まだおすすめデータがありません"
+    override val editProfile = "プロフィール編集"
+    override val nationality = "国籍"
+    override val age = "年齢"
+    override val gender = "性別"
+    override val save = "保存"
+    override val bookmarkEmpty = "保存されたフレーズはありません"
+    override val viewAllPhrases = "すべてのフレーズを見る"
 
     override val locating = "位置を確認中..."
     override val mapView = "地図ビュー"
@@ -171,6 +191,7 @@ object JaStrings : AppStrings {
     override val endNaviMessage = "案内を中断して前の画面に戻ります。"
     override val confirm = "終了"
     override val cancel = "キャンセル"
+    override val movingToNextCourse = "次のスポットに移動します！"
 
     override val noRecommendations = "おすすめスポットがまだありません"
     override val noRecommendationsDesc = "興味を教えてくれたらぴったりの場所を探します"

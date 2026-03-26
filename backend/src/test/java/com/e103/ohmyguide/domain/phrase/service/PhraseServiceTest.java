@@ -14,6 +14,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import com.e103.ohmyguide.domain.phrase.dto.PhraseResponse;
+
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -30,6 +34,56 @@ class PhraseServiceTest extends IntegrationTestSupport {
 
     @Autowired
     private UserPhraseRepository userPhraseRepository;
+
+    @DisplayName("사용자의 북마크 목록을 조회한다.")
+    @Test
+    void getBookmarks_returnsBookmarkedPhrases() {
+        // given
+        User user = buildUser("test@example.com", "Test User");
+        userRepository.save(user);
+
+        Phrase phrase1 = buildPhrase("안녕하세요", PhraseLanguage.KOR);
+        Phrase phrase2 = buildPhrase("감사합니다", PhraseLanguage.KOR);
+        phraseRepository.save(phrase1);
+        phraseRepository.save(phrase2);
+
+        userPhraseRepository.save(UserPhrase.builder().user(user).phrase(phrase1).build());
+        userPhraseRepository.save(UserPhrase.builder().user(user).phrase(phrase2).build());
+
+        // when
+        List<PhraseResponse> bookmarks = phraseService.getBookmarks(user.getId());
+
+        // then
+        assertThat(bookmarks).hasSize(2);
+        assertThat(bookmarks).extracting(PhraseResponse::getContent)
+                .containsExactlyInAnyOrder("안녕하세요", "감사합니다");
+    }
+
+    @DisplayName("북마크가 없는 사용자는 빈 목록을 반환한다.")
+    @Test
+    void getBookmarks_noBookmarks_returnsEmptyList() {
+        // given
+        User user = buildUser("test@example.com", "Test User");
+        userRepository.save(user);
+
+        // when
+        List<PhraseResponse> bookmarks = phraseService.getBookmarks(user.getId());
+
+        // then
+        assertThat(bookmarks).isEmpty();
+    }
+
+    @DisplayName("존재하지 않는 사용자 ID로 북마크 조회 시 예외가 발생한다.")
+    @Test
+    void getBookmarks_userNotFound_throwsException() {
+        // given
+        Long invalidUserId = 999L;
+
+        // when & then
+        assertThatThrownBy(() -> phraseService.getBookmarks(invalidUserId))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("User not found");
+    }
 
     @DisplayName("사용자가 문구를 북마크에 추가한다.")
     @Test

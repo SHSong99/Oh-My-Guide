@@ -117,13 +117,10 @@ fun MascotTip() {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.masot),
+            painter = painterResource(R.drawable.face),
             contentDescription = null,
-            modifier = Modifier
-                .size(30.dp)
-                .clip(CircleShape)
-                .border(2.dp, Primary, CircleShape),
-            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(30.dp),
+            contentScale = ContentScale.Fit,
         )
         Spacer(modifier = Modifier.width(8.dp))
         Box(
@@ -158,7 +155,7 @@ fun PhraseSectionCard(
     isOpen: Boolean,
     savedPhrases: Set<String>,
     onToggle: () -> Unit,
-    onSaveToggle: (String) -> Unit,
+    onSaveToggle: (String, KoreanPhrase) -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -232,7 +229,7 @@ fun PhraseSectionCard(
                         phrase = phrase,
                         sectionColor = section.color,
                         isSaved = isSaved,
-                        onSaveToggle = { onSaveToggle(key) },
+                        onSaveToggle = { onSaveToggle(key, phrase) },
                         showDivider = index < section.phrases.size - 1,
                     )
                 }

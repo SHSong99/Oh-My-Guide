@@ -1,7 +1,11 @@
 package com.ohmyguide.app.data.api
 
 import com.ohmyguide.app.data.model.AttractionDetailDto
+import com.ohmyguide.app.data.model.PhraseBookmarkDto
+import com.ohmyguide.app.data.model.PickRecommendResponse
 import com.ohmyguide.app.data.model.AuthResponse
+import com.ohmyguide.app.data.model.ThemeDetailResponse
+import com.ohmyguide.app.data.model.ThemeListResponse
 import com.ohmyguide.app.data.model.GoogleLoginRequest
 import com.ohmyguide.app.data.model.GuideNavigationResponse
 import com.ohmyguide.app.data.model.OnboardingRequest
@@ -9,6 +13,7 @@ import com.ohmyguide.app.data.model.RefreshRecommendRequest
 import com.ohmyguide.app.data.model.RefreshRecommendResponse
 import com.ohmyguide.app.data.model.UserResponse
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.PUT
@@ -51,4 +56,30 @@ interface ApiService {
     // Attraction
     @GET("attractions/{attrId}")
     suspend fun getAttractionDetail(@Path("attrId") attrId: Long): AttractionDetailDto
+
+    // Theme
+    @GET("themes")
+    suspend fun getThemes(): ThemeListResponse
+
+    @GET("themes/{themeId}")
+    suspend fun getThemeDetail(@Path("themeId") themeId: Long): ThemeDetailResponse
+
+    // Phrases (북마크)
+    @GET("phrases/bookmarks")
+    suspend fun getBookmarkedPhrases(): List<PhraseBookmarkDto>
+
+    @POST("phrases/{phraseId}/bookmark")
+    suspend fun addPhraseBookmark(@Path("phraseId") phraseId: Long)
+
+    @DELETE("phrases/{phraseId}/bookmark")
+    suspend fun removePhraseBookmark(@Path("phraseId") phraseId: Long)
+
+    // Pick Recommend (빅데이터 분산 추천)
+    @GET("pickRecommend")
+    suspend fun getPickRecommend(
+        @Query("nationality") nationality: String,
+        @Query("age") age: Int,
+        @Query("gender") gender: String,
+        @Query("travelPurpose") travelPurpose: String,
+    ): List<PickRecommendResponse>
 }

@@ -130,7 +130,8 @@ fun NavGraph(
         }
         composable(Screen.CourseNavi.route) { backStackEntry ->
             val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
-            com.ohmyguide.app.ui.screen.explore.CourseNaviScreen(navController, courseId)
+            val mode = backStackEntry.arguments?.getString("mode") ?: "car"
+            com.ohmyguide.app.ui.screen.explore.CourseNaviScreen(navController, courseId, mode)
         }
         composable(Screen.Place.route) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable

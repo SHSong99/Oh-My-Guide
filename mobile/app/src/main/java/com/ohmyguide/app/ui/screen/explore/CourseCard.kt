@@ -99,7 +99,14 @@ fun CourseCard(
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(text = catGroup?.emoji ?: "", fontSize = 11.sp)
+                        if (catGroup?.icon != null) {
+                            Icon(
+                                catGroup.icon,
+                                contentDescription = null,
+                                modifier = Modifier.size(12.dp),
+                                tint = BgWhite,
+                            )
+                        }
                         Spacer(modifier = Modifier.width(4.dp))
                         Text(
                             text = catGroup?.label ?: "",
@@ -108,15 +115,16 @@ fun CourseCard(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                // Tags
-                course.tags.take(2).forEach { tag ->
-                    Text(
-                        text = "#$tag",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = BgWhite.copy(alpha = 0.8f),
-                        modifier = Modifier.padding(end = 6.dp),
-                    )
+                if (course.tags.isNotEmpty()) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    course.tags.take(2).forEach { tag ->
+                        Text(
+                            text = "#$tag",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = BgWhite.copy(alpha = 0.8f),
+                            modifier = Modifier.padding(end = 6.dp),
+                        )
+                    }
                 }
             }
 
@@ -144,9 +152,16 @@ fun CourseCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    MetaPill(icon = Icons.Filled.LocationOn, text = "${course.spotCount} spots")
-                    MetaPill(icon = Icons.Filled.AccessTime, text = course.duration)
-                    MetaPill(icon = Icons.Filled.Star, text = "${course.rating}")
+                    if (course.spotCount > 0) {
+                        MetaPill(icon = Icons.Filled.LocationOn, text = "${course.spotCount} spots")
+                    }
+                    if (course.duration.isNotEmpty()) {
+                        MetaPill(icon = Icons.Filled.AccessTime, text = course.duration)
+                    }
+                    MetaPill(
+                        icon = Icons.Filled.LocationOn,
+                        text = course.region.replaceFirstChar { it.uppercase() },
+                    )
                 }
                 Box(
                     modifier = Modifier

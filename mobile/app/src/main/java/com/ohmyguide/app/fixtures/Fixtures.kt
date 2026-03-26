@@ -1,6 +1,7 @@
 package com.ohmyguide.app.fixtures
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Groups
@@ -28,7 +29,7 @@ data class FeaturedTheme(
     val title: String,
     val subtitle: String,
     val badge: String,
-    val courseId: String,
+    val courseId: Long,
     @RawRes val videoRes: Int,
     val dominantColor: Long = 0xFF1A1A2E,
 )
@@ -39,16 +40,16 @@ val FEATURED_THEMES = listOf(
         title = "K-Pop Demon\nHunters",
         subtitle = "Follow the hottest idol spots in Hongdae & Mapo",
         badge = "K-POP",
-        courseId = "demon-hunters",
+        courseId = 2,
         videoRes = R.raw.theme_kpop_demon_hunters,
         dominantColor = 0xFF8B1A1A,
     ),
     FeaturedTheme(
         id = "bts",
-        title = "BTS ARMY\nSeoul Tour",
+        title = "BTS ARMY\nBusan Tour",
         subtitle = "Walk the streets where BTS made history",
         badge = "BTS",
-        courseId = "demon-hunters",
+        courseId = 5,
         videoRes = R.raw.theme_bts,
         dominantColor = 0xFF1A2B5E,
     ),
@@ -57,7 +58,7 @@ val FEATURED_THEMES = listOf(
         title = "SSAFY Lunch\nWalk Course",
         subtitle = "The best lunch break walking route around SSAFY campus",
         badge = "SSAFY",
-        courseId = "demon-hunters",
+        courseId = 1,
         videoRes = R.raw.theme_ssafy,
         dominantColor = 0xFF1A4B8E,
     ),
@@ -270,7 +271,7 @@ val PHRASE_SECTIONS = listOf(
 
 // ── Onboarding (GpsPermissionScreen) ──
 
-data class LanguageOption(val id: String, val label: String)
+data class LanguageOption(val id: String, val label: String, val flag: String, val available: Boolean = true)
 data class CompanionOption(
     val id: String,
     val label: String,
@@ -281,14 +282,18 @@ data class CompanionOption(
 data class CountryOption(val id: String, val flag: String, val name: String)
 
 val LANGUAGE_OPTIONS = listOf(
-    LanguageOption("en", "English"),
-    LanguageOption("ja", "\u65E5\u672C\u8A9E"),
-    LanguageOption("zh-TW", "\u7E41\u9AD4\u4E2D\u6587"),
-    LanguageOption("zh-CN", "\u7B80\u4F53\u4E2D\u6587"),
-    LanguageOption("ko", "\uD55C\uAD6D\uC5B4"),
+    LanguageOption("en", "English", "\uD83C\uDDFA\uD83C\uDDF8"),
+    LanguageOption("ko", "\uD55C\uAD6D\uC5B4", "\uD83C\uDDF0\uD83C\uDDF7"),
+    LanguageOption("ja", "\u65E5\u672C\u8A9E", "\uD83C\uDDEF\uD83C\uDDF5", available = false),
+    LanguageOption("zh-CN", "\u7B80\u4F53\u4E2D\u6587", "\uD83C\uDDE8\uD83C\uDDF3", available = false),
+    LanguageOption("zh-TW", "\u7E41\u9AD4\u4E2D\u6587", "\uD83C\uDDF9\uD83C\uDDFC", available = false),
 )
 
-val GENDER_OPTIONS = listOf("Female", "Male")
+data class GenderOption(val id: String, val label: String)
+val GENDER_OPTIONS = listOf(
+    GenderOption("Female", "Female"),
+    GenderOption("Male", "Male"),
+)
 
 val COMPANION_OPTIONS = listOf(
     CompanionOption("friends", "Friends", Icons.Filled.Groups, Color(0xFF5478FF), Color(0xFFEEF2FF)),
@@ -348,6 +353,7 @@ data class Spot(
     val imageUrl: String? = null,
     val lat: Double = 0.0,
     val lng: Double = 0.0,
+    val overviewTts: String? = null,
 )
 
 data class Course(
@@ -381,16 +387,16 @@ val EXPLORE_REGIONS = listOf(
     Region("all", "All"),
     Region("seoul", "Seoul"),
     Region("busan", "Busan"),
+    Region("daejeon", "Daejeon"),
     Region("jeju", "Jeju"),
     Region("gyeongju", "Gyeongju"),
-    Region("incheon", "Incheon"),
-    Region("jeonju", "Jeonju"),
 )
 
 val EXPLORE_CATEGORY_GROUPS = listOf(
     ExploreCategoryGroup("local", "Local Life", "Markets & food", "\uD83C\uDFEA", Icons.Filled.Luggage, Success, Color(0xFFF0FDF4)),
     ExploreCategoryGroup("kpop", "K-Pop", "Idol hotspots", "\uD83C\uDFB5", Icons.Filled.AutoAwesome, Color(0xFF7C3AED), Color(0xFFF5F3FF)),
     ExploreCategoryGroup("kdrama", "K-Drama", "Filming spots", "\uD83C\uDFAC", Icons.Filled.Favorite, Color(0xFFEA580C), Color(0xFFFFF7ED)),
+    ExploreCategoryGroup("culture", "Culture", "Heritage & history", "\uD83C\uDFDB\uFE0F", Icons.Filled.AccountBalance, Color(0xFF0891B2), Color(0xFFECFEFF)),
 )
 
 val EXPLORE_COURSES = listOf(

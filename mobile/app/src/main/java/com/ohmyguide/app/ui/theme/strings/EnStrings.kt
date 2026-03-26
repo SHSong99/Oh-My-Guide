@@ -19,7 +19,7 @@ object EnStrings : AppStrings {
 
     override val splashSubtitle = "Your Special Korea Tour Guide Service"
 
-    override val welcomeGreeting = "Annyeong! \uD83D\uDC4B"
+    override val welcomeGreeting = "Annyeong!"
     override val welcomeIntro = "I'm your Korea guide"
     override val welcomeDesc = "Find amazing places,\nnavigate like a local,\nand get personalized guides."
     override val signInGoogle = "Sign in with Google"
@@ -34,21 +34,36 @@ object EnStrings : AppStrings {
     override val onboardGpsPrompt = "Perfect! Lastly, please allow location access so we can explore together."
     override val allowLocation = "Allow Location Access"
     override val enterAge = "Enter your age"
-    override val yearsOld = "years old"
+    override val yearsOld = " years old"
+    override val ageConfirm = "I'm %d years old"
+    override val selectCountry = "Select your country"
     override val female = "Female"
     override val male = "Male"
     override val friends = "Friends"
     override val family = "Family"
     override val solo = "Solo"
+    override val partner = "Partner"
 
     override val detectingLocation = "Detecting your location..."
     override val yourLocation = "Your Location"
-    override val categoryGreeting = "Hey! I'm Oh My Guide\nI'll find the perfect spots near you right now!"
+    override val categoryGreeting = "Hello! I'm Kkaebi.\nLet me find the perfect spots near you!"
     override val categoryPrompt = "Just tell me what you're into"
-    override val categoryDone = "Awesome picks! Let me find the best spots for you... \uD83C\uDFAF"
+    override val categoryDone = "Great choices! Let me find the best spots for you."
     override val chooseInterests = "Choose what interests you!"
     override val addMoreOrSend = "Great pick! Add more or send"
     override val categoriesSelected = "categories selected"
+
+    override val categoryNames = mapOf(
+        "attraction" to "Attraction", "culture" to "Culture", "festival" to "Festival",
+        "course" to "Course", "leports" to "Leports", "cafe" to "Cafes",
+        "shopping" to "Shopping", "food" to "Food",
+    )
+    override val categorySubs = mapOf(
+        "attraction" to "Landmarks & nature", "culture" to "Museums & history",
+        "festival" to "Events & performances", "course" to "Travel routes",
+        "leports" to "Leisure & sports", "cafe" to "Coffee & bakeries",
+        "shopping" to "Markets & malls", "food" to "Dining & street eats",
+    )
 
     override val findingSpots = "Finding amazing spots..."
     override val scanningNearby = "Scanning nearby places\nbased on your interests"
@@ -75,12 +90,6 @@ object EnStrings : AppStrings {
     override val exploreThisCourse = "Explore This Course"
     override val seeAllCourses = "See All Courses"
     override val swipeToDiscover = "Swipe to discover more"
-    override val themeKpopTitle = "K-Pop Demon\nHunters"
-    override val themeKpopSubtitle = "Follow the hottest idol spots in Hongdae & Mapo"
-    override val themeBtsTitle = "BTS ARMY\nSeoul Tour"
-    override val themeBtsSubtitle = "Walk the streets where BTS made history"
-    override val themeSsafyTitle = "SSAFY Lunch\nWalk Course"
-    override val themeSsafySubtitle = "The best lunch break walking route around SSAFY campus"
     override val courseRoute = "COURSE ROUTE"
     override val startCourseNavi = "Start Course Navigation"
     override val courseProgress = "COURSE PROGRESS"
@@ -138,6 +147,17 @@ object EnStrings : AppStrings {
     override val food = "Food"
     override val culture = "Culture"
     override val signOut = "Sign Out"
+    override val ageUnit = " yrs"
+    override val pickRecommendTitle = "Popular with Travelers Like You"
+    override val pickRecommendDesc = "Based on big data from similar travelers"
+    override val pickRecommendEmpty = "No recommendations available yet"
+    override val editProfile = "Edit Profile"
+    override val nationality = "Nationality"
+    override val age = "Age"
+    override val gender = "Gender"
+    override val save = "Save"
+    override val bookmarkEmpty = "No saved phrases yet. Tap to browse!"
+    override val viewAllPhrases = "View All Phrases"
 
     override val locating = "Locating..."
     override val mapView = "Map View"
@@ -171,6 +191,7 @@ object EnStrings : AppStrings {
     override val endNaviMessage = "Are you sure you want to stop navigating?"
     override val confirm = "End"
     override val cancel = "Cancel"
+    override val movingToNextCourse = "Moving to the next spot!"
 
     override val noRecommendations = "No recommendations yet"
     override val noRecommendationsDesc = "Tell us your interests to get personalized spots"

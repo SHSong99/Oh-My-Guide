@@ -38,11 +38,14 @@ interface AppStrings {
     val allowLocation: String
     val enterAge: String
     val yearsOld: String
+    val ageConfirm: String  // "I'm 25 years old" / "25세입니다"
+    val selectCountry: String
     val female: String
     val male: String
     val friends: String
     val family: String
     val solo: String
+    val partner: String
 
     // ── Category ──
     val detectingLocation: String
@@ -53,6 +56,10 @@ interface AppStrings {
     val chooseInterests: String
     val addMoreOrSend: String
     val categoriesSelected: String
+
+    // ── Category Names ──
+    val categoryNames: Map<String, String>
+    val categorySubs: Map<String, String>
 
     // ── Loading ──
     val findingSpots: String
@@ -82,12 +89,6 @@ interface AppStrings {
     val exploreThisCourse: String
     val seeAllCourses: String
     val swipeToDiscover: String
-    val themeKpopTitle: String
-    val themeKpopSubtitle: String
-    val themeBtsTitle: String
-    val themeBtsSubtitle: String
-    val themeSsafyTitle: String
-    val themeSsafySubtitle: String
     val courseRoute: String
     val startCourseNavi: String
     val courseProgress: String
@@ -150,6 +151,17 @@ interface AppStrings {
     val food: String
     val culture: String
     val signOut: String
+    val ageUnit: String
+    val pickRecommendTitle: String
+    val pickRecommendDesc: String
+    val pickRecommendEmpty: String
+    val editProfile: String
+    val nationality: String
+    val age: String
+    val gender: String
+    val save: String
+    val bookmarkEmpty: String
+    val viewAllPhrases: String
 
     // ── Map ──
     val locating: String
@@ -187,6 +199,9 @@ interface AppStrings {
     val endNaviMessage: String
     val confirm: String
     val cancel: String
+
+    // ── Course Toast ──
+    val movingToNextCourse: String
 
     // ── Empty State ──
     val noRecommendations: String

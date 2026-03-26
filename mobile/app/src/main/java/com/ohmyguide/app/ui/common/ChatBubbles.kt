@@ -45,14 +45,10 @@ fun GuideBubble(
     ) {
         if (showAvatar) {
             Image(
-                painter = painterResource(R.drawable.masot),
+                painter = painterResource(R.drawable.face),
                 contentDescription = "Guide",
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, Primary, CircleShape)
-                    .background(PrimaryBg),
-                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(36.dp),
+                contentScale = ContentScale.Fit,
             )
         } else {
             Spacer(modifier = Modifier.width(36.dp))

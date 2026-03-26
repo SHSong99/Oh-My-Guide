@@ -28,7 +28,10 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +40,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -68,11 +72,48 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 fun CourseDetailScreen(
     navController: NavController,
     courseId: String,
+    viewModel: CourseDetailViewModel = hiltViewModel(),
 ) {
-    val course = EXPLORE_COURSES.find { it.id == courseId }
-        ?: EXPLORE_COURSES.firstOrNull()
-        ?: return
+    val uiState by viewModel.uiState.collectAsState()
 
+    when (val state = uiState) {
+        is CourseDetailUiState.Loading -> {
+            Box(
+                modifier = Modifier.fillMaxSize().background(BgWhite),
+                contentAlignment = Alignment.Center,
+            ) {
+                CircularProgressIndicator(color = Primary)
+            }
+        }
+        is CourseDetailUiState.Error -> {
+            Column(
+                modifier = Modifier.fillMaxSize().background(BgWhite),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
+            ) {
+                Text(
+                    text = state.message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                PrimaryButton(text = "Retry", onClick = { viewModel.retry() })
+            }
+        }
+        is CourseDetailUiState.Success -> {
+            CourseDetailContent(
+                navController = navController,
+                course = state.course,
+            )
+        }
+    }
+}
+
+@Composable
+private fun CourseDetailContent(
+    navController: NavController,
+    course: Course,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -130,7 +171,12 @@ fun CourseDetailScreen(
             PrimaryButton(
                 text = LocalStrings.current.startCourseNavi,
                 onClick = {
-                    navController.navigate(Screen.CourseNavi.createRoute(course.id))
+                    navController.navigate(
+                        Screen.Transport.createRoute(
+                            placeId = course.id,
+                            courseId = course.id,
+                        )
+                    )
                 },
                 icon = Icons.Filled.Navigation,
             )
@@ -145,7 +191,7 @@ fun CourseDetailScreen(
                         launchSingleTop = true
                         restoreState = true
                     }
-                    "phrases" -> navController.navigate(Screen.Phrases.route) {
+                    "mypage" -> navController.navigate(Screen.MyPage.route) {
                         popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true
@@ -225,37 +271,41 @@ private fun CourseInfo(course: Course) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
+            if (course.spotCount > 0) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(14.dp), tint = Primary)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "${course.spotCount} ${LocalStrings.current.spots}", style = MaterialTheme.typography.labelMedium, color = TextPrimary)
+                }
+            }
+            if (course.duration.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.AccessTime, contentDescription = null, modifier = Modifier.size(14.dp), tint = Primary)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = course.duration, style = MaterialTheme.typography.labelMedium, color = TextPrimary)
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(14.dp), tint = Primary)
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "${course.spotCount} ${LocalStrings.current.spots}", style = MaterialTheme.typography.labelMedium, color = TextPrimary)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.AccessTime, contentDescription = null, modifier = Modifier.size(14.dp), tint = Primary)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(text = course.duration, style = MaterialTheme.typography.labelMedium, color = TextPrimary)
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Star, contentDescription = null, modifier = Modifier.size(14.dp), tint = Star)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(text = "${course.rating}", style = MaterialTheme.typography.labelMedium, color = TextPrimary)
+                Text(text = course.region.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelMedium, color = TextPrimary)
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        // Tags
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(course.tags) { tag ->
-                Text(
-                    text = "#$tag",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = Primary,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(PrimaryBgLight)
-                        .padding(horizontal = 12.dp, vertical = 6.dp),
-                )
+        if (course.tags.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(12.dp))
+            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(course.tags) { tag ->
+                    Text(
+                        text = "#$tag",
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = Primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(100.dp))
+                            .background(PrimaryBgLight)
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    )
+                }
             }
         }
     }

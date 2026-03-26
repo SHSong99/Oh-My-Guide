@@ -43,8 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import androidx.compose.runtime.collectAsState
 import com.ohmyguide.app.fixtures.EXPLORE_CATEGORY_GROUPS
-import com.ohmyguide.app.fixtures.EXPLORE_COURSES
 import com.ohmyguide.app.ui.common.BottomNavBar
 import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.ContentBgTop
@@ -73,9 +73,14 @@ fun ExploreScreen(
     var selectedRegion by remember { mutableStateOf("all") }
     var selectedCategory by remember { mutableStateOf<String?>(null) }
 
-    val themes = viewModel.themes
+    val themes by viewModel.themes.collectAsState()
+    val courses by viewModel.courses.collectAsState()
+    val regions by viewModel.regions.collectAsState()
+    val exploreUiState by viewModel.uiState.collectAsState()
     // +1 trigger page (same video as last theme)
-    val pagerState = rememberPagerState(pageCount = { themes.size + 1 })
+    val pagerState = rememberPagerState(pageCount = {
+        if (isShowcase) themes.size + 1 else themes.size
+    })
 
     val configuration = LocalConfiguration.current
     val screenHeightDp = configuration.screenHeightDp.toFloat()
@@ -118,93 +123,105 @@ fun ExploreScreen(
         }
     }
 
-    val filteredCourses = EXPLORE_COURSES.filter { course ->
+    val filteredCourses = courses.filter { course ->
         (selectedRegion == "all" || course.region == selectedRegion) &&
                 (selectedCategory == null || course.category == selectedCategory)
     }
     val featuredCourse = filteredCourses.firstOrNull()
     val otherCourses = filteredCourses.drop(1)
 
+    // Hero section — outside LazyColumn to avoid touch conflict
+    @Composable
+    fun HeroSection() {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(heroHeight)
+                .clip(
+                    RoundedCornerShape(
+                        bottomStart = heroCorner,
+                        bottomEnd = heroCorner,
+                    )
+                ),
+        ) {
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+                userScrollEnabled = true,
+            ) { page ->
+                if (page < themes.size) {
+                    val pageOffset = (pagerState.currentPage - page) +
+                            pagerState.currentPageOffsetFraction
+                    val isActive = pagerState.currentPage == page &&
+                            pageOffset.absoluteValue < 0.5f
+
+                    ThemePage(
+                        theme = themes[page],
+                        player = viewModel.getOrCreatePlayer(page),
+                        isActive = isActive,
+                        pageOffset = pageOffset,
+                        compact = !isShowcase,
+                        onExploreClick = {
+                            navController.navigate(
+                                Screen.CourseDetail.createRoute(themes[page].courseId.toString())
+                            )
+                        },
+                    )
+                } else {
+                    // Trigger page: color gradient only, no video
+                    val lastTheme = themes.last()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(lastTheme.dominantColor).copy(alpha = 0.8f),
+                                        Color(lastTheme.dominantColor).copy(alpha = 0.4f),
+                                        Color.Black,
+                                    ),
+                                )
+                            ),
+                    )
+                }
+            }
+
+            NetflixDotIndicator(
+                pageCount = themes.size,
+                currentPage = pagerState.currentPage.coerceAtMost(themes.size - 1),
+                modifier = if (isShowcase) {
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 16.dp)
+                } else {
+                    Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 12.dp)
+                },
+            )
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(ExploreDarkBg),
     ) {
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            userScrollEnabled = !isShowcase,
-        ) {
-            item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(heroHeight)
-                        .clip(
-                            RoundedCornerShape(
-                                bottomStart = heroCorner,
-                                bottomEnd = heroCorner,
-                            )
-                        ),
-                ) {
-                    HorizontalPager(
-                        state = pagerState,
-                        modifier = Modifier.fillMaxSize(),
-                        userScrollEnabled = isShowcase,
-                    ) { page ->
-                        if (page < themes.size) {
-                            val pageOffset = (pagerState.currentPage - page) +
-                                    pagerState.currentPageOffsetFraction
-                            val isActive = pagerState.currentPage == page &&
-                                    pageOffset.absoluteValue < 0.5f
-
-                            ThemePage(
-                                theme = themes[page],
-                                player = viewModel.getOrCreatePlayer(page),
-                                isActive = isActive,
-                                pageOffset = pageOffset,
-                                compact = !isShowcase,
-                                onExploreClick = {
-                                    navController.navigate(
-                                        Screen.CourseDetail.createRoute(themes[page].courseId)
-                                    )
-                                },
-                            )
-                        } else {
-                            // Trigger page: color gradient only, no video
-                            val lastTheme = themes.last()
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(
-                                        Brush.radialGradient(
-                                            colors = listOf(
-                                                Color(lastTheme.dominantColor).copy(alpha = 0.8f),
-                                                Color(lastTheme.dominantColor).copy(alpha = 0.4f),
-                                                Color.Black,
-                                            ),
-                                        )
-                                    ),
-                            )
-                        }
-                    }
-
-                    NetflixDotIndicator(
-                        pageCount = themes.size,
-                        currentPage = pagerState.currentPage.coerceAtMost(themes.size - 1),
-                        modifier = if (isShowcase) {
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = 16.dp)
-                        } else {
-                            Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = 12.dp)
-                        },
-                    )
-                }
+        if (isShowcase) {
+            // Showcase mode: HorizontalPager outside LazyColumn for swipe to work
+            Box(modifier = Modifier.weight(1f)) {
+                HeroSection()
             }
+        } else {
+            // Normal mode: hero + course list in LazyColumn
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+            ) {
+                item {
+                    HeroSection()
+                }
 
-            // Course list — always present, animated visibility
+            // Course list
             item {
                 AnimatedVisibility(
                     visible = !isShowcase,
@@ -234,6 +251,7 @@ fun ExploreScreen(
                                 .padding(top = 20.dp),
                         ) {
                             RegionChips(
+                                regions = regions,
                                 selectedRegion = selectedRegion,
                                 onRegionClick = { selectedRegion = it },
                             )
@@ -303,7 +321,8 @@ fun ExploreScreen(
                     }
                 }
             }
-        }
+            } // end LazyColumn
+        } // end if/else
 
         BottomNavBar(
             activeTab = "explore",
@@ -314,7 +333,7 @@ fun ExploreScreen(
                         launchSingleTop = true
                         restoreState = true
                     }
-                    "phrases" -> navController.navigate(Screen.Phrases.route) {
+                    "mypage" -> navController.navigate(Screen.MyPage.route) {
                         popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true

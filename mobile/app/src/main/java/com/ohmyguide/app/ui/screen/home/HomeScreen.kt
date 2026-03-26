@@ -101,7 +101,8 @@ fun HomeScreen(
         if (locationName.isNotEmpty()) return@LaunchedEffect
         val loc = locationData ?: return@LaunchedEffect
         try {
-            val geocoder = Geocoder(context, Locale.ENGLISH)
+            val locale = if (com.ohmyguide.app.ui.theme.LanguageManager.current.value == com.ohmyguide.app.ui.theme.AppLanguage.KO) Locale.KOREAN else Locale.ENGLISH
+            val geocoder = Geocoder(context, locale)
             val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
             val address = addresses?.firstOrNull()
             if (address != null) {
@@ -333,7 +334,7 @@ fun HomeScreen(
                         launchSingleTop = true
                         restoreState = true
                     }
-                    "phrases" -> navController.navigate(Screen.Phrases.route) {
+                    "mypage" -> navController.navigate(Screen.MyPage.route) {
                         popUpTo(Screen.Home.route) { saveState = true }
                         launchSingleTop = true
                         restoreState = true

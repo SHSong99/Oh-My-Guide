@@ -91,14 +91,10 @@ fun HomeHeader(onReset: () -> Unit = {}) {
     ) {
         Box {
             Image(
-                painter = painterResource(R.drawable.masot),
+                painter = painterResource(R.drawable.face),
                 contentDescription = "Guide",
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, Primary, CircleShape)
-                    .background(PrimaryBg),
-                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(40.dp),
+                contentScale = ContentScale.Fit,
             )
             Box(
                 modifier = Modifier
@@ -157,7 +153,7 @@ fun LocationBar(spotCount: Int, locationName: String = "") {
             Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp), tint = Primary)
             Spacer(modifier = Modifier.width(6.dp))
             Text(
-                text = "${LocalStrings.current.near} ${locationName.ifEmpty { LocalStrings.current.yourArea }}",
+                text = locationName.ifEmpty { LocalStrings.current.yourArea },
                 style = MaterialTheme.typography.titleSmall,
                 color = TextPrimary,
             )

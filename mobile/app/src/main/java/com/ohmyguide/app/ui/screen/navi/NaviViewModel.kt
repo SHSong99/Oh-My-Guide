@@ -23,7 +23,7 @@ import com.ohmyguide.app.domain.model.PlaceDetailCache
 import com.ohmyguide.app.domain.model.RouteCoord
 import com.ohmyguide.app.domain.model.RouteSegmentGeo
 import com.ohmyguide.app.fixtures.Course
-import com.ohmyguide.app.fixtures.EXPLORE_COURSES
+import com.ohmyguide.app.domain.model.ThemeCourseCache
 import com.ohmyguide.app.fixtures.FALLBACK_ROUTES
 import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.fixtures.PlaceDetail
@@ -144,7 +144,7 @@ class NaviViewModel @Inject constructor(
     val courseId: String? = savedStateHandle.get<String>("courseId")?.ifEmpty { null }
     val spotIndex: Int = savedStateHandle.get<String>("spotIndex")?.toIntOrNull() ?: 0
 
-    val course: Course? = courseId?.let { id -> EXPLORE_COURSES.find { it.id == id } }
+    val course: Course? = courseId?.let { ThemeCourseCache.get(it) }
     val isCourseMode: Boolean = course != null
 
     val detail: PlaceDetail? = PlaceDetailCache.get(placeId)

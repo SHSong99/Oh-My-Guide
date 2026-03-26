@@ -19,7 +19,7 @@ object KoStrings : AppStrings {
 
     override val splashSubtitle = "당신만의 특별한 한국 여행 가이드"
 
-    override val welcomeGreeting = "안녕! \uD83D\uDC4B"
+    override val welcomeGreeting = "안녕!"
     override val welcomeIntro = "당신의 한국 가이드예요"
     override val welcomeDesc = "멋진 장소를 발견하고,\n현지인처럼 이동하고,\n맞춤 가이드를 받아보세요."
     override val signInGoogle = "Google로 로그인"
@@ -35,20 +35,35 @@ object KoStrings : AppStrings {
     override val allowLocation = "위치 접근 허용"
     override val enterAge = "나이를 입력하세요"
     override val yearsOld = "세"
+    override val ageConfirm = "%d세입니다"
+    override val selectCountry = "국가를 선택하세요"
     override val female = "여성"
     override val male = "남성"
     override val friends = "친구"
     override val family = "가족"
     override val solo = "혼자"
+    override val partner = "연인"
 
     override val detectingLocation = "위치를 감지하는 중..."
     override val yourLocation = "현재 위치"
-    override val categoryGreeting = "안녕! 나는 Oh My Guide야\n지금 바로 주변의 완벽한 장소를 찾아줄게!"
+    override val categoryGreeting = "안녕하세요! 저는 깨비예요.\n지금 바로 주변의 완벽한 장소를 찾아드릴게요!"
     override val categoryPrompt = "관심 있는 것을 알려주세요"
-    override val categoryDone = "멋진 선택! 최고의 장소를 찾아볼게요... \uD83C\uDFAF"
+    override val categoryDone = "멋진 선택이에요! 최고의 장소를 찾아볼게요."
     override val chooseInterests = "관심 있는 것을 선택하세요!"
     override val addMoreOrSend = "좋은 선택! 더 추가하거나 보내세요"
     override val categoriesSelected = "개 카테고리 선택됨"
+
+    override val categoryNames = mapOf(
+        "attraction" to "관광지", "culture" to "문화", "festival" to "축제",
+        "course" to "코스", "leports" to "레포츠", "cafe" to "카페",
+        "shopping" to "쇼핑", "food" to "맛집",
+    )
+    override val categorySubs = mapOf(
+        "attraction" to "명소 및 자연", "culture" to "박물관 및 역사",
+        "festival" to "행사 및 공연", "course" to "여행 경로",
+        "leports" to "레저 및 스포츠", "cafe" to "카페 및 베이커리",
+        "shopping" to "시장 및 쇼핑몰", "food" to "맛집 및 길거리 음식",
+    )
 
     override val findingSpots = "멋진 장소를 찾는 중..."
     override val scanningNearby = "관심사를 기반으로\n주변 장소를 검색 중"
@@ -75,12 +90,6 @@ object KoStrings : AppStrings {
     override val exploreThisCourse = "코스 탐색하기"
     override val seeAllCourses = "전체 코스 보기"
     override val swipeToDiscover = "스와이프하여 더 보기"
-    override val themeKpopTitle = "K-POP\n데몬 헌터스"
-    override val themeKpopSubtitle = "케데헌 속 한국 명소를 따라 거닐어 보세요"
-    override val themeBtsTitle = "BTS ARMY\n서울 투어"
-    override val themeBtsSubtitle = "BTS가 역사를 만든 거리를 걸어보세요"
-    override val themeSsafyTitle = "싸피 점심\n산책 코스"
-    override val themeSsafySubtitle = "싸피 캠퍼스 주변 최고의 점심 산책 루트"
     override val courseRoute = "코스 경로"
     override val startCourseNavi = "코스 시작하기"
     override val courseProgress = "코스 진행"
@@ -138,6 +147,17 @@ object KoStrings : AppStrings {
     override val food = "음식"
     override val culture = "문화"
     override val signOut = "로그아웃"
+    override val ageUnit = "세"
+    override val pickRecommendTitle = "나와 비슷한 여행자들의 인기 장소"
+    override val pickRecommendDesc = "빅데이터 기반 맞춤 추천"
+    override val pickRecommendEmpty = "아직 추천 데이터가 없습니다"
+    override val editProfile = "프로필 수정"
+    override val nationality = "국적"
+    override val age = "나이"
+    override val gender = "성별"
+    override val save = "저장"
+    override val bookmarkEmpty = "저장된 구문이 없습니다. 탭하여 둘러보세요!"
+    override val viewAllPhrases = "전체 구문 보기"
 
     override val locating = "위치 확인 중..."
     override val mapView = "지도 보기"
@@ -171,6 +191,7 @@ object KoStrings : AppStrings {
     override val endNaviMessage = "안내를 중단하고 이전 화면으로 돌아가요."
     override val confirm = "종료"
     override val cancel = "취소"
+    override val movingToNextCourse = "다음 코스로 이동할게요!"
 
     override val noRecommendations = "아직 추천 장소가 없어요"
     override val noRecommendationsDesc = "관심사를 알려주시면 맞춤 장소를 찾아드릴게요"
