@@ -59,13 +59,11 @@ class MyPageViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(pickLoading = true) }
 
-            val ageGroup = user.age?.let { "${it / 10 * 10}s" } ?: "20s"
             val result = userRepository.getPickRecommend(
-                nationality = user.nationality ?: "US",
-                ageGroup = ageGroup,
-                gender = user.gender ?: "M",
-                travelPurpose = user.travelPurpose ?: "leisure",
-                lifestyle = user.lifestyle ?: "active",
+                nationality = user.nationality ?: "USA",
+                age = user.age ?: 25,
+                gender = user.gender ?: "Male",
+                travelPurpose = user.travelPurpose?.replaceFirstChar { it.uppercase() } ?: "Solo",
             )
 
             val picks = result.getOrNull() ?: emptyList()

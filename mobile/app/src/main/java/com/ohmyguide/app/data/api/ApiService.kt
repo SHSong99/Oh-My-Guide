@@ -4,6 +4,8 @@ import com.ohmyguide.app.data.model.AttractionDetailDto
 import com.ohmyguide.app.data.model.PhraseBookmarkDto
 import com.ohmyguide.app.data.model.PickRecommendResponse
 import com.ohmyguide.app.data.model.AuthResponse
+import com.ohmyguide.app.data.model.ThemeDetailResponse
+import com.ohmyguide.app.data.model.ThemeListResponse
 import com.ohmyguide.app.data.model.GoogleLoginRequest
 import com.ohmyguide.app.data.model.GuideNavigationResponse
 import com.ohmyguide.app.data.model.OnboardingRequest
@@ -55,6 +57,13 @@ interface ApiService {
     @GET("attractions/{attrId}")
     suspend fun getAttractionDetail(@Path("attrId") attrId: Long): AttractionDetailDto
 
+    // Theme
+    @GET("themes")
+    suspend fun getThemes(): ThemeListResponse
+
+    @GET("themes/{themeId}")
+    suspend fun getThemeDetail(@Path("themeId") themeId: Long): ThemeDetailResponse
+
     // Phrases (북마크)
     @GET("phrases/bookmarks")
     suspend fun getBookmarkedPhrases(): List<PhraseBookmarkDto>
@@ -69,9 +78,8 @@ interface ApiService {
     @GET("pickRecommend")
     suspend fun getPickRecommend(
         @Query("nationality") nationality: String,
-        @Query("ageGroup") ageGroup: String,
+        @Query("age") age: Int,
         @Query("gender") gender: String,
         @Query("travelPurpose") travelPurpose: String,
-        @Query("lifestyle") lifestyle: String,
     ): List<PickRecommendResponse>
 }

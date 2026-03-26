@@ -60,6 +60,8 @@ import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.BorderCategory
+import com.ohmyguide.app.ui.theme.AppLanguage
+import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
@@ -90,7 +92,8 @@ fun CategoryScreen(
         if (locationName.isNotEmpty()) return@LaunchedEffect
         val loc = locationData ?: return@LaunchedEffect
         try {
-            val geocoder = Geocoder(context, Locale.ENGLISH)
+            val locale = if (LanguageManager.current.value == AppLanguage.KO) Locale.KOREAN else Locale.ENGLISH
+            val geocoder = Geocoder(context, locale)
             val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
             val address = addresses?.firstOrNull()
             if (address != null) {
@@ -167,7 +170,7 @@ fun CategoryScreen(
                     Icon(Icons.Filled.MyLocation, contentDescription = null, modifier = Modifier.size(16.dp), tint = Primary)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "📍 $locationName",
+                        text = locationName,
                         style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
                         color = TextPrimary,
                     )
@@ -234,7 +237,9 @@ fun CategoryScreen(
             // After send: user bubble + bot response
             if (step >= ChatStep.SENT) {
                 Spacer(modifier = Modifier.height(8.dp))
-                val names = selected.mapNotNull { id -> CATEGORIES.find { it.id == id }?.name }
+                val names = selected.mapNotNull { id ->
+                    strings.categoryNames[id] ?: CATEGORIES.find { it.id == id }?.name
+                }
                 UserBubble(text = names.joinToString(", "))
 
                 if (step == ChatStep.SENT) {
@@ -301,8 +306,9 @@ private fun CategoryInputBar(
                             .padding(start = 10.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
+                        val catName = LocalStrings.current.categoryNames[cat.id] ?: cat.name
                         Text(
-                            text = "${cat.emoji} ${cat.name}",
+                            text = "${cat.emoji} $catName",
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = cat.color,
                         )
@@ -413,13 +419,14 @@ private fun CategoryCard(
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
+        val strings = LocalStrings.current
         Text(
-            text = category.name,
+            text = strings.categoryNames[category.id] ?: category.name,
             style = MaterialTheme.typography.titleSmall,
             color = if (isSelected) category.color else TextPrimary,
         )
         Text(
-            text = category.sub,
+            text = strings.categorySubs[category.id] ?: category.sub,
             style = MaterialTheme.typography.labelSmall,
             color = TextCaption,
         )
