@@ -41,7 +41,7 @@ public class AttractionService {
         Attraction attraction = attractionRepository.findById(attractionId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attraction", "id", attractionId));
         attraction.update(request.getTitle(), request.getLatitude(), request.getLongitude(),
-                request.getFirstImage1(), request.getOverview());
+                request.getFirstImage1(), request.getOverview(), request.getOverviewTts());
         return AttractionDetailResponse.from(attraction);
     }
 }

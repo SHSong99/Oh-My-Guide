@@ -17,6 +17,7 @@ public class AttractionDetailResponse {
     private String firstImage1;
     private String firstImage2;
     private String overview;
+    private String overviewTts;
     private String homepage;
     private Long contentTypeId;
 
@@ -32,6 +33,7 @@ public class AttractionDetailResponse {
                 .firstImage1(a.getFirstImage1())
                 .firstImage2(a.getFirstImage2())
                 .overview(a.getOverview())
+                .overviewTts(a.getOverviewTts())
                 .homepage(a.getHomepage())
                 .contentTypeId(a.getContentType() != null ? a.getContentType().getContentTypeId() : null)
                 .build();
