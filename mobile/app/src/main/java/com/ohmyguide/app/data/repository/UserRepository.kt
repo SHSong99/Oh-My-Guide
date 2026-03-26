@@ -31,13 +31,12 @@ class UserRepository @Inject constructor(
 
     suspend fun getPickRecommend(
         nationality: String,
-        ageGroup: String,
+        age: Int,
         gender: String,
         travelPurpose: String,
-        lifestyle: String,
     ): Result<List<PickRecommendResponse>> {
         return try {
-            Result.success(apiService.getPickRecommend(nationality, ageGroup, gender, travelPurpose, lifestyle))
+            Result.success(apiService.getPickRecommend(nationality, age, gender, travelPurpose))
         } catch (e: Exception) {
             Result.failure(e)
         }

@@ -93,6 +93,7 @@ data class NearbySpotInfo(
     val overview: String?,
     val lat: Double,
     val lng: Double,
+    val routeProgress: Float = 0f,  // 경로상 위치 (0.0~1.0)
 )
 
 sealed class NaviChatMessage {
@@ -121,6 +122,7 @@ data class NaviUiState(
     val userLat: Double = 35.0950,
     val userLng: Double = 128.8560,
     val guideReady: Boolean = false,
+    val pickedNearbySpots: List<NearbySpotInfo> = emptyList(),
     // Course mode
     val course: Course? = null,
     val spotIndex: Int = 0,
@@ -171,28 +173,31 @@ class NaviViewModel @Inject constructor(
     val uiState: StateFlow<NaviUiState> = _uiState.asStateFlow()
 
     private var gpsJob: Job? = null
-    private val shownNearbySpotIds = mutableSetOf<String>()
-    private var nearbySpotCount = 0
-    private var lastRecommendLat = 0.0
-    private var lastRecommendLng = 0.0
     private var nearbyRecommendEnabled = false
     private var arrivalPromptShown = false
-
-    private val nearbySpots: List<NearbySpotInfo> = guideData?.nearbyPlaces
-        ?.filter { it.placeId.toString() != placeId && it.latitude != null && it.longitude != null }
-        ?.map { dto ->
-            NearbySpotInfo(
-                placeId = dto.placeId.toString(),
-                name = dto.title ?: "",
-                imageUrl = dto.firstImage1,
-                overview = dto.overview,
-                lat = dto.latitude ?: 0.0,
-                lng = dto.longitude ?: 0.0,
-            )
-        } ?: emptyList()
+    private var nextNearbyIndex = 0
+    private var pickedSpots: List<NearbySpotInfo> = emptyList()
 
     private fun notifyUser() {
-        com.ohmyguide.app.service.NotificationSoundPlayer.play(appContext)
+        try {
+            // 비프음
+            val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60)
+            tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+            // 약한 진동
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vm = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
+                vm.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                appContext.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(100)
+            }
+        } catch (_: Exception) {}
     }
 
     companion object {
@@ -213,10 +218,7 @@ class NaviViewModel @Inject constructor(
             "dh3" to (37.5586 to 126.9267),
         )
         private const val ARRIVAL_THRESHOLD_METERS = 50.0
-        private const val NEARBY_WALK_RADIUS = 30.0        // 도보: 30m 이내
-        private const val NEARBY_VEHICLE_RADIUS = 200.0    // 차/대중교통: 200m 이내
-        private const val COOLDOWN_WALK_METERS = 300.0     // 도보: 300m 이동 후 다음 추천
-        private const val COOLDOWN_VEHICLE_METERS = 1000.0 // 차/대중교통: 1km 이동 후 다음 추천
+        private const val ROUTE_NEARBY_RADIUS = 500.0      // 경로에서 500m 이내 장소만 선별
         private const val MAX_NEARBY_RECOMMENDATIONS = 5
 
         private val USEFUL_PHRASES = listOf(
@@ -291,14 +293,14 @@ class NaviViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            // t=0s — 전체 경로 보여주는 시간 (지도 줌아웃 상태)
+            // t=0s — 전체 경로 줌아웃 상태
 
-            // t=2s — 줌인 시작 타이밍에 맞춰 guideReady
+            // t=2s — 깨비 인사 오버레이 표시 + 줌인 준비
             delay(2000L)
             _uiState.update { it.copy(guideReady = true) }
 
-            // t=4s — Greeting
-            delay(2000L)
+            // t=8s — 깨비 인사(3s) + 줌인(2.5s) 완료 후 대화 시작
+            delay(6000L)
             addMessage(NaviChatMessage.BotText(
                 "I'll guide you to $placeName! Keep going straight ahead.",
             ))
@@ -408,6 +410,7 @@ class NaviViewModel @Inject constructor(
                     ),
                     totalDurationMin = totalDuration,
                 )
+                pickNearbySpotsAlongRoute(result.data)
             }
 
             startGpsTracking()
@@ -425,6 +428,8 @@ class NaviViewModel @Inject constructor(
     private fun startGpsTracking() {
         val transitCoords = allRouteCoords()
         val routePoints = if (transitCoords != null) {
+            // transit 모드에서도 경로 기반 장소 선별
+            if (pickedSpots.isEmpty()) pickNearbySpotsAlongRoute(transitCoords)
             transitCoords.map { com.ohmyguide.app.fixtures.RoutePoint(it.lat, it.lng) }
         } else {
             route?.points ?: return
@@ -466,8 +471,8 @@ class NaviViewModel @Inject constructor(
                     "$placeName · ${remainingMin}min"
                 )
 
-                // Nearby spot proximity check (mode-based threshold)
-                checkNearbySpotProximity(userLat, userLng)
+                // Nearby spot check (progress-based)
+                checkNearbyByProgress(progress)
 
                 // Arrival proximity — show confirm button (once)
                 val distToDest = haversineMeters(userLat, userLng, destinationLat, destinationLng)
@@ -502,42 +507,70 @@ class NaviViewModel @Inject constructor(
     }
 
 
-    // ── Nearby Spot Proximity ──
+    // ── Nearby Spot: Route-based pre-pick ──
 
-    private fun checkNearbySpotProximity(userLat: Double, userLng: Double) {
-        // 초기 가이드 완료 전에는 추천 비활성
-        if (!nearbyRecommendEnabled) return
-        // 최대 추천 횟수 초과
-        if (nearbySpotCount >= MAX_NEARBY_RECOMMENDATIONS) return
+    private fun pickNearbySpotsAlongRoute(routeCoords: List<RouteCoord>) {
+        val allSpots = guideData?.nearbyPlaces
+            ?.filter { it.placeId.toString() != placeId && it.latitude != null && it.longitude != null }
+            ?: return
 
-        // 쿨다운: 마지막 추천 위치에서 일정 거리 이동해야 다음 추천
-        val cooldown = if (mode == "walk") COOLDOWN_WALK_METERS else COOLDOWN_VEHICLE_METERS
-        if (lastRecommendLat != 0.0 && lastRecommendLng != 0.0) {
-            val movedDist = haversineMeters(lastRecommendLat, lastRecommendLng, userLat, userLng)
-            if (movedDist < cooldown) return
+        if (allSpots.isEmpty() || routeCoords.size < 2) return
+
+        // 각 장소에 대해 경로까지의 최소 거리 + 경로상 위치(progress) 계산
+        data class ScoredSpot(
+            val dto: com.ohmyguide.app.data.model.GuidePlaceDto,
+            val distToRoute: Double,
+            val progress: Float,
+        )
+
+        val scored = allSpots.mapNotNull { dto ->
+            val sLat = dto.latitude ?: return@mapNotNull null
+            val sLng = dto.longitude ?: return@mapNotNull null
+
+            // 경로의 각 점과의 거리 중 최소값 + 해당 점의 인덱스
+            var minDist = Double.MAX_VALUE
+            var closestIdx = 0
+            routeCoords.forEachIndexed { i, coord ->
+                val d = haversineMeters(sLat, sLng, coord.lat, coord.lng)
+                if (d < minDist) {
+                    minDist = d
+                    closestIdx = i
+                }
+            }
+            if (minDist > ROUTE_NEARBY_RADIUS) return@mapNotNull null
+
+            val progress = (closestIdx + 1).toFloat() / routeCoords.size
+            ScoredSpot(dto, minDist, progress)
         }
 
-        // 반경 내 장소 중 가장 가까운 1개 선정 (overview 있는 장소 우선)
-        val radius = if (mode == "walk") NEARBY_WALK_RADIUS else NEARBY_VEHICLE_RADIUS
-        val candidate = nearbySpots
-            .filter { it.placeId !in shownNearbySpotIds }
-            .map { spot -> spot to haversineMeters(userLat, userLng, spot.lat, spot.lng) }
-            .filter { (_, dist) -> dist < radius }
-            .sortedWith(compareByDescending<Pair<NearbySpotInfo, Double>> { (spot, _) ->
-                !spot.overview.isNullOrBlank()  // overview 있는 장소 우선
-            }.thenBy { (_, dist) -> dist })     // 그 다음 거리순
-            .firstOrNull()
+        // 점수: overview 있으면 +100, imageUrl 있으면 +50, 경로 가까울수록 높은 점수
+        val picked = scored
+            .sortedWith(compareByDescending<ScoredSpot> { spot ->
+                var score = 0
+                if (!spot.dto.overview.isNullOrBlank() && spot.dto.overview != "-") score += 100
+                if (!spot.dto.firstImage1.isNullOrBlank()) score += 50
+                score
+            }.thenBy { it.distToRoute })
+            .distinctBy { it.dto.placeId }
+            .take(MAX_NEARBY_RECOMMENDATIONS)
+            .sortedBy { it.progress }  // 경로 순서대로 정렬
 
-        if (candidate != null) {
-            val (spot, _) = candidate
-            shownNearbySpotIds.add(spot.placeId)
-            nearbySpotCount++
-            lastRecommendLat = userLat
-            lastRecommendLng = userLng
+        pickedSpots = picked.map { s ->
+            NearbySpotInfo(
+                placeId = s.dto.placeId.toString(),
+                name = s.dto.title ?: "",
+                imageUrl = s.dto.firstImage1,
+                overview = s.dto.overview,
+                lat = s.dto.latitude ?: 0.0,
+                lng = s.dto.longitude ?: 0.0,
+                routeProgress = s.progress,
+            )
+        }
 
-            // Cache guide data for StoryOverlay
+        // 각 장소의 guide data를 캐시
+        pickedSpots.forEach { spot ->
             PlaceDetailCache.putGuide(spot.placeId, com.ohmyguide.app.data.model.GuideNavigationResponse(
-                startLocation = com.ohmyguide.app.data.model.StartLocationDto(userLat, userLng),
+                startLocation = com.ohmyguide.app.data.model.StartLocationDto(0.0, 0.0),
                 destination = com.ohmyguide.app.data.model.GuidePlaceDto(
                     placeId = spot.placeId.toLongOrNull() ?: 0L,
                     title = spot.name,
@@ -550,14 +583,32 @@ class NaviViewModel @Inject constructor(
                 ),
                 nearbyPlaces = emptyList(),
             ))
+        }
+
+        // UI에 마커용 데이터 전달
+        _uiState.update { it.copy(pickedNearbySpots = pickedSpots) }
+
+        if (BuildConfig.DEBUG) {
+            Log.d("NaviVM", "Picked ${pickedSpots.size} nearby spots along route")
+            pickedSpots.forEach { Log.d("NaviVM", "  - ${it.name} at progress=${it.routeProgress}") }
+        }
+    }
+
+    private fun checkNearbyByProgress(progress: Float) {
+        if (!nearbyRecommendEnabled) return
+        if (nextNearbyIndex >= pickedSpots.size) return
+
+        val nextSpot = pickedSpots[nextNearbyIndex]
+        if (progress >= nextSpot.routeProgress) {
+            nextNearbyIndex++
             viewModelScope.launch {
                 addMessage(NaviChatMessage.BotTyping)
                 delay(800L)
                 removeTyping()
                 addMessage(NaviChatMessage.BotText(
-                    "📍 There's a place called ${spot.name} nearby! Want to hear about it?"
+                    "📍 There's a place called ${nextSpot.name} nearby! Want to hear about it?"
                 ))
-                addMessage(NaviChatMessage.NearbySpotCard(spot = spot))
+                addMessage(NaviChatMessage.NearbySpotCard(spot = nextSpot))
                 notifyUser()
             }
         }
