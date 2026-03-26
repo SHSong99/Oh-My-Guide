@@ -7,12 +7,26 @@ import androidx.lifecycle.viewModelScope
 import com.ohmyguide.app.BuildConfig
 import com.ohmyguide.app.data.model.ApiResult
 import com.ohmyguide.app.data.repository.NaverDirectionsRepository
+import com.ohmyguide.app.data.repository.TmapRepository
 import com.ohmyguide.app.domain.model.NaviRouteData
 import com.ohmyguide.app.domain.model.RouteCoord
 import com.ohmyguide.app.domain.model.RouteSegmentGeo
+import com.ohmyguide.app.data.model.GuidePlaceDto
+import com.ohmyguide.app.data.model.GuideNavigationResponse
+import com.ohmyguide.app.data.model.StartLocationDto
+import com.ohmyguide.app.data.model.ThemeDetailResponse
+import com.ohmyguide.app.data.repository.ThemeRepository
+import com.ohmyguide.app.domain.model.PlaceDetailCache
+import com.ohmyguide.app.domain.model.ThemeCourseCache
 import com.ohmyguide.app.fixtures.Course
-import com.ohmyguide.app.fixtures.EXPLORE_COURSES
+import com.ohmyguide.app.fixtures.EXPLORE_CATEGORY_GROUPS
 import com.ohmyguide.app.fixtures.Spot
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
 import com.ohmyguide.app.service.LocationForegroundService
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -22,8 +36,11 @@ import com.ohmyguide.app.ui.theme.CourseLeg3
 import com.ohmyguide.app.ui.theme.CourseLeg4
 import com.ohmyguide.app.ui.theme.CourseLeg5
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -31,32 +48,82 @@ import javax.inject.Inject
 
 private val LEG_COLORS = listOf(CourseLeg1, CourseLeg2, CourseLeg3, CourseLeg4, CourseLeg5)
 
+sealed class CourseNaviChatMessage {
+    data class BotText(val text: String) : CourseNaviChatMessage()
+    object BotTyping : CourseNaviChatMessage()
+    data class SpotCard(val spot: Spot, val spotIndex: Int) : CourseNaviChatMessage()
+}
+
 data class CourseNaviUiState(
     val currentSpotIndex: Int = 0,
     val isLoading: Boolean = true,
+    val transportMode: String = "car",
+    val chatMessages: List<CourseNaviChatMessage> = emptyList(),
+    val isAdvancing: Boolean = false,
 )
 
 @HiltViewModel
 class CourseNaviViewModel @Inject constructor(
+    @dagger.hilt.android.qualifiers.ApplicationContext private val appContext: android.content.Context,
     savedStateHandle: SavedStateHandle,
     private val directionsRepository: NaverDirectionsRepository,
+    private val tmapRepository: TmapRepository,
+    private val themeRepository: ThemeRepository,
 ) : ViewModel() {
 
     val courseId: String = savedStateHandle["courseId"] ?: ""
-    val course: Course? = EXPLORE_COURSES.find { it.id == courseId }
+    private val initialMode: String = savedStateHandle["mode"] ?: "car"
+
+    private val _course = MutableStateFlow<Course?>(null)
+    val course: StateFlow<Course?> = _course.asStateFlow()
 
     private val _routeData = MutableStateFlow<NaviRouteData?>(null)
     val routeData: StateFlow<NaviRouteData?> = _routeData.asStateFlow()
 
-    private val _uiState = MutableStateFlow(CourseNaviUiState())
+    private val _uiState = MutableStateFlow(CourseNaviUiState(transportMode = initialMode))
     val uiState: StateFlow<CourseNaviUiState> = _uiState.asStateFlow()
 
+    private val _spotAdvanceEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val spotAdvanceEvent: SharedFlow<String> = _spotAdvanceEvent.asSharedFlow()
+
+    private var gpsJob: Job? = null
+    private val arrivedSpots = mutableSetOf<Int>()
+
     init {
-        fetchCourseRoute()
+        loadCourse()
+    }
+
+    private fun loadCourse() {
+        // Try cache first
+        val cached = ThemeCourseCache.get(courseId)
+        if (cached != null) {
+            _course.value = cached
+            cacheSpotGuideData(cached)
+            fetchCourseRoute()
+            startGpsTracking()
+            initCourseChat(cached)
+            return
+        }
+        val themeId = courseId.toLongOrNull() ?: return
+        viewModelScope.launch {
+            themeRepository.getThemeDetail(themeId)
+                .onSuccess { detail ->
+                    val c = detail.toCourse()
+                    ThemeCourseCache.put(courseId, c)
+                    _course.value = c
+                    cacheSpotGuideData(c)
+                    fetchCourseRoute()
+                    startGpsTracking()
+                    initCourseChat(c)
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isLoading = false) }
+                }
+        }
     }
 
     private fun fetchCourseRoute() {
-        val spots = course?.spots ?: return
+        val spots = _course.value?.spots ?: return
         if (spots.size < 2) return
 
         viewModelScope.launch {
@@ -84,22 +151,36 @@ class CourseNaviViewModel @Inject constructor(
             val goal = allPoints.last()
             val waypoints = allPoints.drop(1).dropLast(1)
 
-            // Try Naver Directions 5 with waypoints
-            val result = if (waypoints.isNotEmpty()) {
-                directionsRepository.getDrivingRouteWithWaypoints(
-                    startLat = start.first,
-                    startLng = start.second,
-                    waypoints = waypoints,
-                    endLat = goal.first,
-                    endLng = goal.second,
-                )
-            } else {
-                directionsRepository.getDrivingRoute(
-                    startLat = start.first,
-                    startLng = start.second,
-                    endLat = goal.first,
-                    endLng = goal.second,
-                )
+            val mode = _uiState.value.transportMode
+            val result = when (mode) {
+                "walk" -> {
+                    // 도보: Tmap 보행 경로 (waypoint 미지원이므로 start→goal 직접)
+                    tmapRepository.getWalkingRoute(
+                        startLat = start.first,
+                        startLng = start.second,
+                        endLat = goal.first,
+                        endLng = goal.second,
+                    )
+                }
+                else -> {
+                    // 자차: Naver Directions
+                    if (waypoints.isNotEmpty()) {
+                        directionsRepository.getDrivingRouteWithWaypoints(
+                            startLat = start.first,
+                            startLng = start.second,
+                            waypoints = waypoints,
+                            endLat = goal.first,
+                            endLng = goal.second,
+                        )
+                    } else {
+                        directionsRepository.getDrivingRoute(
+                            startLat = start.first,
+                            startLng = start.second,
+                            endLat = goal.first,
+                            endLng = goal.second,
+                        )
+                    }
+                }
             }
 
             when (result) {
@@ -129,7 +210,7 @@ class CourseNaviViewModel @Inject constructor(
     ) {
         // Single path from API — split into segments by nearest waypoint
         val segments = mutableListOf<RouteSegmentGeo>()
-        val spots = course?.spots ?: return
+        val spots = _course.value?.spots ?: return
 
         if (waypoints.size <= 2) {
             // Simple A→B, one segment
@@ -190,7 +271,7 @@ class CourseNaviViewModel @Inject constructor(
     }
 
     private fun buildFallbackRoute(points: List<Pair<Double, Double>>) {
-        val spots = course?.spots ?: return
+        val spots = _course.value?.spots ?: return
         val segments = mutableListOf<RouteSegmentGeo>()
 
         for (i in 0 until points.size - 1) {
@@ -218,8 +299,170 @@ class CourseNaviViewModel @Inject constructor(
         )
     }
 
+    private fun cacheSpotGuideData(course: Course) {
+        course.spots.forEach { spot ->
+            PlaceDetailCache.putGuide(spot.id, GuideNavigationResponse(
+                startLocation = StartLocationDto(0.0, 0.0),
+                destination = GuidePlaceDto(
+                    placeId = spot.id.toLongOrNull() ?: 0L,
+                    title = spot.name,
+                    addr1 = null,
+                    latitude = spot.lat,
+                    longitude = spot.lng,
+                    firstImage1 = spot.imageUrl,
+                    overview = spot.desc,
+                    overviewTts = spot.overviewTts,
+                ),
+                nearbyPlaces = emptyList(),
+            ))
+        }
+    }
+
+    // ── Chat System ──
+
+    private fun addMessage(msg: CourseNaviChatMessage) {
+        _uiState.update { it.copy(chatMessages = it.chatMessages + msg) }
+    }
+
+    private fun removeTyping() {
+        _uiState.update { state ->
+            state.copy(chatMessages = state.chatMessages.filterNot { it is CourseNaviChatMessage.BotTyping })
+        }
+    }
+
+    private fun initCourseChat(course: Course) {
+        val firstSpot = course.spots.firstOrNull() ?: return
+        viewModelScope.launch {
+            delay(2000L)
+            addMessage(CourseNaviChatMessage.BotText(
+                "📍 ${course.title}에 오신 걸 환영해요! 총 ${course.spots.size}개의 장소를 함께 둘러볼게요."
+            ))
+
+            delay(2000L)
+            addMessage(CourseNaviChatMessage.BotTyping)
+            delay(800L)
+            removeTyping()
+            addMessage(CourseNaviChatMessage.BotText(
+                "첫 번째 장소: ${firstSpot.name}! 아래 카드를 탭하면 가이드를 들을 수 있어요."
+            ))
+            addMessage(CourseNaviChatMessage.SpotCard(spot = firstSpot, spotIndex = 0))
+        }
+    }
+
+    fun setTransportMode(mode: String) {
+        _uiState.update { it.copy(transportMode = mode, isLoading = true) }
+        _routeData.value = null
+        fetchCourseRoute()
+    }
+
     fun selectSpot(index: Int) {
+        val course = _course.value ?: return
+        val spot = course.spots.getOrNull(index) ?: return
         _uiState.update { it.copy(currentSpotIndex = index) }
+
+        viewModelScope.launch {
+            addMessage(CourseNaviChatMessage.BotTyping)
+            delay(800L)
+            removeTyping()
+            addMessage(CourseNaviChatMessage.BotText(
+                "📍 ${index + 1}번째 장소: ${spot.name}(으)로 이동할게요!"
+            ))
+            addMessage(CourseNaviChatMessage.SpotCard(spot = spot, spotIndex = index))
+        }
+    }
+
+    // ── GPS Tracking ──
+
+    private fun advanceToSpot(nextIdx: Int, spots: List<Spot>) {
+        val nextSpot = spots.getOrNull(nextIdx) ?: return
+        if (_uiState.value.isAdvancing) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isAdvancing = true) }
+            _spotAdvanceEvent.tryEmit(nextSpot.name)
+            com.ohmyguide.app.service.NotificationSoundPlayer.play(appContext)
+
+            addMessage(CourseNaviChatMessage.BotTyping)
+            delay(800L)
+            removeTyping()
+            addMessage(CourseNaviChatMessage.BotText(
+                "🎉 다음 장소: ${nextSpot.name}(으)로 이동합니다!"
+            ))
+            addMessage(CourseNaviChatMessage.SpotCard(spot = nextSpot, spotIndex = nextIdx))
+
+            delay(1500L)
+            _uiState.update { it.copy(currentSpotIndex = nextIdx, isAdvancing = false) }
+        }
+    }
+
+    private fun startGpsTracking() {
+        gpsJob?.cancel()
+        gpsJob = viewModelScope.launch {
+            LocationForegroundService.locationFlow.collect { location ->
+                location ?: return@collect
+                if (_uiState.value.isAdvancing) return@collect
+                val userLat = location.latitude
+                val userLng = location.longitude
+
+                val spots = _course.value?.spots ?: return@collect
+                val currentIdx = _uiState.value.currentSpotIndex
+                val currentSpot = spots.getOrNull(currentIdx) ?: return@collect
+
+                // Check arrival at current spot
+                val distCurrent = haversineMeters(userLat, userLng, currentSpot.lat, currentSpot.lng)
+                if (distCurrent < ARRIVAL_THRESHOLD_METERS && currentIdx !in arrivedSpots) {
+                    arrivedSpots.add(currentIdx)
+
+                    viewModelScope.launch {
+                        com.ohmyguide.app.service.NotificationSoundPlayer.play(appContext)
+                        addMessage(CourseNaviChatMessage.BotTyping)
+                        delay(800L)
+                        removeTyping()
+                        addMessage(CourseNaviChatMessage.BotText(
+                            "🎉 ${currentSpot.name}에 도착했어요! 카드를 탭하면 가이드를 들을 수 있어요."
+                        ))
+                        addMessage(CourseNaviChatMessage.SpotCard(spot = currentSpot, spotIndex = currentIdx))
+
+                        if (currentIdx < spots.lastIndex) {
+                            delay(5000L)
+                            arrivedSpots.add(currentIdx)
+                            advanceToSpot(currentIdx + 1, spots)
+                        } else {
+                            delay(2000L)
+                            addMessage(CourseNaviChatMessage.BotText(
+                                "🏁 축하합니다! 코스를 모두 완료했어요!"
+                            ))
+                        }
+                    }
+                    return@collect
+                }
+
+                // Check proximity to NEXT spot — auto-advance if closer to next than current
+                if (currentIdx < spots.lastIndex) {
+                    val nextSpot = spots[currentIdx + 1]
+                    val distNext = haversineMeters(userLat, userLng, nextSpot.lat, nextSpot.lng)
+                    if (distNext < ADVANCE_THRESHOLD_METERS && distNext < distCurrent) {
+                        arrivedSpots.add(currentIdx)
+                        advanceToSpot(currentIdx + 1, spots)
+                    }
+                }
+            }
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        gpsJob?.cancel()
+    }
+
+    private fun haversineMeters(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
+        val r = 6371000.0
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLng = Math.toRadians(lng2 - lng1)
+        val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLng / 2) * sin(dLng / 2)
+        return r * 2 * atan2(sqrt(a), sqrt(1 - a))
     }
 
     private fun sqDist(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
@@ -227,4 +470,45 @@ class CourseNaviViewModel @Inject constructor(
         val dLng = lng1 - lng2
         return dLat * dLat + dLng * dLng
     }
+
+    companion object {
+        private const val ARRIVAL_THRESHOLD_METERS = 50.0
+        private const val ADVANCE_THRESHOLD_METERS = 150.0
+    }
+}
+
+private fun ThemeDetailResponse.toCourse(): Course {
+    val categoryKey = category.lowercase()
+    val regionKey = when (region) {
+        "부산" -> "busan"; "서울" -> "seoul"; "대전" -> "daejeon"
+        "제주" -> "jeju"; "경주" -> "gyeongju"; "인천" -> "incheon"
+        "전주" -> "jeonju"; else -> region.lowercase()
+    }
+    val catGroup = EXPLORE_CATEGORY_GROUPS.find { it.key == categoryKey }
+    return Course(
+        id = themeId.toString(),
+        title = name,
+        subtitle = description,
+        category = categoryKey,
+        region = regionKey,
+        emoji = catGroup?.emoji ?: "",
+        duration = "",
+        spotCount = attractionCount,
+        rating = 0f,
+        tags = emptyList(),
+        spots = attractions.sortedBy { it.attractionOrder }.map { attr ->
+            Spot(
+                id = attr.attractionId.toString(),
+                name = attr.title,
+                nameKr = "",
+                desc = attr.overview ?: "",
+                walkMin = 0,
+                imageUrl = attr.image,
+                lat = attr.latitude,
+                lng = attr.longitude,
+                overviewTts = attr.overviewTts,
+            )
+        },
+        imageUrl = attractions.firstOrNull()?.image,
+    )
 }

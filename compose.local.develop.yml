@@ -91,6 +91,66 @@ services:
       - "9094:9094" # 컨트롤러 포트 (외부 노출은 선택 사항)
 
   # ─────────────────────────────────────────────
+  # Kafka Consumers
+  # ─────────────────────────────────────────────
+  user-visited-consumer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+      AI_SERVER_URL: http://fastapi-server:8000
+      SPRING_PROFILES_ACTIVE: user-visited-consumer
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - app-network
+
+  attractions-route-consumer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+      AI_SERVER_URL: http://fastapi-server:8000
+      SPRING_PROFILES_ACTIVE: attractions-route-consumer
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    networks:
+      - app-network
+
+  hdfs-log-consumer:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    env_file:
+      - ./backend/.env
+    environment:
+      DB_HOST: postgres
+      AI_SERVER_URL: http://fastapi-server:8000
+      SPRING_PROFILES_ACTIVE: hdfs-log-consumer
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+      - namenode
+      - datanode
+    networks:
+      - app-network
+      - data-network
+
+  # ─────────────────────────────────────────────
   # HDFS NameNode
   # ─────────────────────────────────────────────
   namenode:

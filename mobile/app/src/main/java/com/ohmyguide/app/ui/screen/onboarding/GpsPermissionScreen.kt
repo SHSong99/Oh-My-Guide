@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -37,6 +38,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
@@ -55,10 +57,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.AlertDialog
 import com.ohmyguide.app.fixtures.COMPANION_OPTIONS
 import com.ohmyguide.app.fixtures.COUNTRY_OPTIONS
 import com.ohmyguide.app.fixtures.GENDER_OPTIONS
 import com.ohmyguide.app.fixtures.LANGUAGE_OPTIONS
+import com.ohmyguide.app.fixtures.LanguageOption
 import com.ohmyguide.app.ui.theme.AppLanguage
 import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.service.LocationForegroundService
@@ -87,9 +91,13 @@ fun GpsPermissionScreen(
     var step by remember { mutableStateOf(OnboardStep.LANGUAGE) }
     var languageLabel by remember { mutableStateOf("") }
     var genderLabel by remember { mutableStateOf("") }
+    var genderDisplayLabel by remember { mutableStateOf("") }
     var ageLabel by remember { mutableStateOf("") }
+    var ageValue by remember { mutableIntStateOf(25) }
     var countryLabel by remember { mutableStateOf("") }
+    var countryValue by remember { mutableStateOf("") }
     var companionLabel by remember { mutableStateOf("") }
+    var companionDisplayLabel by remember { mutableStateOf("") }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions(),
@@ -100,7 +108,7 @@ fun GpsPermissionScreen(
             val intent = Intent(context, LocationForegroundService::class.java)
             context.startForegroundService(intent)
         }
-        onAllow(genderLabel, ageLabel.toIntOrNull() ?: 25, countryLabel, companionLabel)
+        onAllow(genderLabel, ageValue, countryValue, companionLabel)
     }
 
     val scrollState = rememberScrollState()
@@ -126,12 +134,10 @@ fun GpsPermissionScreen(
         GuideBubble(text = strings.onboardLangPrompt)
 
         if (step == OnboardStep.LANGUAGE) {
-            PillOptionButtons(
-                options = LANGUAGE_OPTIONS.map { it.label },
-                onSelect = { label ->
-                    languageLabel = label
-                    val langCode = LANGUAGE_OPTIONS.find { it.label == label }?.id ?: "en"
-                    LanguageManager.setLanguage(context, AppLanguage.fromCode(langCode))
+            LanguageOptionButtons(
+                onSelect = { option ->
+                    languageLabel = "${option.flag} ${option.label}"
+                    LanguageManager.setLanguage(context, AppLanguage.fromCode(option.id))
                     step = OnboardStep.GENDER
                 },
             )
@@ -143,10 +149,13 @@ fun GpsPermissionScreen(
             GuideBubble(text = strings.onboardGenderPrompt)
 
             if (step == OnboardStep.GENDER) {
+                val genderDisplayMap = mapOf("Female" to strings.female, "Male" to strings.male)
                 PillOptionButtons(
-                    options = GENDER_OPTIONS,
-                    onSelect = { label ->
-                        genderLabel = label
+                    options = genderDisplayMap.values.toList(),
+                    onSelect = { display ->
+                        val id = genderDisplayMap.entries.find { it.value == display }?.key ?: display
+                        genderLabel = id
+                        genderDisplayLabel = display
                         step = OnboardStep.AGE
                     },
                 )
@@ -155,12 +164,13 @@ fun GpsPermissionScreen(
 
         // Step 3: Age
         if (step > OnboardStep.GENDER) {
-            UserBubble(text = genderLabel)
+            UserBubble(text = genderDisplayLabel)
             GuideBubble(text = strings.onboardAgePrompt)
 
             if (step == OnboardStep.AGE) {
                 AgeWheelPicker(
                     onConfirm = { age ->
+                        ageValue = age
                         ageLabel = "$age ${strings.yearsOld}"
                         step = OnboardStep.COUNTRY
                     },
@@ -178,8 +188,9 @@ fun GpsPermissionScreen(
 
             if (step == OnboardStep.COUNTRY) {
                 CountrySelector(
-                    onSelect = { label ->
+                    onSelect = { label, name ->
                         countryLabel = label
+                        countryValue = name
                         step = OnboardStep.COMPANION
                     },
                 )
@@ -193,8 +204,9 @@ fun GpsPermissionScreen(
 
             if (step == OnboardStep.COMPANION) {
                 CompanionButtons(
-                    onSelect = { label ->
-                        companionLabel = label
+                    onSelect = { id, display ->
+                        companionLabel = id
+                        companionDisplayLabel = display
                         step = OnboardStep.GPS
                     },
                 )
@@ -203,7 +215,7 @@ fun GpsPermissionScreen(
 
         // Step 6: GPS
         if (step == OnboardStep.GPS) {
-            UserBubble(text = companionLabel)
+            UserBubble(text = companionDisplayLabel)
             GuideBubble(text = strings.onboardGpsPrompt)
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -348,12 +360,122 @@ private fun AgeWheelPicker(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = "I'm $selectedAge years old",
+                text = LocalStrings.current.ageConfirm.replace("%d", "$selectedAge"),
                 style = MaterialTheme.typography.titleMedium,
                 color = BgWhite,
             )
         }
     }
+}
+
+// ── Pill Option Buttons ──
+
+// ── Language Option Buttons ──
+
+@Composable
+private fun LanguageOptionButtons(
+    onSelect: (LanguageOption) -> Unit,
+) {
+    var showComingSoon by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(start = 46.dp, bottom = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        LANGUAGE_OPTIONS.forEach { option ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(if (option.available) BgWhite else BgWhite.copy(alpha = 0.6f))
+                    .border(1.dp, Border, RoundedCornerShape(14.dp))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = ripple(),
+                    ) {
+                        if (option.available) onSelect(option)
+                        else showComingSoon = true
+                    }
+                    .padding(14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(if (option.available) PrimaryBgLight else PrimaryBgLight.copy(alpha = 0.5f)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = option.flag,
+                        style = MaterialTheme.typography.titleSmall,
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = option.label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (option.available) TextPrimary else TextCaption,
+                )
+                if (!option.available) {
+                    Spacer(modifier = Modifier.weight(1f))
+                    Text(
+                        text = "Coming soon",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextCaption,
+                    )
+                }
+            }
+        }
+    }
+
+    if (showComingSoon) {
+        ComingSoonDialog(onDismiss = { showComingSoon = false })
+    }
+}
+
+// ── Coming Soon Dialog ──
+
+@Composable
+private fun ComingSoonDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(20.dp),
+        containerColor = BgWhite,
+        title = {
+            Text(
+                text = "Coming Soon",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                ),
+                color = TextPrimary,
+            )
+        },
+        text = {
+            Text(
+                text = "This language is not yet supported.\nPlease select English or Korean.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = TextCaption,
+            )
+        },
+        confirmButton = {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(PrimaryGradient)
+                    .clickable(onClick = onDismiss)
+                    .padding(horizontal = 24.dp, vertical = 10.dp),
+            ) {
+                Text(
+                    text = "OK",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = BgWhite,
+                )
+            }
+        },
+    )
 }
 
 // ── Pill Option Buttons ──
@@ -393,13 +515,22 @@ private fun PillOptionButtons(
 
 @Composable
 private fun CompanionButtons(
-    onSelect: (String) -> Unit,
+    onSelect: (String, String) -> Unit,
 ) {
+    val strings = LocalStrings.current
+    val displayMap = mapOf(
+        "friends" to strings.friends,
+        "family" to strings.family,
+        "solo" to strings.solo,
+        "partner" to strings.partner,
+    )
+
     Column(
         modifier = Modifier.padding(start = 46.dp, bottom = 12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         COMPANION_OPTIONS.forEach { option ->
+            val displayLabel = displayMap[option.id] ?: option.label
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -408,7 +539,7 @@ private fun CompanionButtons(
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = ripple(),
-                    ) { onSelect(option.label) }
+                    ) { onSelect(option.id, displayLabel) }
                     .padding(14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -421,14 +552,14 @@ private fun CompanionButtons(
                 ) {
                     Icon(
                         imageVector = option.icon,
-                        contentDescription = option.label,
+                        contentDescription = displayLabel,
                         tint = option.iconColor,
                         modifier = Modifier.size(20.dp),
                     )
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = option.label,
+                    text = displayLabel,
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextPrimary,
                 )
@@ -441,7 +572,7 @@ private fun CompanionButtons(
 
 @Composable
 private fun CountrySelector(
-    onSelect: (String) -> Unit,
+    onSelect: (label: String, name: String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -466,7 +597,7 @@ private fun CountrySelector(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = "Select your country",
+                text = LocalStrings.current.selectCountry,
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextCaption,
             )
@@ -498,7 +629,7 @@ private fun CountrySelector(
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = ripple(),
-                            ) { onSelect("${country.flag} ${country.name}") }
+                            ) { onSelect("${country.flag} ${country.name}", country.name) }
                             .padding(horizontal = 16.dp, vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {

@@ -211,19 +211,8 @@ fun ThemePage(
 ) {
     val strings = LocalStrings.current
 
-    // Localized title/subtitle based on theme id
-    val localTitle = when (theme.id) {
-        "kpop-demon" -> strings.themeKpopTitle
-        "bts" -> strings.themeBtsTitle
-        "ssafy" -> strings.themeSsafyTitle
-        else -> theme.title
-    }
-    val localSubtitle = when (theme.id) {
-        "kpop-demon" -> strings.themeKpopSubtitle
-        "bts" -> strings.themeBtsSubtitle
-        "ssafy" -> strings.themeSsafySubtitle
-        else -> theme.subtitle
-    }
+    val localTitle = theme.title
+    val localSubtitle = theme.subtitle
 
     // Staggered reveal: each element appears with spring delay
     var showBadge by remember { mutableStateOf(false) }
@@ -654,13 +643,10 @@ fun HeroBanner() {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(com.ohmyguide.app.R.drawable.masot),
+                painter = androidx.compose.ui.res.painterResource(com.ohmyguide.app.R.drawable.face),
                 contentDescription = null,
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, BgWhite.copy(alpha = 0.3f), CircleShape),
-                contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                modifier = Modifier.size(36.dp),
+                contentScale = androidx.compose.ui.layout.ContentScale.Fit,
             )
             Spacer(modifier = Modifier.width(10.dp))
             Column {
@@ -782,6 +768,7 @@ fun CategoryCardsRow(
 
 @Composable
 fun RegionChips(
+    regions: List<com.ohmyguide.app.fixtures.Region> = com.ohmyguide.app.fixtures.EXPLORE_REGIONS,
     selectedRegion: String,
     onRegionClick: (String) -> Unit,
 ) {
@@ -789,7 +776,7 @@ fun RegionChips(
         contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        items(EXPLORE_REGIONS) { region ->
+        items(regions) { region ->
             val active = selectedRegion == region.id
             Box(
                 modifier = Modifier

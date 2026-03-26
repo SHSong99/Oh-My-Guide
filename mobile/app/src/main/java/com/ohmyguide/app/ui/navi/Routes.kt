@@ -42,8 +42,8 @@ sealed class Screen(val route: String) {
     object CourseDetail : Screen("course/{courseId}") {
         fun createRoute(courseId: String) = "course/$courseId"
     }
-    object CourseNavi : Screen("course_navi/{courseId}") {
-        fun createRoute(courseId: String) = "course_navi/$courseId"
+    object CourseNavi : Screen("course_navi/{courseId}/{mode}") {
+        fun createRoute(courseId: String, mode: String = "car") = "course_navi/$courseId/$mode"
     }
     object Navi : Screen("navi/{placeId}/{mode}?courseId={courseId}&spotIndex={spotIndex}") {
         fun createRoute(

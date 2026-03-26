@@ -1,33 +1,42 @@
-package com.e103.ohmyguide.domain.userlog.service;
+package com.e103.ohmyguide.domain.guide.consumer.HdfsLog;
 
-import com.e103.ohmyguide.domain.userlog.dto.UserLogRequest;
+import com.e103.ohmyguide.domain.guide.dto.UserGoLogMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.annotation.RetryableTopic;
+import org.springframework.retry.annotation.Backoff;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 
+@Profile("hdfs-log-consumer")
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class UserLogConsumer {
+public class HdfsLogConsumer {
 
-    private static final int FLUSH_THRESHOLD = 100;
+    private static final int FLUSH_THRESHOLD = 10;
 
     private final HdfsLogWriter hdfsLogWriter;
     private final ObjectMapper objectMapper;
 
-    private final List<UserLogRequest> buffer = new ArrayList<>();
+    private final List<UserGoLogMessage> buffer = new ArrayList<>();
 
-    @KafkaListener(topics = "user-log", groupId = "${spring.kafka.consumer.group-id}")
+    @RetryableTopic(
+        attempts = "5",
+        backoff = @Backoff(delay = 1000, multiplier = 2),
+        dltTopicSuffix = ".dlt"
+    )
+    @KafkaListener(topics = {"user-go-log", "user-view-log"}, groupId = "hdfs-log-group")
     public synchronized void consume(String message) {
         try {
-            UserLogRequest logRequest = objectMapper.readValue(message, UserLogRequest.class);
+            UserGoLogMessage logRequest = objectMapper.readValue(message, UserGoLogMessage.class);
             buffer.add(logRequest);
             log.debug("Buffered user log, buffer size: {}", buffer.size());
 
@@ -39,7 +48,7 @@ public class UserLogConsumer {
         }
     }
 
-    @Scheduled(fixedRate = 60000)
+    @Scheduled(fixedRate = 30000)
     public synchronized void scheduledFlush() {
         if (!buffer.isEmpty()) {
             flush();
@@ -47,7 +56,7 @@ public class UserLogConsumer {
     }
 
     private void flush() {
-        List<UserLogRequest> logsToWrite = new ArrayList<>(buffer);
+        List<UserGoLogMessage> logsToWrite = new ArrayList<>(buffer);
         buffer.clear();
 
         try {
