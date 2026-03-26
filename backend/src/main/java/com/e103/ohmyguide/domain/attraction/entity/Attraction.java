@@ -120,11 +120,12 @@ public class Attraction extends BaseEntity {
         if (this.overview == null || this.overview.isEmpty()) this.overview = overview;
     }
 
-    public void update(String title, BigDecimal latitude, BigDecimal longitude, String firstImage1, String overview) {
+    public void update(String title, BigDecimal latitude, BigDecimal longitude, String firstImage1, String overview, String overviewTts) {
         if (title != null) this.title = title;
         if (latitude != null) this.latitude = latitude;
         if (longitude != null) this.longitude = longitude;
         if (firstImage1 != null) this.firstImage1 = firstImage1;
         if (overview != null) this.overview = overview;
+        if (overviewTts != null) this.overviewTts = overviewTts;
     }
 }
