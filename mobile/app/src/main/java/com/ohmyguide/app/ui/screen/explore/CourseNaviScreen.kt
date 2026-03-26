@@ -325,19 +325,19 @@ fun CourseNaviScreen(
                     if (activeSpot != null && activeSpot.lat != 0.0) {
                         val pulseTransition = rememberInfiniteTransition(label = "spotPulse")
                         val pulseRadius by pulseTransition.animateFloat(
-                            initialValue = 30f,
-                            targetValue = 80f,
+                            initialValue = 20f,
+                            targetValue = 45f,
                             animationSpec = infiniteRepeatable(
-                                animation = tween(1500),
+                                animation = tween(2000),
                                 repeatMode = RepeatMode.Restart,
                             ),
                             label = "pulseR",
                         )
                         val pulseAlpha by pulseTransition.animateFloat(
-                            initialValue = 0.35f,
+                            initialValue = 0.2f,
                             targetValue = 0f,
                             animationSpec = infiniteRepeatable(
-                                animation = tween(1500),
+                                animation = tween(2000),
                                 repeatMode = RepeatMode.Restart,
                             ),
                             label = "pulseA",
@@ -383,19 +383,19 @@ fun CourseNaviScreen(
                     if (userPosition != null) {
                         val userPulse = rememberInfiniteTransition(label = "userPulse")
                         val userRipple by userPulse.animateFloat(
-                            initialValue = 10f,
-                            targetValue = 50f,
+                            initialValue = 8f,
+                            targetValue = 30f,
                             animationSpec = infiniteRepeatable(
-                                animation = tween(1200),
+                                animation = tween(1800),
                                 repeatMode = RepeatMode.Restart,
                             ),
                             label = "userR",
                         )
                         val userAlpha by userPulse.animateFloat(
-                            initialValue = 0.4f,
+                            initialValue = 0.25f,
                             targetValue = 0f,
                             animationSpec = infiniteRepeatable(
-                                animation = tween(1200),
+                                animation = tween(1800),
                                 repeatMode = RepeatMode.Restart,
                             ),
                             label = "userA",

@@ -39,9 +39,6 @@ class LocationForegroundService : Service() {
         startLocationUpdates()
     }
 
-    private fun isGpsOrMock(location: android.location.Location): Boolean =
-        location.isFromMockProvider || location.provider == "gps"
-
     private fun startLocationUpdates() {
         try {
             fusedLocationClient.lastLocation
@@ -55,7 +52,7 @@ class LocationForegroundService : Service() {
                             Log.d(TAG, "lastLocation: null")
                         }
                     }
-                    if (location != null && _locationFlow.value == null && isGpsOrMock(location)) {
+                    if (location != null && _locationFlow.value == null) {
                         _locationFlow.value = LocationData(location.latitude, location.longitude)
                     }
                 }
@@ -79,10 +76,7 @@ class LocationForegroundService : Service() {
                             "lat=${location.latitude}, lng=${location.longitude}, " +
                             "accuracy=${location.accuracy}m, mock=${location.isFromMockProvider}")
                     }
-                    // GPS 또는 Mock 위치만 수용, 네트워크 위치는 무시
-                    if (isGpsOrMock(location)) {
-                        _locationFlow.value = LocationData(location.latitude, location.longitude)
-                    }
+                    _locationFlow.value = LocationData(location.latitude, location.longitude)
                 }
             }
         }
@@ -145,8 +139,8 @@ class LocationForegroundService : Service() {
         private const val TAG = "LocationService"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "location_channel"
-        private const val LOCATION_INTERVAL_MS = 3000L
-        private const val FASTEST_INTERVAL_MS = 1000L
+        private const val LOCATION_INTERVAL_MS = 1000L
+        private const val FASTEST_INTERVAL_MS = 500L
 
         private val _locationFlow = MutableStateFlow<LocationData?>(null)
         val locationFlow: StateFlow<LocationData?> = _locationFlow.asStateFlow()
