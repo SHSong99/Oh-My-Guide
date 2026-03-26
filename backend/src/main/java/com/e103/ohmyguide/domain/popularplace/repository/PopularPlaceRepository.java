@@ -15,14 +15,12 @@ public interface PopularPlaceRepository extends JpaRepository<PopularPlace, Long
             "AND p.ageGroup = :ageGroup " +
             "AND p.gender = :gender " +
             "AND p.travelPurpose = :travelPurpose " +
-            "AND p.lifestyle = :lifestyle " +
             "ORDER BY p.placeRank ASC " +
             "LIMIT 5")                        // 최대 5개만 반환
     List<PopularPlace> findByCluster(
             @Param("nationality") String nationality,     // :nationality 자리에 이 값이 들어감
             @Param("ageGroup") String ageGroup,
             @Param("gender") String gender,
-            @Param("travelPurpose") String travelPurpose,
-            @Param("lifestyle") String lifestyle
+            @Param("travelPurpose") String travelPurpose
     );
 }
