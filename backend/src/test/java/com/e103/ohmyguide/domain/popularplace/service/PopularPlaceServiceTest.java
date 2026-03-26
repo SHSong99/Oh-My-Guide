@@ -29,7 +29,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE"
+                "KOR", 25, "M", "LEISURE"
         );
 
         // then
@@ -49,7 +49,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE"
+                "KOR", 25, "M", "LEISURE"
         );
 
         // then
@@ -74,7 +74,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE"
+                "KOR", 25, "M", "LEISURE"
         );
 
         // then
@@ -90,7 +90,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE"
+                "KOR", 25, "M", "LEISURE"
         );
 
         // then
@@ -112,7 +112,7 @@ class PopularPlaceServiceTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlaceResponse> result = popularPlaceService.getRecommendations(
-                "KOR", "20s", "M", "LEISURE"
+                "KOR", 25, "M", "LEISURE"
         );
 
 //        // then

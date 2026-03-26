@@ -27,22 +27,10 @@ public class PopularPlaceController {
             @RequestParam String gender,
             @RequestParam String travelPurpose
     ) {
-        String ageGroup = toAgeGroup(age);
         List<PopularPlaceResponse> results = popularPlaceService.getRecommendations(
-                nationality, ageGroup, gender, travelPurpose
+                nationality, age, gender, travelPurpose
         );
         return ResponseEntity.ok(results);
-    }
-
-    // Spark analyze_logs.py 와 동일한 나이대 분류 기준
-    private String toAgeGroup(int age) {
-        if (age < 20) return "10s";
-        if (age < 30) return "20s";
-        if (age < 40) return "30s";
-        if (age < 50) return "40s";
-        if (age < 60) return "50s";
-        if (age < 70) return "60s";
-        return "70s+";
     }
 
     // POST /api/pickRecommend/calculate
