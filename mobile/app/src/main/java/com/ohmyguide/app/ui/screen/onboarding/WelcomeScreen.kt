@@ -49,7 +49,7 @@ import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBgLight
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
-import com.ohmyguide.app.ui.theme.TextSecondary
+
 
 @Composable
 fun WelcomeScreen(
@@ -93,53 +93,65 @@ fun WelcomeScreen(
             ),
     ) {
         // ── Content Area ──
-        Column(
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .padding(horizontal = 28.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+                .fillMaxWidth(),
+            contentAlignment = Alignment.Center,
         ) {
-            // Floating mascot
-            Image(
-                painter = painterResource(R.drawable.masot),
-                contentDescription = "Oh My Guide mascot",
-                modifier = Modifier
-                    .size(180.dp)
-                    .offset { IntOffset(0, -floatOffset.dp.roundToPx()) },
-                contentScale = ContentScale.Fit,
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(horizontal = 28.dp),
+            ) {
+                // Mascot with glow background
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .offset { IntOffset(0, -floatOffset.dp.roundToPx()) },
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(160.dp)
+                            .clip(CircleShape)
+                            .background(Primary.copy(alpha = 0.06f)),
+                    )
+                    Image(
+                        painter = painterResource(R.drawable.masot),
+                        contentDescription = "Oh My Guide mascot",
+                        modifier = Modifier.size(130.dp),
+                        contentScale = ContentScale.Fit,
+                    )
+                }
 
-            Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
-            // Title
-            Text(
-                text = strings.welcomeGreeting,
-                style = MaterialTheme.typography.displayLarge,
-                color = TextPrimary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = strings.welcomeIntro,
-                style = MaterialTheme.typography.headlineMedium,
-                color = Primary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+                // Greeting
+                Text(
+                    text = strings.welcomeGreeting,
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    ),
+                    color = TextPrimary,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = strings.welcomeIntro,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Primary,
+                    textAlign = TextAlign.Center,
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            // Description
-            Text(
-                text = strings.welcomeDesc,
-                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 28.sp),
-                color = TextSecondary,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
+                // Description
+                Text(
+                    text = strings.welcomeDesc,
+                    style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 24.sp),
+                    color = TextCaption,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
 
         // ── Bottom CTA ──

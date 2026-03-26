@@ -344,14 +344,13 @@ private fun ProfileSection(user: UserResponse?, onEditClick: () -> Unit) {
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
-                painter = painterResource(R.drawable.masot),
+                painter = painterResource(R.drawable.face),
                 contentDescription = "Profile",
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)
-                    .border(3.dp, Primary, CircleShape)
-                    .background(PrimaryBg),
-                contentScale = ContentScale.Crop,
+                    .border(3.dp, Primary.copy(alpha = 0.3f), CircleShape),
+                contentScale = ContentScale.Fit,
             )
             Spacer(modifier = Modifier.width(14.dp))
             Column(modifier = Modifier.weight(1f)) {

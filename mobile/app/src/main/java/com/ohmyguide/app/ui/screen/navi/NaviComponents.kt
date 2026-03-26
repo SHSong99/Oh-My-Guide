@@ -311,14 +311,10 @@ fun KkaebiHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Image(
-            painter = painterResource(R.drawable.masot),
+            painter = painterResource(R.drawable.face),
             contentDescription = "Kkaebi",
-            modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .border(2.dp, Primary, CircleShape)
-                .background(PrimaryBg),
-            contentScale = ContentScale.Crop,
+            modifier = Modifier.size(36.dp),
+            contentScale = ContentScale.Fit,
         )
         Spacer(modifier = Modifier.width(10.dp))
         Text(
