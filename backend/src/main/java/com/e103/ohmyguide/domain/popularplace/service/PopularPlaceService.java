@@ -19,10 +19,11 @@ public class PopularPlaceService {
 
     public List<PopularPlaceResponse> getRecommendations(
             String nationality,
-            String ageGroup,
+            int age,
             String gender,
             String travelPurpose
     ) {
+        String ageGroup = toAgeGroup(age);
         List<PopularPlaceResponse> popularPlaces = popularPlaceRepository.findByCluster(nationality, ageGroup, gender, travelPurpose)
                 .stream()                              // Entity 리스트를 스트림으로
                 .map(PopularPlaceResponse::from)        // 각 Entity를 Response DTO로 변환
@@ -33,5 +34,16 @@ public class PopularPlaceService {
         log.info("PopularPlaceService.getRecommendations: result size = {}",  popularPlaces.size());
 
         return popularPlaces;
+    }
+
+    // Spark analyze_logs.py 와 동일한 나이대 분류 기준
+    private String toAgeGroup(int age) {
+        if (age < 20) return "10s";
+        if (age < 30) return "20s";
+        if (age < 40) return "30s";
+        if (age < 50) return "40s";
+        if (age < 60) return "50s";
+        if (age < 70) return "60s";
+        return "70s+";
     }
 }

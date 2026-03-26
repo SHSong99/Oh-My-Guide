@@ -28,8 +28,8 @@ class PopularPlaceControllerTest extends ControllerTestSupport {
                 PopularPlaceResponse.builder().placeId(200L).visitCount(30L).totalScore(120L).placeRank(2).build()
         );
 
-        // stubbing (age=25 → "20s")
-        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE"))
+        // stubbing (age=25, 서비스 내부에서 "20s"로 변환)
+        given(popularPlaceService.getRecommendations("KOR", 25, "M", "LEISURE"))
                 .willReturn(response);
 
         // when & then
@@ -54,7 +54,7 @@ class PopularPlaceControllerTest extends ControllerTestSupport {
     @Test
     void getRecommendations_returnsEmptyList() throws Exception {
         // given
-        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE"))
+        given(popularPlaceService.getRecommendations("KOR", 25, "M", "LEISURE"))
                 .willReturn(List.of());
 
         // when & then
@@ -84,7 +84,7 @@ class PopularPlaceControllerTest extends ControllerTestSupport {
     @Test
     void getRecommendations_callsServiceOnce() throws Exception {
         // given
-        given(popularPlaceService.getRecommendations("KOR", "20s", "M", "LEISURE"))
+        given(popularPlaceService.getRecommendations("KOR", 25, "M", "LEISURE"))
                 .willReturn(List.of());
 
         // when (age=25 → "20s" 변환 후 서비스 호출)
@@ -97,7 +97,7 @@ class PopularPlaceControllerTest extends ControllerTestSupport {
 
         // then
         then(popularPlaceService).should(times(1))
-                .getRecommendations("KOR", "20s", "M", "LEISURE");
+                .getRecommendations("KOR", 25, "M", "LEISURE");
     }
 
     @DisplayName("POST /pickRecommend/calculate - Spark 작업 제출 성공 시 202를 반환한다.")
