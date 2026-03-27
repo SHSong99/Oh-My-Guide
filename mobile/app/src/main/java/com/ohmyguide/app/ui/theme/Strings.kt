@@ -163,6 +163,31 @@ interface AppStrings {
     val bookmarkEmpty: String
     val viewAllPhrases: String
 
+    // ── Chat / Recommend ──
+    val picksForYou: String
+    val newPicksForYou: String
+    val noPlacesFound: String
+    val sorryNoPlaces: String
+    val freshPicks: String
+    val mainFocusQuestion: String
+    val vibeQuestion: String
+    val optionFood: String
+    val optionPhoto: String
+    val optionShopping: String
+    val optionActive: String
+    val optionCalm: String
+    val optionNightlife: String
+    val showMore: String
+    val moreSpots: String
+
+    // ── Navi Chat ──
+    val guideToPlace: String
+    val storyAboutPlace: String
+    val usefulPhrases: String
+    val arrivedAt: String
+    val nearbyPlacesAlong: String
+    val nearbyPlacesLove: String
+
     // ── Map ──
     val locating: String
     val mapView: String

@@ -8,7 +8,7 @@ import numpy as np
 from database import get_user_vector, get_places_in_radius, save_user_vector
 from vector_utils import (
     rank_places, build_cold_start_vector, DIM_ORDER,
-    apply_vector_delta, apply_vector_choices,
+    apply_vector_delta, apply_vector_choices, apply_category_filter,
 )
 from gms_client import rerank_places, vectorize_refine_text, get_weather, get_time_context
 
@@ -317,6 +317,10 @@ def get_user_recommend(
             save_user_vector(userId, user_vec)
         except Exception:
             pass
+
+    # 3.5. 선택한 카테고리 차원 강제 (선택=1.0, 미선택=0.0, 분위기/실용은 유지)
+    mobile_cats = [c.strip().lower() for c in category.split(",")] if category else None
+    user_vec = apply_category_filter(user_vec, mobile_cats)
 
     # 4. 반경 내 장소 조회 (방문한 장소 제외)
     places = get_places_in_radius(
