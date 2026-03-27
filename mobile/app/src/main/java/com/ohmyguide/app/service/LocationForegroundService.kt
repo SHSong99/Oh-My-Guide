@@ -39,6 +39,18 @@ class LocationForegroundService : Service() {
         startLocationUpdates()
     }
 
+    // mock 위치가 한 번이라도 감지되면 mock만 수용 (Fake GPS 사용 시)
+    private var mockDetected = false
+
+    private fun shouldAccept(location: android.location.Location): Boolean {
+        if (location.isFromMockProvider) {
+            mockDetected = true
+            return true
+        }
+        // mock이 감지된 적 있으면 실제 위치는 무시
+        return !mockDetected
+    }
+
     private fun startLocationUpdates() {
         try {
             fusedLocationClient.lastLocation
@@ -52,7 +64,7 @@ class LocationForegroundService : Service() {
                             Log.d(TAG, "lastLocation: null")
                         }
                     }
-                    if (location != null && _locationFlow.value == null) {
+                    if (location != null && _locationFlow.value == null && shouldAccept(location)) {
                         _locationFlow.value = LocationData(location.latitude, location.longitude)
                     }
                 }
@@ -76,7 +88,9 @@ class LocationForegroundService : Service() {
                             "lat=${location.latitude}, lng=${location.longitude}, " +
                             "accuracy=${location.accuracy}m, mock=${location.isFromMockProvider}")
                     }
-                    _locationFlow.value = LocationData(location.latitude, location.longitude)
+                    if (shouldAccept(location)) {
+                        _locationFlow.value = LocationData(location.latitude, location.longitude)
+                    }
                 }
             }
         }
