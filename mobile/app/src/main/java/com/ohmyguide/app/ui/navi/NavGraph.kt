@@ -82,7 +82,7 @@ fun NavGraph(
                     scope.launch {
                         val dest = userRepository.getCurrentUser().fold(
                             onSuccess = { user ->
-                                if (user.onboardingCompleted) Screen.Home.createRoute()
+                                if (user.onboardingCompleted) Screen.InterestSelect.route
                                 else Screen.GpsPermission.route
                             },
                             onFailure = { Screen.GpsPermission.route },
