@@ -159,6 +159,29 @@ object KoStrings : AppStrings {
     override val bookmarkEmpty = "저장된 구문이 없습니다. 탭하여 둘러보세요!"
     override val viewAllPhrases = "전체 구문 보기"
 
+    // ── Chat / Recommend ──
+    override val picksForYou = "맞춤 추천"
+    override val newPicksForYou = "새로운 맞춤 추천"
+    override val noPlacesFound = "장소를 찾을 수 없어요"
+    override val sorryNoPlaces = "요청에 맞는 장소가 없어요"
+    override val freshPicks = "새로운 추천"
+    override val mainFocusQuestion = "오늘 뭘 하고 싶으세요?"
+    override val vibeQuestion = "어떤 분위기를 원하세요?"
+    override val optionFood = "맛집"
+    override val optionPhoto = "포토 스팟"
+    override val optionShopping = "쇼핑"
+    override val optionActive = "액티비티"
+    override val optionCalm = "힐링"
+    override val optionNightlife = "야경/밤문화"
+    override val showMore = "더 보기"
+    override val moreSpots = "더 많은 장소"
+
+    // ── Navi Chat ──
+    override val guideToPlace = "이 장소 가이드"
+    override val storyAboutPlace = "이 장소 이야기"
+    override val usefulPhrases = "주변 유용한 표현"
+    override val arrivedAt = "도착:"
+
     override val locating = "위치 확인 중..."
     override val mapView = "지도 보기"
     override val explorePlaces = "주변 장소를 탐색하세요"

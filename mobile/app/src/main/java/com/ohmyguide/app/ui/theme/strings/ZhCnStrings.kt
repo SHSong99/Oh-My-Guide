@@ -159,6 +159,29 @@ object ZhCnStrings : AppStrings {
     override val bookmarkEmpty = "暂无收藏短语"
     override val viewAllPhrases = "查看全部短语"
 
+    // ── Chat / Recommend ──
+    override val picksForYou = "为你推荐"
+    override val newPicksForYou = "新推荐"
+    override val noPlacesFound = "未找到景点"
+    override val sorryNoPlaces = "抱歉，没有找到符合要求的景点"
+    override val freshPicks = "最新推荐"
+    override val mainFocusQuestion = "今天想做什么？"
+    override val vibeQuestion = "想要什么样的氛围？"
+    override val optionFood = "美食"
+    override val optionPhoto = "拍照景点"
+    override val optionShopping = "购物"
+    override val optionActive = "活力"
+    override val optionCalm = "休闲"
+    override val optionNightlife = "夜生活"
+    override val showMore = "查看更多"
+    override val moreSpots = "更多景点"
+
+    // ── Navi Chat ──
+    override val guideToPlace = "这个地方的导览"
+    override val storyAboutPlace = "这个地方的故事"
+    override val usefulPhrases = "附近实用用语"
+    override val arrivedAt = "已到达"
+
     override val locating = "定位中..."
     override val mapView = "地图视图"
     override val explorePlaces = "探索您周围的景点"
