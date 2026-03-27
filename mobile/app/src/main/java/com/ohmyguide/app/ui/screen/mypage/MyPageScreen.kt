@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
@@ -61,7 +64,16 @@ import com.ohmyguide.app.R
 import com.ohmyguide.app.data.model.UserResponse
 import com.ohmyguide.app.domain.model.BookmarkedPhrase
 import com.ohmyguide.app.domain.model.PhraseBookmarkStore
+import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.ui.common.BottomNavBar
+import com.ohmyguide.app.ui.screen.home.PlaceCard
+import com.ohmyguide.app.ui.theme.CatAttraction
+import com.ohmyguide.app.ui.theme.CatCafe
+import com.ohmyguide.app.ui.theme.CatCulture
+import com.ohmyguide.app.ui.theme.CatFestival
+import com.ohmyguide.app.ui.theme.CatFood
+import com.ohmyguide.app.ui.theme.CatLeports
+import com.ohmyguide.app.ui.theme.CatShopping
 import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.AppLanguage
 import com.ohmyguide.app.ui.theme.BgScreen
@@ -137,7 +149,13 @@ fun MyPageScreen(
                     onEditClick = { showProfileDialog = true },
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                PickRecommendSection(places = state.pickPlaces, isLoading = state.pickLoading)
+                PickRecommendSection(
+                    places = state.pickPlaces,
+                    isLoading = state.pickLoading,
+                    onPlaceClick = { attrId ->
+                        navController.navigate(Screen.Place.createRoute(attrId.toString()))
+                    },
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 BookmarkedPhrasesSection(
                     bookmarks = bookmarkMap.values.toList(),
@@ -522,7 +540,11 @@ private fun BookmarkedPhrasesSection(
 // ── Pick Recommend Section ──
 
 @Composable
-private fun PickRecommendSection(places: List<PickPlace>, isLoading: Boolean) {
+private fun PickRecommendSection(
+    places: List<PickPlace>,
+    isLoading: Boolean,
+    onPlaceClick: (Long) -> Unit,
+) {
     val strings = LocalStrings.current
     Column(
         modifier = Modifier
@@ -530,15 +552,23 @@ private fun PickRecommendSection(places: List<PickPlace>, isLoading: Boolean) {
             .clip(RoundedCornerShape(20.dp))
             .background(BgWhite)
             .border(1.dp, BorderLight, RoundedCornerShape(20.dp))
-            .padding(16.dp),
+            .padding(vertical = 16.dp),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Icon(Icons.Filled.TravelExplore, contentDescription = null, modifier = Modifier.size(20.dp), tint = Primary)
             Spacer(modifier = Modifier.width(8.dp))
             Text(text = strings.pickRecommendTitle, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = TextPrimary)
         }
         Spacer(modifier = Modifier.height(4.dp))
-        Text(text = strings.pickRecommendDesc, style = MaterialTheme.typography.labelSmall, color = TextCaption)
+        Text(
+            text = strings.pickRecommendDesc,
+            style = MaterialTheme.typography.labelSmall,
+            color = TextCaption,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
         Spacer(modifier = Modifier.height(12.dp))
 
         if (isLoading) {
@@ -547,42 +577,67 @@ private fun PickRecommendSection(places: List<PickPlace>, isLoading: Boolean) {
             }
         } else if (places.isEmpty()) {
             Box(
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgScreen).padding(20.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).clip(RoundedCornerShape(12.dp)).background(BgScreen).padding(20.dp),
                 contentAlignment = Alignment.Center,
             ) { Text(text = strings.pickRecommendEmpty, style = MaterialTheme.typography.bodySmall, color = TextCaption) }
         } else {
-            places.forEach { place ->
-                PickPlaceRow(place = place)
-                if (place != places.last()) Spacer(modifier = Modifier.height(8.dp))
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                items(places) { pick ->
+                    PlaceCard(
+                        place = pick.toPlace(),
+                        onClick = { onPlaceClick(pick.attrId) },
+                    )
+                }
             }
         }
     }
 }
 
-@Composable
-private fun PickPlaceRow(place: PickPlace) {
-    Row(
-        modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(BgScreen).padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(modifier = Modifier.size(36.dp).clip(RoundedCornerShape(10.dp)).background(PrimaryBgLight), contentAlignment = Alignment.Center) {
-            Text(text = "#${place.rank}", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = Primary)
-        }
-        Spacer(modifier = Modifier.width(12.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = place.title, style = MaterialTheme.typography.titleSmall, color = TextPrimary, maxLines = 1)
-            if (!place.addr.isNullOrBlank()) {
-                Text(text = place.addr, style = MaterialTheme.typography.labelSmall, color = TextCaption, maxLines = 1)
-            }
-        }
-        if (place.imageUrl != null) {
-            coil.compose.AsyncImage(
-                model = place.imageUrl, contentDescription = place.title,
-                modifier = Modifier.size(40.dp).clip(RoundedCornerShape(8.dp)), contentScale = ContentScale.Crop,
-            )
-        }
-    }
-}
+private val CONTENT_TYPE_TAG_MAP = mapOf(
+    12L to "Nature",
+    14L to "Culture",
+    15L to "Festival",
+    25L to "Activity",
+    28L to "Activity",
+    32L to "Lodging",
+    38L to "Shopping",
+    39L to "Food",
+)
+
+private val PICK_TAG_EMOJI_MAP = mapOf(
+    "Nature" to "\uD83C\uDFDE\uFE0F",
+    "Culture" to "\uD83C\uDFDB\uFE0F",
+    "Festival" to "\uD83C\uDF86",
+    "Activity" to "\uD83C\uDFC4",
+    "Shopping" to "\uD83D\uDECD\uFE0F",
+    "Food" to "\uD83C\uDF5C",
+    "Lodging" to "\uD83C\uDFE8",
+)
+
+private val PICK_TAG_COLOR_MAP = mapOf(
+    "Nature" to CatAttraction,
+    "Culture" to CatCulture,
+    "Festival" to CatFestival,
+    "Activity" to CatLeports,
+    "Shopping" to CatShopping,
+    "Food" to CatFood,
+    "Lodging" to CatCafe,
+)
+
+private fun PickPlace.toPlace(): Place = Place(
+    id = attrId.toString(),
+    name = title,
+    nameKr = addr ?: "",
+    rating = 0f,
+    distance = "",
+    tag = CONTENT_TYPE_TAG_MAP[contentTypeId] ?: "Nature",
+    color = PICK_TAG_COLOR_MAP[CONTENT_TYPE_TAG_MAP[contentTypeId]] ?: CatAttraction,
+    emoji = PICK_TAG_EMOJI_MAP[CONTENT_TYPE_TAG_MAP[contentTypeId]] ?: "\uD83D\uDCCD",
+    imageUrl = imageUrl,
+)
 
 // ── Menu Section ──
 
