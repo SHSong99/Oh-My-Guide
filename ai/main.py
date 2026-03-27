@@ -5,7 +5,7 @@ from typing import Optional
 
 import numpy as np
 
-from database import get_user_vector, get_places_in_radius, save_user_vector, get_segment_vectors
+from database import get_user_vector, get_places_in_radius, save_user_vector
 from vector_utils import (
     rank_places, build_cold_start_vector, DIM_ORDER,
     apply_vector_delta, apply_vector_choices, apply_category_filter,
@@ -165,11 +165,6 @@ def recommend(req: RecommendRequest):
     if cold_start:
         p = req.user_profile
         if p:
-            seg_nationality = _COUNTRY_TO_NATIONALITY.get((p.country or "").upper(), "Other")
-            seg_age = _to_segment_age(p.age)
-            seg_gender = _to_segment_gender(p.gender)
-            seg_vecs = get_segment_vectors(seg_nationality, seg_age, seg_gender)
-
             user_vec = build_cold_start_vector(
                 companion=p.companion,
                 age=p.age,
@@ -177,7 +172,6 @@ def recommend(req: RecommendRequest):
                 language=p.language,
                 country=p.country,
                 content_type_ids=req.content_type_ids,
-                segment_vectors=seg_vecs if seg_vecs else None,
             )
         else:
             user_vec = np.zeros(len(DIM_ORDER), dtype=np.float32)
@@ -271,42 +265,6 @@ _MOBILE_CATEGORY_MAP = {
 }
 
 
-_COUNTRY_TO_NATIONALITY = {
-    "JP": "Japan", "CN": "China", "TW": "Taiwan", "HK": "HongKong",
-    "TH": "Thailand", "SG": "Singapore", "MY": "Malaysia", "PH": "Philippines",
-    "VN": "Vietnam", "ID": "Indonesia", "IN": "India",
-    "US": "USA", "CA": "Canada", "GB": "UK", "AU": "Australia",
-    "FR": "France", "DE": "Germany", "RU": "Russia",
-}
-
-
-def _to_segment_age(age: int | None) -> str | None:
-    if age is None:
-        return None
-    if age < 20:
-        return "10s"
-    if age < 30:
-        return "20s"
-    if age < 40:
-        return "30s"
-    if age < 50:
-        return "40s"
-    if age < 60:
-        return "50s"
-    return "60s"
-
-
-def _to_segment_gender(gender: str | None) -> str | None:
-    if not gender:
-        return None
-    g = gender.strip().upper()
-    if g in ("M", "MALE"):
-        return "male"
-    if g in ("F", "FEMALE"):
-        return "female"
-    return None
-
-
 def _parse_mobile_categories(category_str: str | None) -> list[int]:
     """쉼표 구분 모바일 카테고리 → content_type_ids. 없으면 전체."""
     if not category_str:
@@ -348,18 +306,12 @@ def get_user_recommend(
 
     # 3. cold-start 처리 (사용자 프로필 반영)
     if cold_start:
-        seg_nationality = _COUNTRY_TO_NATIONALITY.get((country or "").upper(), "Other")
-        seg_age = _to_segment_age(age)
-        seg_gender = _to_segment_gender(gender)
-        seg_vecs = get_segment_vectors(seg_nationality, seg_age, seg_gender)
-
         user_vec = build_cold_start_vector(
             companion=companion,
             age=age,
             gender=gender,
             country=country,
             content_type_ids=content_type_ids,
-            segment_vectors=seg_vecs if seg_vecs else None,
         )
         try:
             save_user_vector(userId, user_vec)

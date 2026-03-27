@@ -137,22 +137,16 @@ fun MyPageScreen(
                     onEditClick = { showProfileDialog = true },
                 )
                 Spacer(modifier = Modifier.height(16.dp))
-                MenuSection(
-                    onLanguageClick = { showLanguageDialog = true },
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                PickRecommendSection(
-                    places = state.pickPlaces,
-                    isLoading = state.pickLoading,
-                    onPlaceClick = { attrId ->
-                        navController.navigate(Screen.Place.createRoute(attrId.toString()))
-                    },
-                )
+                PickRecommendSection(places = state.pickPlaces, isLoading = state.pickLoading)
                 Spacer(modifier = Modifier.height(16.dp))
                 BookmarkedPhrasesSection(
                     bookmarks = bookmarkMap.values.toList(),
                     onRemove = { key -> PhraseBookmarkStore.remove(key) },
                     onViewAll = { navController.navigate(Screen.Phrases.route) },
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                MenuSection(
+                    onLanguageClick = { showLanguageDialog = true },
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 SignOutButton(
@@ -528,7 +522,7 @@ private fun BookmarkedPhrasesSection(
 // ── Pick Recommend Section ──
 
 @Composable
-private fun PickRecommendSection(places: List<PickPlace>, isLoading: Boolean, onPlaceClick: (Long) -> Unit = {}) {
+private fun PickRecommendSection(places: List<PickPlace>, isLoading: Boolean) {
     val strings = LocalStrings.current
     Column(
         modifier = Modifier
