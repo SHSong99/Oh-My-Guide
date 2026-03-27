@@ -2,7 +2,7 @@ package com.e103.ohmyguide.domain.guide.controller;
 
 import com.e103.ohmyguide.ControllerTestSupport;
 import com.e103.ohmyguide.domain.auth.security.UserPrincipal;
-import com.e103.ohmyguide.domain.guide.dto.GuideNavigationResponse;
+import com.e103.ohmyguide.domain.guide.dto.GuideGoResponse;
 import com.e103.ohmyguide.domain.guide.dto.GuideResponse;
 import com.e103.ohmyguide.domain.guide.dto.StartLocationResponse;
 import org.junit.jupiter.api.DisplayName;
@@ -13,13 +13,14 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 class GuideControllerTest extends ControllerTestSupport {
 
@@ -31,11 +32,11 @@ class GuideControllerTest extends ControllerTestSupport {
         return new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
     }
 
-    @DisplayName("GET /guide/{placeId} - 출발지, 목적지, 주변 장소 정보를 200과 함께 반환한다.")
+    @DisplayName("GET /guide/{placeId} - 출발지, 목적지 정보를 200과 함께 반환한다.")
     @Test
     void startNavigation_returns200() throws Exception {
         // given
-        GuideNavigationResponse response = GuideNavigationResponse.builder()
+        GuideGoResponse response = GuideGoResponse.builder()
                 .startLocation(StartLocationResponse.builder()
                         .latitude(new BigDecimal("35.15"))
                         .longitude(new BigDecimal("129.16"))
@@ -50,14 +51,6 @@ class GuideControllerTest extends ControllerTestSupport {
                         .overview("해운대 해수욕장은 부산을 대표하는 해수욕장이다.")
                         .overviewTts("해운대 해수욕장은 부산을 대표하는 해수욕장입니다.")
                         .build())
-                .nearbyPlaces(List.of(
-                        GuideResponse.builder()
-                                .placeId(456L)
-                                .title("광안리 해수욕장")
-                                .latitude(new BigDecimal("35.15300"))
-                                .longitude(new BigDecimal("129.11800"))
-                                .build()
-                ))
                 .build();
 
         given(guideService.startNavigation(any(), any(), any(), any(), any(), any()))
@@ -69,8 +62,7 @@ class GuideControllerTest extends ControllerTestSupport {
                         .param("currentLat", "35.15")
                         .param("currentLng", "129.16")
                         .param("reachLat", "35.10")
-                        .param("reachLng", "129.03")
-                        .param("trafic", "transit"))
+                        .param("reachLng", "129.03"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.startLocation.latitude").value(35.15))
@@ -78,23 +70,19 @@ class GuideControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.destination.placeId").value(123))
                 .andExpect(jsonPath("$.destination.title").value("해운대 해수욕장"))
                 .andExpect(jsonPath("$.destination.overview").value("해운대 해수욕장은 부산을 대표하는 해수욕장이다."))
-                .andExpect(jsonPath("$.destination.overviewTts").value("해운대 해수욕장은 부산을 대표하는 해수욕장입니다."))
-                .andExpect(jsonPath("$.nearbyPlaces.length()").value(1))
-                .andExpect(jsonPath("$.nearbyPlaces[0].placeId").value(456))
-                .andExpect(jsonPath("$.nearbyPlaces[0].title").value("광안리 해수욕장"));
+                .andExpect(jsonPath("$.destination.overviewTts").value("해운대 해수욕장은 부산을 대표하는 해수욕장입니다."));
     }
 
-    @DisplayName("GET /guide/{placeId} - trafic 파라미터 없이도 200을 반환한다.")
+    @DisplayName("GET /guide/{placeId} - 최소 정보로도 200을 반환한다.")
     @Test
-    void startNavigation_withoutTrafic_returns200() throws Exception {
+    void startNavigation_minimal_returns200() throws Exception {
         // given
-        GuideNavigationResponse response = GuideNavigationResponse.builder()
+        GuideGoResponse response = GuideGoResponse.builder()
                 .startLocation(StartLocationResponse.builder()
                         .latitude(new BigDecimal("35.15"))
                         .longitude(new BigDecimal("129.16"))
                         .build())
                 .destination(GuideResponse.builder().placeId(123L).build())
-                .nearbyPlaces(List.of())
                 .build();
 
         given(guideService.startNavigation(any(), any(), any(), any(), any(), any()))
@@ -108,8 +96,7 @@ class GuideControllerTest extends ControllerTestSupport {
                         .param("reachLat", "35.10")
                         .param("reachLng", "129.03"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.destination.placeId").value(123))
-                .andExpect(jsonPath("$.nearbyPlaces.length()").value(0));
+                .andExpect(jsonPath("$.destination.placeId").value(123));
     }
 
     @DisplayName("GET /guide/{placeId} - 필수 좌표 파라미터 누락 시 400을 반환한다.")
@@ -122,5 +109,19 @@ class GuideControllerTest extends ControllerTestSupport {
                         .param("reachLat", "35.10")
                         .param("reachLng", "129.03"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @DisplayName("GET /guide/sse - SSE 스트림 연결에 성공하면 200을 반환한다.")
+    @Test
+    void connectSse_returns200() throws Exception {
+        // given
+        given(sseEmitterManager.create(any())).willReturn(new SseEmitter());
+
+        // when & then
+        mockMvc.perform(get("/guide/sse")
+                        .with(authentication(mockAuth()))
+                        .accept("text/event-stream"))
+                .andDo(print())
+                .andExpect(status().isOk());
     }
 }

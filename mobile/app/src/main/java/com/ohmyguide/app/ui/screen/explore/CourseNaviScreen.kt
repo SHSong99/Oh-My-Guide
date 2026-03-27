@@ -223,17 +223,14 @@ fun CourseNaviScreen(
     val locationData by com.ohmyguide.app.service.LocationForegroundService.locationFlow.collectAsState()
     val userPosition = locationData?.let { LatLng(it.latitude, it.longitude) }
 
-    // 방위각 (compass heading)
-    var heading by remember { mutableStateOf(0f) }
-    LaunchedEffect(Unit) {
-        com.ohmyguide.app.service.compassHeadingFlow(context).collect { heading = it }
-    }
-
     val firstSpot = currentCourse.spots.first()
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition(LatLng(firstSpot.lat, firstSpot.lng), 15.0)
     }
-    val mapProperties = remember { MapProperties() }
+    val locationSource = com.naver.maps.map.compose.rememberFusedLocationSource()
+    val mapProperties = remember {
+        MapProperties(locationTrackingMode = com.naver.maps.map.compose.LocationTrackingMode.NoFollow)
+    }
     val mapUiSettings = remember {
         MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = false)
     }
@@ -262,6 +259,7 @@ fun CourseNaviScreen(
             NaverMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
+                locationSource = locationSource,
                 properties = mapProperties,
                 uiSettings = mapUiSettings,
             ) {
@@ -342,47 +340,7 @@ fun CourseNaviScreen(
                     }
                 }
 
-                // GPS user position: blue dot + 시야각 콘
-                if (userPosition != null) {
-                    // 시야각 콘 (방위각 기반 부채꼴)
-                    val coneRadius = 25.0 // 미터
-                    val coneAngle = 60.0  // 시야각 (도)
-                    val headingRad = Math.toRadians(heading.toDouble())
-                    val halfAngle = Math.toRadians(coneAngle / 2)
-                    val earthRadius = 6371000.0
-                    val lat = Math.toRadians(userPosition.latitude)
-
-                    val conePoints = mutableListOf(userPosition)
-                    val steps = 12
-                    for (i in 0..steps) {
-                        val angle = headingRad - halfAngle + (2 * halfAngle * i / steps)
-                        val dLat = (coneRadius / earthRadius) * kotlin.math.cos(angle)
-                        val dLng = (coneRadius / earthRadius) * kotlin.math.sin(angle) / kotlin.math.cos(lat)
-                        conePoints.add(LatLng(
-                            userPosition.latitude + Math.toDegrees(dLat),
-                            userPosition.longitude + Math.toDegrees(dLng),
-                        ))
-                    }
-                    conePoints.add(userPosition)
-
-                    if (conePoints.size >= 3) {
-                        com.naver.maps.map.compose.PolygonOverlay(
-                            coords = conePoints,
-                            color = Primary.copy(alpha = 0.2f),
-                            outlineWidth = 0.dp,
-                            outlineColor = Primary.copy(alpha = 0f),
-                        )
-                    }
-
-                    // Blue dot center
-                    com.naver.maps.map.compose.CircleOverlay(
-                        center = userPosition,
-                        radius = 4.0,
-                        color = Primary,
-                        outlineWidth = 2.dp,
-                        outlineColor = BgWhite,
-                    )
-                }
+                // GPS user position: SDK 파란 점으로 표시 (locationSource + NoFollow)
             }
 
             if (uiState.isLoading) {

@@ -235,6 +235,7 @@ class AttractionControllerTest extends ControllerTestSupport {
                 .latitude(33.36160800)
                 .longitude(126.53390800)
                 .overview("새로운 개요")
+                .overviewTts("새로운 TTS")
                 .build();
         given(attractionService.updateAttraction(eq(1L), any())).willReturn(response);
 
@@ -242,6 +243,7 @@ class AttractionControllerTest extends ControllerTestSupport {
                 new java.util.HashMap<>() {{
                     put("title", "한라산 국립공원");
                     put("overview", "새로운 개요");
+                    put("overviewTts", "새로운 TTS");
                 }}
         );
 
@@ -253,7 +255,8 @@ class AttractionControllerTest extends ControllerTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.attrId").value(1))
                 .andExpect(jsonPath("$.title").value("한라산 국립공원"))
-                .andExpect(jsonPath("$.overview").value("새로운 개요"));
+                .andExpect(jsonPath("$.overview").value("새로운 개요"))
+                .andExpect(jsonPath("$.overviewTts").value("새로운 TTS"));
 
         then(attractionService).should(times(1)).updateAttraction(eq(1L), any());
     }

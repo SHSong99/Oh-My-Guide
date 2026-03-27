@@ -16,7 +16,9 @@ import com.ohmyguide.app.ui.common.NavMinimizedState
 import com.ohmyguide.app.ui.screen.auth.AuthScreen
 import com.ohmyguide.app.ui.screen.auth.AuthState
 import com.ohmyguide.app.ui.screen.auth.AuthViewModel
+import com.ohmyguide.app.ui.screen.onboarding.SplashDestination
 import com.ohmyguide.app.ui.screen.onboarding.SplashScreen
+import com.ohmyguide.app.ui.screen.onboarding.SplashViewModel
 import com.ohmyguide.app.ui.screen.onboarding.CategoryScreen
 import com.ohmyguide.app.ui.screen.onboarding.GpsPermissionScreen
 import com.ohmyguide.app.ui.screen.onboarding.LoadingScreen
@@ -47,9 +49,17 @@ fun NavGraph(
         startDestination = Screen.Splash.route
     ) {
         composable(Screen.Splash.route) {
+            val splashViewModel: SplashViewModel = hiltViewModel()
+            val destination by splashViewModel.destination.collectAsState()
+
             SplashScreen(
                 onFinish = {
-                    navController.navigate(Screen.Welcome.route) {
+                    val route = when (destination) {
+                        is SplashDestination.Home -> Screen.Home.createRoute()
+                        is SplashDestination.Onboarding -> Screen.GpsPermission.route
+                        else -> Screen.Welcome.route
+                    }
+                    navController.navigate(route) {
                         popUpTo(Screen.Splash.route) { inclusive = true }
                     }
                 },
@@ -59,6 +69,8 @@ fun NavGraph(
             val authViewModel: AuthViewModel = hiltViewModel()
             val authState by authViewModel.authState.collectAsState()
             val context = LocalContext.current
+            val userRepository: UserRepository = hiltViewModel<OnboardingHelper>().userRepository
+            val scope = rememberCoroutineScope()
 
             val strings = LocalStrings.current
 
@@ -66,8 +78,18 @@ fun NavGraph(
                 if (authState is AuthState.Success) {
                     Toast.makeText(context, strings.loginSuccess, Toast.LENGTH_SHORT).show()
                     authViewModel.resetState()
-                    navController.navigate(Screen.GpsPermission.route) {
-                        popUpTo(Screen.Welcome.route) { inclusive = true }
+
+                    scope.launch {
+                        val dest = userRepository.getCurrentUser().fold(
+                            onSuccess = { user ->
+                                if (user.onboardingCompleted) Screen.InterestSelect.route
+                                else Screen.GpsPermission.route
+                            },
+                            onFailure = { Screen.GpsPermission.route },
+                        )
+                        navController.navigate(dest) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
                     }
                 }
             }
