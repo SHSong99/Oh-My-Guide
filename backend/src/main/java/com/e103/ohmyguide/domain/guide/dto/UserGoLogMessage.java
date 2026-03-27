@@ -48,6 +48,8 @@ public class UserGoLogMessage {
 
     private BigDecimal reachLng;
 
+    private Integer star;
+
     @NotBlank
     private String timestamp;
 
@@ -55,7 +57,8 @@ public class UserGoLogMessage {
     private UserGoLogMessage(Long userId, String nationality, int age, String gender,
                              String travelPurpose, String lifestyle, String action,
                              Long placeId, BigDecimal currentLat, BigDecimal currentLng,
-                             BigDecimal reachLat, BigDecimal reachLng, String timestamp) {
+                             BigDecimal reachLat, BigDecimal reachLng, Integer star,
+                             String timestamp) {
         this.userId = userId;
         this.nationality = nationality;
         this.age = age;
@@ -68,6 +71,7 @@ public class UserGoLogMessage {
         this.currentLng = currentLng;
         this.reachLat = reachLat;
         this.reachLng = reachLng;
+        this.star = star;
         this.timestamp = timestamp;
     }
 
@@ -87,6 +91,27 @@ public class UserGoLogMessage {
                 .currentLng(currentLng)
                 .reachLat(reachLat)
                 .reachLng(reachLng)
+                .timestamp(LocalDateTime.now().toString())
+                .build();
+    }
+
+    public static UserGoLogMessage toStarMessage(User user, Long placeId, int star) {
+        String action = switch (star) {
+            case 3 -> "1";
+            case 4 -> "2";
+            case 5 -> "3";
+            default -> "0";
+        };
+        return UserGoLogMessage.builder()
+                .userId(user.getId())
+                .nationality(user.getNationality())
+                .age(user.getAge() != null ? user.getAge() : 0)
+                .gender(user.getGender() != null ? user.getGender() : "unknown")
+                .travelPurpose(user.getTravelPurpose() != null ? user.getTravelPurpose() : "general")
+                .lifestyle(user.getLifestyle() != null ? user.getLifestyle() : "standard")
+                .action(action)
+                .placeId(placeId)
+                .star(star)
                 .timestamp(LocalDateTime.now().toString())
                 .build();
     }

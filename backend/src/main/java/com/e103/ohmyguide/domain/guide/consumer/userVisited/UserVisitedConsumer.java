@@ -84,6 +84,64 @@ public class UserVisitedConsumer {
         updateUserVector(userId, placeId);
     }
 
+    @RetryableTopic(
+        attempts = "5",
+        backoff = @Backoff(delay = 1000, multiplier = 2),
+        dltTopicSuffix = ".dlt"
+    )
+    @KafkaListener(topics = "user-star-log", groupId = "user-visited-group")
+    @Transactional
+    public void consumeStarLog(String message) {
+        UserGoLogMessage logMessage;
+        try {
+            logMessage = objectMapper.readValue(message, UserGoLogMessage.class);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to deserialize user-star-log message", e);
+            return;
+        }
+
+        Integer star = logMessage.getStar();
+        if (star == null || star > 3) {
+            return;
+        }
+
+        // star 1, 2, 3 → reverse the vector update done on GO
+        Long userId = logMessage.getUserId();
+        Long placeId = logMessage.getPlaceId();
+        revertUserVector(userId, placeId);
+    }
+
+    private void revertUserVector(Long userId, Long placeId) {
+        UserVector userVector = userVectorRepository.findById(userId).orElse(null);
+        AttractionVector attractionVector = attractionVectorRepository.findById(placeId).orElse(null);
+
+        if (userVector == null || attractionVector == null) {
+            log.warn("Vector not found for revert: userId={}, placeId={}", userId, placeId);
+            return;
+        }
+
+        try {
+            List<Double> uVec = objectMapper.readValue(userVector.getPreferenceVector(), VECTOR_TYPE);
+            List<Double> aVec = objectMapper.readValue(attractionVector.getAttractionVector(), VECTOR_TYPE);
+
+            if (uVec.size() != aVec.size()) {
+                log.error("Vector dimension mismatch for revert: userVector={}, attractionVector={}", uVec.size(), aVec.size());
+                return;
+            }
+
+            // Reverse: newUserVector = userVector - 0.15 * (attractionVector - userVector)
+            List<Double> reverted = new java.util.ArrayList<>(uVec.size());
+            for (int i = 0; i < uVec.size(); i++) {
+                reverted.add(uVec.get(i) - LEARNING_RATE * (aVec.get(i) - uVec.get(i)));
+            }
+
+            userVector.updatePreferenceVector(objectMapper.writeValueAsString(reverted));
+            log.info("Reverted user vector: userId={}, placeId={}", userId, placeId);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to parse vectors for revert: userId={}, placeId={}", userId, placeId, e);
+        }
+    }
+
     private void updateUserVector(Long userId, Long placeId) {
         UserVector userVector = userVectorRepository.findById(userId).orElse(null);
         AttractionVector attractionVector = attractionVectorRepository.findById(placeId).orElse(null);

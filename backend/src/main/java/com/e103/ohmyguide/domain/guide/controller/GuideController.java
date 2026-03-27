@@ -12,6 +12,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+
 import java.math.BigDecimal;
 
 @RestController
@@ -38,6 +43,17 @@ public class GuideController {
                 currentLat, currentLng, reachLat, reachLng);
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/star")
+    @PreAuthorize("hasRole('USER')")
+    public ResponseEntity<Void> rateStar(
+            @CurrentUser UserPrincipal userPrincipal,
+            @RequestParam @NotNull Long attrId,
+            @RequestParam @Min(1) @Max(5) int star
+    ) {
+        guideService.rateStar(userPrincipal.getId(), attrId, star);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping(value = "/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
