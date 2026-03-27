@@ -139,6 +139,8 @@ class NaviViewModel @Inject constructor(
     private val weatherRepository: WeatherRepository,
 ) : ViewModel() {
 
+    private val s get() = LanguageManager.current.value.strings
+
     val placeId: String = savedStateHandle["placeId"] ?: "dm3"
     val mode: String = savedStateHandle["mode"] ?: "walk"
     val courseId: String? = savedStateHandle.get<String>("courseId")?.ifEmpty { null }
@@ -302,7 +304,7 @@ class NaviViewModel @Inject constructor(
             // t=8s — 깨비 인사(3s) + 줌인(2.5s) 완료 후 대화 시작
             delay(6000L)
             addMessage(NaviChatMessage.BotText(
-                "I'll guide you to $placeName! Keep going straight ahead.",
+                s.guideToPlace.replace("%s", placeName),
             ))
             notifyUser()
 
@@ -349,7 +351,7 @@ class NaviViewModel @Inject constructor(
                 delay(800L)
                 removeTyping()
                 addMessage(NaviChatMessage.BotText(
-                    "By the way, I know some interesting stories about $placeName!"
+                    s.storyAboutPlace.replace("%s", placeName)
                 ))
                 addMessage(NaviChatMessage.StoryPrompt(placeName = placeName))
                 notifyUser()
@@ -501,7 +503,7 @@ class NaviViewModel @Inject constructor(
             addMessage(NaviChatMessage.BotTyping)
             delay(800L)
             removeTyping()
-            addMessage(NaviChatMessage.BotText("Here are some useful Korean phrases:"))
+            addMessage(NaviChatMessage.BotText(s.usefulPhrases))
             addMessage(NaviChatMessage.Phrases(items = USEFUL_PHRASES))
         }
     }
@@ -743,7 +745,7 @@ class NaviViewModel @Inject constructor(
         viewModelScope.launch {
             removeArrivalConfirm()
             addMessage(NaviChatMessage.BotText(
-                "🎉 You've arrived at ${detail?.place?.name ?: "your destination"}! Enjoy your visit!"
+                s.arrivedAt.replace("%s", detail?.place?.name ?: s.destination)
             ))
             notifyUser()
         }
