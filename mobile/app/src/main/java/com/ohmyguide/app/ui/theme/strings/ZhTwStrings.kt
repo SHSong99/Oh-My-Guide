@@ -159,6 +159,29 @@ object ZhTwStrings : AppStrings {
     override val bookmarkEmpty = "暫無收藏短語"
     override val viewAllPhrases = "查看全部短語"
 
+    // ── Chat / Recommend ──
+    override val picksForYou = "為你推薦"
+    override val newPicksForYou = "新推薦"
+    override val noPlacesFound = "未找到景點"
+    override val sorryNoPlaces = "抱歉，沒有找到符合要求的景點"
+    override val freshPicks = "最新推薦"
+    override val mainFocusQuestion = "今天想做什麼？"
+    override val vibeQuestion = "想要什麼樣的氛圍？"
+    override val optionFood = "美食"
+    override val optionPhoto = "拍照景點"
+    override val optionShopping = "購物"
+    override val optionActive = "活力"
+    override val optionCalm = "休閒"
+    override val optionNightlife = "夜生活"
+    override val showMore = "查看更多"
+    override val moreSpots = "更多景點"
+
+    // ── Navi Chat ──
+    override val guideToPlace = "這個地方的導覽"
+    override val storyAboutPlace = "這個地方的故事"
+    override val usefulPhrases = "附近實用用語"
+    override val arrivedAt = "已到達"
+
     override val locating = "定位中..."
     override val mapView = "地圖檢視"
     override val explorePlaces = "探索您周圍的景點"
