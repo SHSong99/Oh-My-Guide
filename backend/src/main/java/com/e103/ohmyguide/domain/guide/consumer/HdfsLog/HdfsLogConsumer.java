@@ -33,7 +33,7 @@ public class HdfsLogConsumer {
         backoff = @Backoff(delay = 1000, multiplier = 2),
         dltTopicSuffix = ".dlt"
     )
-    @KafkaListener(topics = {"user-go-log", "user-view-log"}, groupId = "hdfs-log-group")
+    @KafkaListener(topics = {"user-go-log", "user-view-log", "user-star-log"}, groupId = "hdfs-log-group")
     public synchronized void consume(String message) {
         try {
             UserGoLogMessage logRequest = objectMapper.readValue(message, UserGoLogMessage.class);

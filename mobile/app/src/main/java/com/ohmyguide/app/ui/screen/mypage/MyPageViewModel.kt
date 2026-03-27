@@ -20,7 +20,6 @@ data class PickPlace(
     val imageUrl: String?,
     val addr: String?,
     val rank: Int,
-    val contentTypeId: Long? = null,
 )
 
 data class MyPageUiState(
@@ -78,7 +77,6 @@ class MyPageViewModel @Inject constructor(
                             imageUrl = detail.firstImage1,
                             addr = detail.addr1,
                             rank = pick.placeRank ?: 0,
-                            contentTypeId = detail.contentTypeId,
                         )
                     } else null
                 }
