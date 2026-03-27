@@ -28,6 +28,7 @@ public class GuideService {
     private final AttractionRepository attractionRepository;
 
     private static final String TOPIC = "user-go-log";
+    private static final String STAR_TOPIC = "user-star-log";
 
     private final KafkaTemplate<String, String> kafkaTemplate;
     private final ObjectMapper objectMapper;
@@ -60,5 +61,20 @@ public class GuideService {
                         .build())
                 .destination(GuideResponse.from(attraction))
                 .build();
+    }
+
+    public void rateStar(Long userId, Long attrId, int star) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
+
+        UserGoLogMessage logMessage = UserGoLogMessage.toStarMessage(user, attrId, star);
+
+        try {
+            String message = objectMapper.writeValueAsString(logMessage);
+            kafkaTemplate.send(STAR_TOPIC, message);
+            log.debug("Sent user star log to Kafka: placeId={}, star={}", attrId, star);
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize user star log", e);
+        }
     }
 }
