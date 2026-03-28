@@ -1,6 +1,7 @@
 package com.ohmyguide.app.ui.screen.explore
 
 import android.graphics.Color as AndroidColor
+import androidx.compose.ui.graphics.Color
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.AnimatedContent
@@ -501,99 +502,88 @@ fun CourseNaviScreen(
         )
     }
 
-    // 투어 완료 오버레이
+    // 투어 완료 오버레이 (대시보드 스타일)
     if (uiState.tourCompleted) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)),
+                .background(Color.Black.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center,
         ) {
             Column(
                 modifier = Modifier
-                    .padding(32.dp)
+                    .padding(horizontal = 28.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(BgWhite)
+                    .background(Color(0xFF1A1A2E))
                     .padding(28.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Image(
-                    painter = painterResource(R.drawable.masot),
-                    contentDescription = "Kkaebi",
-                    modifier = Modifier
-                        .size(80.dp)
-                        .clip(CircleShape),
-                    contentScale = ContentScale.Fit,
-                )
-                Spacer(modifier = Modifier.height(16.dp))
                 Text(
                     text = "투어가 끝났어요!",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary,
+                    style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                    color = BgWhite,
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = "이번 가이드는 어떠셨나요?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = BgWhite.copy(alpha = 0.7f),
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    // 따봉
                     Column(
                         modifier = Modifier
+                            .weight(1f)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(Primary.copy(alpha = 0.1f))
+                            .background(Color(0xFF2A2A3E))
                             .clickable {
-                                // TODO: "good" 저장
                                 ttsManager.shutdown()
                                 navController.popBackStack(Screen.Explore.route, inclusive = false)
                             }
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                            .padding(vertical = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text("👍", fontSize = 32.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Image(
+                            painter = painterResource(R.drawable.ic_feedback_good),
+                            contentDescription = "Good",
+                            modifier = Modifier.size(80.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "좋았어요",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = Primary,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = BgWhite,
                         )
                     }
-                    // 아쉬움
                     Column(
                         modifier = Modifier
+                            .weight(1f)
                             .clip(RoundedCornerShape(16.dp))
-                            .background(BgSub)
+                            .background(Color(0xFF2A2A3E))
                             .clickable {
-                                // TODO: "bad" 저장
                                 ttsManager.shutdown()
                                 navController.popBackStack(Screen.Explore.route, inclusive = false)
                             }
-                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                            .padding(vertical = 16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
-                        Text("😕", fontSize = 32.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Image(
+                            painter = painterResource(R.drawable.ic_feedback_bad),
+                            contentDescription = "Bad",
+                            modifier = Modifier.size(80.dp),
+                            contentScale = ContentScale.Fit,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "아쉬웠어요",
-                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                            color = TextCaption,
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                            color = BgWhite.copy(alpha = 0.7f),
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "다른 투어도 둘러볼까요?",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Primary,
-                    modifier = Modifier.clickable {
-                        ttsManager.shutdown()
-                        navController.popBackStack(Screen.Explore.route, inclusive = false)
-                    },
-                )
             }
         }
     }

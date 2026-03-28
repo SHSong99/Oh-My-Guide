@@ -9,6 +9,7 @@ import okhttp3.Response
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -30,7 +31,11 @@ class GuideSseClient @Inject constructor(
             .header("Accept", "text/event-stream")
             .build()
 
-        eventSource = EventSources.createFactory(okHttpClient)
+        val sseClient = okHttpClient.newBuilder()
+            .readTimeout(0, TimeUnit.SECONDS)
+            .build()
+
+        eventSource = EventSources.createFactory(sseClient)
             .newEventSource(request, object : EventSourceListener() {
                 override fun onOpen(eventSource: EventSource, response: Response) {
                     onOpen()

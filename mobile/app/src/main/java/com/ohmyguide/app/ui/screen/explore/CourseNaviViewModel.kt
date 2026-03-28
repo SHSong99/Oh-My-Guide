@@ -467,33 +467,53 @@ class CourseNaviViewModel @Inject constructor(
                 val currentIdx = _uiState.value.currentSpotIndex
                 val currentSpot = spots.getOrNull(currentIdx) ?: return@collect
 
-                // 현재 스팟 도착 체크 (순서대로만 진행)
-                val distCurrent = haversineMeters(userLat, userLng, currentSpot.lat, currentSpot.lng)
-                if (com.ohmyguide.app.BuildConfig.DEBUG) {
-                    android.util.Log.d("CourseNaviVM", "GPS: ($userLat, $userLng) → ${currentSpot.name}($currentIdx) dist=${distCurrent.toInt()}m, arrived=$arrivedSpots")
-                }
-                if (distCurrent < ARRIVAL_THRESHOLD_METERS && currentIdx !in arrivedSpots) {
-                    arrivedSpots.add(currentIdx)
-
-                    // 큐에 순서대로: 알림음 → 장소 설명 → 다음 이동 → 스팟 전환
-                    enqueueGuide("__SOUND__")
-
-                    val guideText = currentSpot.overviewTts ?: currentSpot.desc
-                    if (guideText.isNotBlank()) {
-                        enqueueGuide(guideText)
+                // 현재 스팟 + 아직 미도착 스팟 모두 감지 (이전 가이드 재생 중에도 미리 큐에 쌓기)
+                for (checkIdx in 0..spots.lastIndex) {
+                    if (checkIdx in arrivedSpots) continue
+                    val checkSpot = spots[checkIdx]
+                    val dist = haversineMeters(userLat, userLng, checkSpot.lat, checkSpot.lng)
+                    if (com.ohmyguide.app.BuildConfig.DEBUG && checkIdx == currentIdx) {
+                        android.util.Log.d("CourseNaviVM", "GPS: ($userLat, $userLng) → ${checkSpot.name}($checkIdx) dist=${dist.toInt()}m, arrived=$arrivedSpots")
                     }
-
-                    if (currentIdx < spots.lastIndex) {
-                        val nextSpot = spots[currentIdx + 1]
-                        enqueueGuide("다음 장소는 ${nextSpot.name}이에요. 이동해볼까요?")
-                        enqueueGuide("__ADVANCE__${currentIdx + 1}")
-                    } else {
-                        enqueueGuide("축하합니다! ${_course.value?.title ?: "코스"}를 모두 완료했어요! 즐거운 산책이었길 바랍니다.")
-                        enqueueGuide("__COMPLETE__")
+                    if (dist < ARRIVAL_THRESHOLD_METERS) {
+                        arrivedSpots.add(checkIdx)
+                        enqueueSpotGuide(checkIdx, spots)
                     }
                 }
-                // 순서 스킵 제거: 다음 스팟이 더 가까워도 현재 스팟 도착 전까지 대기
             }
+        }
+    }
+
+    private fun enqueueSpotGuide(spotIdx: Int, spots: List<com.ohmyguide.app.fixtures.Spot>) {
+        val spot = spots[spotIdx]
+
+        enqueueGuide("__SOUND__")
+
+        val guideText = spot.overviewTts ?: spot.desc
+        if (guideText.isNotBlank()) {
+            enqueueGuide(guideText)
+        }
+
+        // SSAFY 코스 전용: 마지막 스팟 후 삼성전기/SSAFY 설명
+        if (courseId == "6" && spotIdx == spots.lastIndex) {
+            enqueueGuide("원래 삼성자동차 부품을 만들려고 지은 공장인데, 외환위기로 자동차 사업이 접히면서 MLCC 공장으로 변신했어요. MLCC는 전자산업의 쌀이라 불리는 초소형 부품인데요. 스마트폰에 1,000개, 전기차에 3만 개, AI 서버에 2만 5천 개나 들어간답니다! 삼성전기가 글로벌 시장 점유율 약 24%를 차지하고 있어요.")
+            enqueueGuide("그리고 재미있는 사실! 이 공장 안에 SSAFY, 싸피 부산 캠퍼스가 숨어 있어요. 삼성의 SW·AI 인재 양성 프로그램인데, 2021년에 개소했답니다. 교육생들은 삼성전기 직원들과 같은 식당에서 밥 먹고, 보안 검색도 받으면서 코딩을 배워요!")
+            enqueueGuide("같은 주소에서 하나는 세계에서 가장 작은 부품을, 하나는 미래의 개발자를 만드는 곳. 삼성의 하드웨어와 소프트웨어, 두 개의 심장이랍니다!")
+        }
+
+        if (spotIdx < spots.lastIndex) {
+            val nextSpot = spots[spotIdx + 1]
+            enqueueGuide("다음 장소는 ${nextSpot.name}이에요. 이동해볼까요?")
+            // SSAFY 코스 전용: 3번→4번 이동 중 녹산공단 설명
+            if (courseId == "6" && spotIdx == 2) {
+                enqueueGuide("조금 더 덧붙여서 이야기 드리자면, 놀랍게도 이곳은 원래 바다였어요! 1990년에 매립을 시작해서 만든 곳이랍니다.")
+                enqueueGuide("약 27,000명이 일하고 있고, 특히 조선기자재 업체가 아주 많이 모여 있어서, 이곳 없으면 배를 못 만든다는 말이 있을 정도예요! 삼성전기, 농심, 대한제강 같은 큰 기업들도 여기 있답니다.")
+                enqueueGuide("바로 옆에 부산신항이 있고, 앞으로 가덕도신공항도 가까이 생길 예정이라 공항·항만·철도가 모이는 물류 중심지가 되고 있어요. 지금은 스마트그린산단으로 변신 중이랍니다!")
+            }
+            enqueueGuide("__ADVANCE__${spotIdx + 1}")
+        } else {
+            enqueueGuide("축하합니다! ${_course.value?.title ?: "코스"}를 모두 완료했어요! 즐거운 산책이었길 바랍니다.")
+            enqueueGuide("__COMPLETE__")
         }
     }
 
@@ -519,7 +539,7 @@ class CourseNaviViewModel @Inject constructor(
     }
 
     companion object {
-        private const val ARRIVAL_THRESHOLD_METERS = 50.0
+        private const val ARRIVAL_THRESHOLD_METERS = 30.0
         private const val ADVANCE_THRESHOLD_METERS = 150.0
     }
 }
