@@ -32,6 +32,17 @@ public class SseEmitterManager {
         });
 
         emitters.put(userId, emitter);
+
+        // 초기 이벤트 전송 → HTTP 응답 commit → 이후 send 가능
+        try {
+            emitter.send(SseEmitter.event()
+                    .name("connected")
+                    .data("SSE connected"));
+        } catch (Exception e) {
+            emitters.remove(userId, emitter);
+            log.error("Failed to send initial SSE event: userId={}", userId, e);
+        }
+
         return emitter;
     }
 
