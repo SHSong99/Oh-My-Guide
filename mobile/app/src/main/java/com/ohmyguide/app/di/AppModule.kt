@@ -11,6 +11,7 @@ import com.ohmyguide.app.data.api.OdsayApi
 import com.ohmyguide.app.data.api.OpenMeteoApi
 import com.ohmyguide.app.data.api.TmapApi
 import com.ohmyguide.app.data.local.TokenDataStore
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -32,6 +33,10 @@ object AppModule {
     fun provideTokenDataStore(@ApplicationContext context: Context): TokenDataStore {
         return TokenDataStore(context)
     }
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson = Gson()
 
     @Provides
     @Singleton

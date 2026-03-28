@@ -5,6 +5,7 @@ import com.ohmyguide.app.BuildConfig
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ohmyguide.app.data.model.PlaceCardDto
+import com.ohmyguide.app.data.api.GuideSseClient
 import com.ohmyguide.app.data.model.RefreshRecommendRequest
 import com.ohmyguide.app.data.repository.RecommendRepository
 import com.ohmyguide.app.fixtures.HOME_RECOMMENDATIONS
@@ -80,6 +81,7 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val recommendRepository: RecommendRepository,
+    private val guideSseClient: GuideSseClient,
 ) : ViewModel() {
 
     private val s get() = LanguageManager.current.value.strings
@@ -185,10 +187,24 @@ class HomeViewModel @Inject constructor(
             val lng = location?.longitude ?: 128.8510
             val reachLat = place?.lat ?: lat
             val reachLng = place?.lng ?: lng
-            val result = recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
-            result.getOrNull()?.let { guide ->
-                PlaceDetailCache.putGuide(placeId, guide)
-            }
+
+            // 1) SSE 구독 → 연결 확인 후 REST 호출 → SSE로 nearbyPlaces 수신
+            guideSseClient.connect(
+                onOpen = {
+                    // 2) SSE 연결이 열린 후에만 안내 시작 (Kafka 발행 트리거)
+                    viewModelScope.launch {
+                        recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
+                    }
+                },
+                onResponse = { guide ->
+                    PlaceDetailCache.putGuide(placeId, guide)
+                    guideSseClient.close()
+                },
+                onError = {
+                    if (BuildConfig.DEBUG) Log.d("HomeViewModel", "SSE error", it)
+                    guideSseClient.close()
+                },
+            )
         }
     }
 
