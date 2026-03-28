@@ -46,7 +46,7 @@ public class GuideService {
         try {
             String message = objectMapper.writeValueAsString(logRequest);
             kafkaTemplate.send(TOPIC, message);
-            log.debug("Sent user log to Kafka: action={}, placeId={}", logRequest.getAction(), logRequest.getPlaceId());
+            log.info("Sent user log to Kafka: action={}, placeId={}", logRequest.getAction(), logRequest.getPlaceId());
         } catch (JsonProcessingException e) {
             log.error("Failed to serialize user log request", e);
         }

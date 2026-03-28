@@ -40,6 +40,7 @@ public class GuideController {
             @RequestParam BigDecimal reachLng
     ) {
         Long userId = userPrincipal.getId();
+        log.info("GuideController.startNavigation: userId = {} 호출!!", userId);
 
         GuideGoResponse response = guideService.startNavigation(userId, placeId,
                 currentLat, currentLng, reachLat, reachLng);

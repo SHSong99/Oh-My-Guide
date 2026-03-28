@@ -38,6 +38,8 @@ public class AttractionsRouteConsumer {
     )
     @KafkaListener(topics = "user-go-log", groupId = "attractions-route-group")
     public void consume(String message) {
+        log.info("AttractionsRouteConsumer.consume: consumer 동작!!!! message = {}", message);
+
         UserGoLogMessage logMessage;
         try {
             logMessage = objectMapper.readValue(message, UserGoLogMessage.class);

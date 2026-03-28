@@ -37,6 +37,8 @@ public class SseEmitterManager {
 
     public void send(Long userId, Object data) {
         SseEmitter emitter = emitters.get(userId);
+
+        log.info("SSE emitter started: userId={}, data={}!!!!!", userId, data);
         if (emitter == null) {
             log.warn("No SSE emitter found for userId={}", userId);
             return;
