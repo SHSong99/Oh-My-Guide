@@ -188,7 +188,8 @@ class HomeViewModel @Inject constructor(
             val reachLat = place?.lat ?: lat
             val reachLng = place?.lng ?: lng
 
-            // 1) SSE 구독 → 연결 확인 후 REST 호출 → SSE로 nearbyPlaces 수신
+            // 1) SSE 구독 → 연결 확인 후 REST 호출 → SSE로 2건 수신 (목적지 + nearbyPlaces)
+            var sseReceivedCount = 0
             guideSseClient.connect(
                 onOpen = {
                     // 2) SSE 연결이 열린 후에만 안내 시작 (Kafka 발행 트리거)
@@ -197,8 +198,11 @@ class HomeViewModel @Inject constructor(
                     }
                 },
                 onResponse = { guide ->
+                    sseReceivedCount++
                     PlaceDetailCache.putGuide(placeId, guide)
-                    guideSseClient.close()
+                    if (sseReceivedCount >= 2) {
+                        guideSseClient.close()
+                    }
                 },
                 onError = {
                     if (BuildConfig.DEBUG) Log.d("HomeViewModel", "SSE error", it)
