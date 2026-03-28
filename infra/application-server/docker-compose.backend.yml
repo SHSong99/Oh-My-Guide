@@ -24,16 +24,6 @@ services:
       - app-network
     restart: unless-stopped
 
-  attractions-route-consumer:
-    image: oh-my-guide-backend:latest
-    container_name: attractions-route-consumer
-    env_file: ../../backend/.env
-    environment:
-      SPRING_PROFILES_ACTIVE: attractions-route-consumer
-    networks:
-      - app-network
-    restart: unless-stopped
-
   hdfs-log-consumer:
     image: oh-my-guide-backend:latest
     container_name: hdfs-log-consumer
