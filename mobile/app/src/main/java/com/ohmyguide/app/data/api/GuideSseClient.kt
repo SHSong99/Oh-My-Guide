@@ -21,7 +21,6 @@ class GuideSseClient @Inject constructor(
     private var eventSource: EventSource? = null
 
     fun connect(
-        onOpen: () -> Unit,
         onResponse: (GuideNavigationResponse) -> Unit,
         onError: (Throwable) -> Unit,
     ) {
@@ -35,12 +34,9 @@ class GuideSseClient @Inject constructor(
             .readTimeout(0, TimeUnit.SECONDS)
             .build()
 
+
         eventSource = EventSources.createFactory(sseClient)
             .newEventSource(request, object : EventSourceListener() {
-                override fun onOpen(eventSource: EventSource, response: Response) {
-                    onOpen()
-                }
-
                 override fun onEvent(
                     eventSource: EventSource,
                     id: String?,

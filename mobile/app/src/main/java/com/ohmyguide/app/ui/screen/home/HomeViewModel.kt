@@ -188,15 +188,12 @@ class HomeViewModel @Inject constructor(
             val reachLat = place?.lat ?: lat
             val reachLng = place?.lng ?: lng
 
-            // 1) SSE 구독 → 연결 확인 후 REST 호출 → SSE로 nearbyPlaces 수신
+            // 이전 SSE 연결이 남아있으면 정리
+            guideSseClient.close()
+            // 1) SSE 연결 (fire-and-forget) → 2) REST 호출 (Kafka 트리거) → SSE 1건 수신 후 종료
             guideSseClient.connect(
-                onOpen = {
-                    // 2) SSE 연결이 열린 후에만 안내 시작 (Kafka 발행 트리거)
-                    viewModelScope.launch {
-                        recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
-                    }
-                },
                 onResponse = { guide ->
+                    if (BuildConfig.DEBUG) Log.d("HomeViewModel", "SSE onResponse: $guide")
                     PlaceDetailCache.putGuide(placeId, guide)
                     guideSseClient.close()
                 },
@@ -205,6 +202,10 @@ class HomeViewModel @Inject constructor(
                     guideSseClient.close()
                 },
             )
+            // SSE 연결 요청 직후 REST 호출 — 네트워크 왕복 시간 동안 SSE가 열림
+            if (BuildConfig.DEBUG) Log.d("HomeViewModel", "Calling REST guide/$attrId")
+            recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
+            if (BuildConfig.DEBUG) Log.d("HomeViewModel", "REST guide/$attrId done")
         }
     }
 
