@@ -66,6 +66,17 @@ data class TransitStopInfo(
     val exitStopName: String,
 )
 
+data class TransitGuideInfo(
+    val type: String,           // "board" or "alight"
+    val transitType: String,    // "bus" or "subway"
+    val lineName: String,       // "Bus 201", "Line 2"
+    val stationName: String,    // station name (Korean)
+    val stationNameEn: String,  // station name (English)
+    val stopsCount: Int = 0,
+    val exitStation: String = "",
+    val exitStationEn: String = "",
+)
+
 data class WeatherInfo(
     val temperature: Double,
     val feelsLike: Double,
@@ -100,6 +111,7 @@ sealed class NaviChatMessage {
     object BotTyping : NaviChatMessage()
     data class PlaceIntro(val detail: PlaceDetail, val distance: String, val eta: String) : NaviChatMessage()
     data class TransitInfo(val info: TransitStopInfo) : NaviChatMessage()
+    data class TransitGuide(val info: TransitGuideInfo) : NaviChatMessage()
     data class DestinationDetail(val detail: PlaceDetail) : NaviChatMessage()
     data class NearbyPlaces(
         val places: List<Place>,
@@ -179,6 +191,10 @@ class NaviViewModel @Inject constructor(
     private var nextNearbyIndex = 0
     private var pickedSpots: List<NearbySpotInfo> = emptyList()
 
+    // Transit 세그먼트별 탑승/하차 안내 추적
+    private val boardedSegments = mutableSetOf<Int>()   // 탑승 안내 완료
+    private val alightedSegments = mutableSetOf<Int>()   // 하차 안내 완료
+
     private fun notifyUser() {
         try {
             // 비프음
@@ -228,38 +244,7 @@ class NaviViewModel @Inject constructor(
             PhraseItem("맛있어요!", "ma-si-sseo-yo!", "It's delicious!"),
         )
 
-        private val TRANSIT_STOPS = mapOf(
-            "dm3" to TransitStopInfo(
-                stopName = "Jongno 5-ga Stn.",
-                busNumber = "Bus 201",
-                remainingStops = 3,
-                exitStopName = "Gwangjang Market",
-            ),
-            "dm4" to TransitStopInfo(
-                stopName = "Anguk Stn.",
-                busNumber = "Bus 172",
-                remainingStops = 2,
-                exitStopName = "Bukchon Hanok Village",
-            ),
-            "dm5" to TransitStopInfo(
-                stopName = "Myeongdong Stn.",
-                busNumber = "Bus 402",
-                remainingStops = 4,
-                exitStopName = "Namsan Tower Entrance",
-            ),
-            "dm6" to TransitStopInfo(
-                stopName = "Jongno 3-ga Stn.",
-                busNumber = "Bus 151",
-                remainingStops = 1,
-                exitStopName = "Ikseon-dong",
-            ),
-            "dm7" to TransitStopInfo(
-                stopName = "Gwanghwamun Stn.",
-                busNumber = "Bus 109",
-                remainingStops = 2,
-                exitStopName = "Cheonggyecheon Stream",
-            ),
-        )
+        private const val TRANSIT_BOARD_RADIUS = 100.0
     }
 
     init {
@@ -320,10 +305,32 @@ class NaviViewModel @Inject constructor(
             removeTyping()
             when (mode) {
                 "transit" -> {
-                    addMessage(NaviChatMessage.BotText("Here's your transit info:"))
-                    addMessage(NaviChatMessage.TransitInfo(
-                        info = TRANSIT_STOPS[placeId] ?: TRANSIT_STOPS.values.first(),
-                    ))
+                    val transitSegments = _naviRoute.value?.segments
+                        ?.filter { it.type == "bus" || it.type == "subway" } ?: emptyList()
+                    if (transitSegments.isNotEmpty()) {
+                        val first = transitSegments.first()
+                        addMessage(NaviChatMessage.TransitGuide(
+                            TransitGuideInfo(
+                                type = "board",
+                                transitType = first.type,
+                                lineName = first.lineName,
+                                stationName = first.fromNameKr.ifEmpty { first.fromName },
+                                stationNameEn = first.fromName,
+                                stopsCount = first.stopsCount,
+                                exitStation = first.toNameKr.ifEmpty { first.toName },
+                                exitStationEn = first.toName,
+                            )
+                        ))
+                        if (transitSegments.size > 1) {
+                            addMessage(NaviChatMessage.BotText(
+                                "🔄 ${transitSegments.size - 1} transfer(s) ahead. I'll guide you when you're close!"
+                            ))
+                        }
+                    } else {
+                        addMessage(NaviChatMessage.BotText(
+                            "🚶 Follow the transit route! About $totalDuration min."
+                        ))
+                    }
                 }
                 "car" -> {
                     addMessage(NaviChatMessage.BotText(
@@ -465,6 +472,11 @@ class NaviViewModel @Inject constructor(
                     "$placeName · ${remainingMin}min"
                 )
 
+                // Transit 탑승/하차 감지
+                if (mode == "transit") {
+                    checkTransitBoardingAlighting(userLat, userLng)
+                }
+
                 // Nearby spot check (progress-based)
                 checkNearbyByProgress(progress)
 
@@ -585,6 +597,56 @@ class NaviViewModel @Inject constructor(
         if (BuildConfig.DEBUG) {
             Log.d("NaviVM", "Picked ${pickedSpots.size} nearby spots along route")
             pickedSpots.forEach { Log.d("NaviVM", "  - ${it.name} at progress=${it.routeProgress}") }
+        }
+    }
+
+    // ── Transit 탑승/하차 GPS 감지 ──
+
+    private fun checkTransitBoardingAlighting(userLat: Double, userLng: Double) {
+        val segments = _naviRoute.value?.segments ?: return
+        segments.forEachIndexed { idx, seg ->
+            if (seg.type != "bus" && seg.type != "subway") return@forEachIndexed
+            val boardCoord = seg.coords.firstOrNull() ?: return@forEachIndexed
+
+            val distToBoard = haversineMeters(userLat, userLng, boardCoord.lat, boardCoord.lng)
+
+            // 탑승 정류장 100m 이내 진입 → 탑승 카드
+            if (distToBoard < TRANSIT_BOARD_RADIUS && idx !in boardedSegments) {
+                boardedSegments.add(idx)
+                viewModelScope.launch {
+                    addMessage(NaviChatMessage.TransitGuide(
+                        TransitGuideInfo(
+                            type = "board",
+                            transitType = seg.type,
+                            lineName = seg.lineName,
+                            stationName = seg.fromNameKr.ifEmpty { seg.fromName },
+                            stationNameEn = seg.fromName,
+                            stopsCount = seg.stopsCount,
+                            exitStation = seg.toNameKr.ifEmpty { seg.toName },
+                            exitStationEn = seg.toName,
+                        )
+                    ))
+                    notifyUser()
+                }
+            }
+
+            // 탑승 완료 후 100m 밖으로 벗어남 → 하차 카드
+            if (idx in boardedSegments && idx !in alightedSegments && distToBoard >= TRANSIT_BOARD_RADIUS) {
+                alightedSegments.add(idx)
+                viewModelScope.launch {
+                    addMessage(NaviChatMessage.TransitGuide(
+                        TransitGuideInfo(
+                            type = "alight",
+                            transitType = seg.type,
+                            lineName = seg.lineName,
+                            stationName = seg.toNameKr.ifEmpty { seg.toName },
+                            stationNameEn = seg.toName,
+                            stopsCount = seg.stopsCount,
+                        )
+                    ))
+                    notifyUser()
+                }
+            }
         }
     }
 

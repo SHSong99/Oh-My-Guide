@@ -6,6 +6,7 @@ import com.e103.ohmyguide.domain.guide.dto.GuideGoResponse;
 import com.e103.ohmyguide.domain.guide.service.GuideService;
 import com.e103.ohmyguide.domain.guide.service.SseEmitterManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +20,7 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 
+@Slf4j
 @RestController
 @RequestMapping("/guide")
 @RequiredArgsConstructor
@@ -38,6 +40,7 @@ public class GuideController {
             @RequestParam BigDecimal reachLng
     ) {
         Long userId = userPrincipal.getId();
+        log.info("GuideController.startNavigation: userId = {} 호출!!", userId);
 
         GuideGoResponse response = guideService.startNavigation(userId, placeId,
                 currentLat, currentLng, reachLat, reachLng);
@@ -60,6 +63,11 @@ public class GuideController {
     @PreAuthorize("hasRole('USER')")
     public SseEmitter connectSse(@CurrentUser UserPrincipal userPrincipal) {
         Long userId = userPrincipal.getId();
-        return sseEmitterManager.create(userId);
+
+        log.info("GuideController.connectSse: sse 연결 요청!! user id = {}", userId);
+        SseEmitter emitter = sseEmitterManager.create(userId);
+
+        log.info("GuideController.connectSse: sse 반환!! userId = {} emitter = {}", userId, emitter);
+        return emitter;
     }
 }
