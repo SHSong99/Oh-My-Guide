@@ -19,15 +19,15 @@ public class SseEmitterManager {
         SseEmitter emitter = new SseEmitter(SSE_TIMEOUT);
 
         emitter.onCompletion(() -> {
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
             log.debug("SSE emitter completed: userId={}", userId);
         });
         emitter.onTimeout(() -> {
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
             log.debug("SSE emitter timed out: userId={}", userId);
         });
         emitter.onError(e -> {
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
             log.debug("SSE emitter error: userId={}", userId);
         });
 
@@ -47,7 +47,7 @@ public class SseEmitterManager {
                     .data(data));
             emitter.complete();
         } catch (Exception e) {
-            emitters.remove(userId);
+            emitters.remove(userId, emitter);
             log.error("Failed to send SSE event: userId={}", userId, e);
         }
     }
