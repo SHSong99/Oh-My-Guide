@@ -3,8 +3,7 @@ package com.e103.ohmyguide.domain.guide.consumer;
 import com.e103.ohmyguide.domain.attraction.entity.Attraction;
 import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
 import com.e103.ohmyguide.domain.guide.consumer.attractionsRoute.AttractionsRouteConsumer;
-import com.e103.ohmyguide.domain.guide.dto.GuideNavigationResponse;
-import com.e103.ohmyguide.domain.guide.service.SseEmitterManager;
+import com.e103.ohmyguide.domain.guide.dto.AttractionsRouteResponseMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -14,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.kafka.core.KafkaTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -39,7 +39,7 @@ class AttractionsRouteConsumerTest {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Mock
-    private SseEmitterManager sseEmitterManager;
+    private KafkaTemplate<String, String> kafkaTemplate;
 
     @DisplayName("Kafka 메시지를 소비하면 bounding box 내 주변 관광지를 SSE로 전송한다")
     @Test
@@ -67,16 +67,18 @@ class AttractionsRouteConsumerTest {
         // when
         consumer.consume(kafkaMessage);
 
-        // then - SSE로 전송된 응답 검증
-        ArgumentCaptor<GuideNavigationResponse> responseCaptor =
-                ArgumentCaptor.forClass(GuideNavigationResponse.class);
-        verify(sseEmitterManager).send(eq(userId), responseCaptor.capture());
+        // then - Kafka reply topic으로 발행된 응답 검증
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(kafkaTemplate).send(eq("attractions-route-response"), messageCaptor.capture());
 
-        GuideNavigationResponse sseResponse = responseCaptor.getValue();
-        assertThat(sseResponse.getStartLocation().getLatitude()).isEqualByComparingTo(currentLat);
-        assertThat(sseResponse.getDestination().getTitle()).isEqualTo("경복궁");
-        assertThat(sseResponse.getNearbyPlaces()).hasSize(2);
-        assertThat(sseResponse.getNearbyPlaces())
+        AttractionsRouteResponseMessage responseMessage =
+                objectMapper.readValue(messageCaptor.getValue(), AttractionsRouteResponseMessage.class);
+        assertThat(responseMessage.getUserId()).isEqualTo(userId);
+        assertThat(responseMessage.getNavigationResponse().getStartLocation().getLatitude())
+                .isEqualByComparingTo(currentLat);
+        assertThat(responseMessage.getNavigationResponse().getDestination().getTitle()).isEqualTo("경복궁");
+        assertThat(responseMessage.getNavigationResponse().getNearbyPlaces()).hasSize(2);
+        assertThat(responseMessage.getNavigationResponse().getNearbyPlaces())
                 .extracting("title")
                 .containsExactly("북촌한옥마을", "인사동");
     }
@@ -105,11 +107,12 @@ class AttractionsRouteConsumerTest {
         consumer.consume(kafkaMessage);
 
         // then
-        ArgumentCaptor<GuideNavigationResponse> responseCaptor =
-                ArgumentCaptor.forClass(GuideNavigationResponse.class);
-        verify(sseEmitterManager).send(eq(userId), responseCaptor.capture());
+        ArgumentCaptor<String> messageCaptor = ArgumentCaptor.forClass(String.class);
+        verify(kafkaTemplate).send(eq("attractions-route-response"), messageCaptor.capture());
 
-        assertThat(responseCaptor.getValue().getNearbyPlaces()).isEmpty();
+        AttractionsRouteResponseMessage responseMessage =
+                objectMapper.readValue(messageCaptor.getValue(), AttractionsRouteResponseMessage.class);
+        assertThat(responseMessage.getNavigationResponse().getNearbyPlaces()).isEmpty();
     }
 
     @DisplayName("잘못된 JSON 메시지는 무시하고 SSE 전송하지 않는다")
@@ -119,7 +122,7 @@ class AttractionsRouteConsumerTest {
         consumer.consume("{ invalid json }}}");
 
         // then
-        verify(sseEmitterManager, never()).send(any(), any());
+        verify(kafkaTemplate, never()).send(any(), any());
     }
 
     // -- 헬퍼 메서드 --

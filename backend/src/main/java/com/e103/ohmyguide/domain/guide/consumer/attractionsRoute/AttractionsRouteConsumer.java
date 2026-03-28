@@ -2,11 +2,11 @@ package com.e103.ohmyguide.domain.guide.consumer.attractionsRoute;
 
 import com.e103.ohmyguide.domain.attraction.entity.Attraction;
 import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
+import com.e103.ohmyguide.domain.guide.dto.AttractionsRouteResponseMessage;
 import com.e103.ohmyguide.domain.guide.dto.GuideNavigationResponse;
 import com.e103.ohmyguide.domain.guide.dto.GuideResponse;
 import com.e103.ohmyguide.domain.guide.dto.StartLocationResponse;
 import com.e103.ohmyguide.domain.guide.dto.UserGoLogMessage;
-import com.e103.ohmyguide.domain.guide.service.SseEmitterManager;
 import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -15,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.RetryableTopic;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.stereotype.Service;
 
@@ -27,9 +28,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AttractionsRouteConsumer {
 
+    private static final String RESPONSE_TOPIC = "attractions-route-response";
+
     private final AttractionRepository attractionRepository;
     private final ObjectMapper objectMapper;
-    private final SseEmitterManager sseEmitterManager;
+    private final KafkaTemplate<String, String> kafkaTemplate;
 
     @RetryableTopic(
         attempts = "5",
@@ -82,9 +85,20 @@ public class AttractionsRouteConsumer {
                 .nearbyPlaces(nearbyPlaces)
                 .build();
 
-        // SSE로 프론트에 푸시
-        sseEmitterManager.send(logMessage.getUserId(), response);
-        log.info("Sent navigation response via SSE: userId={}, placeId={}, nearbyPlaces={}",
-                logMessage.getUserId(), placeId, nearbyPlaces.size());
+        // 응답을 Kafka reply topic으로 발행 → 메인 컨테이너에서 SSE로 프론트에 전달
+        AttractionsRouteResponseMessage responseMessage = AttractionsRouteResponseMessage.builder()
+                .userId(logMessage.getUserId())
+                .navigationResponse(response)
+                .build();
+
+        try {
+            String responseJson = objectMapper.writeValueAsString(responseMessage);
+            kafkaTemplate.send(RESPONSE_TOPIC, responseJson);
+            log.info("Published navigation response to {}: userId={}, placeId={}, nearbyPlaces={}",
+                    RESPONSE_TOPIC, logMessage.getUserId(), placeId, nearbyPlaces.size());
+        } catch (JsonProcessingException e) {
+            log.error("Failed to serialize navigation response: userId={}, placeId={}",
+                    logMessage.getUserId(), placeId, e);
+        }
     }
 }
