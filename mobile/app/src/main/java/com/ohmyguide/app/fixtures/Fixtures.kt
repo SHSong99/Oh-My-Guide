@@ -37,8 +37,8 @@ data class FeaturedTheme(
 val FEATURED_THEMES = listOf(
     FeaturedTheme(
         id = "kpop-demon",
-        title = "K-Pop Demon\nHunters",
-        subtitle = "Follow the hottest idol spots in Hongdae & Mapo",
+        title = "K-Pop 데몬 헌터스",
+        subtitle = "케데헌 속 한국 명소를 함께 걸어 보세요",
         badge = "K-POP",
         courseId = 2,
         videoRes = R.raw.theme_kpop_demon_hunters,
@@ -55,8 +55,8 @@ val FEATURED_THEMES = listOf(
     ),
     FeaturedTheme(
         id = "ssafy",
-        title = "SSAFY Lunch\nWalk Course",
-        subtitle = "The best lunch break walking route around SSAFY campus",
+        title = "SSAFY 점심\n산책 코스",
+        subtitle = "SSAFY 부울경캠퍼스 주변 점심시간 활용 산책 루트",
         badge = "SSAFY",
         courseId = 1,
         videoRes = R.raw.theme_ssafy,

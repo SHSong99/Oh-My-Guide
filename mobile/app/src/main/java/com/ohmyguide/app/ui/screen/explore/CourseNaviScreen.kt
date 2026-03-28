@@ -3,7 +3,10 @@ package com.ohmyguide.app.ui.screen.explore
 import android.graphics.Color as AndroidColor
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -15,8 +18,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,36 +27,34 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Headphones
-import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Navigation
-import androidx.compose.material3.BottomSheetScaffold
+import androidx.compose.material.icons.automirrored.filled.VolumeOff
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -68,15 +67,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import coil.compose.AsyncImage
 import coil.request.ImageRequest
-import com.ohmyguide.app.R
-import kotlinx.coroutines.delay
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
@@ -89,21 +85,15 @@ import com.naver.maps.map.compose.PathOverlay
 import com.naver.maps.map.compose.rememberCameraPositionState
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
-import com.ohmyguide.app.fixtures.Course
-import com.ohmyguide.app.fixtures.Spot
+import com.ohmyguide.app.R
+import com.ohmyguide.app.service.TtsManager
 import com.ohmyguide.app.ui.common.ConfirmDialog
-import com.ohmyguide.app.ui.common.TypingIndicator
+import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.common.buildCircleMarker
-import com.ohmyguide.app.ui.screen.navi.AnimatedMessageItem
-import com.ohmyguide.app.ui.screen.navi.KkaebiHeader
-import com.ohmyguide.app.ui.screen.navi.KkaebiLabel
-import com.ohmyguide.app.ui.screen.navi.NaviBotBubble
 import com.ohmyguide.app.ui.theme.BgSub
+import com.ohmyguide.app.ui.theme.Error
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
-import com.ohmyguide.app.ui.theme.BorderLight
-import com.ohmyguide.app.ui.theme.DragHandle
-import com.ohmyguide.app.ui.theme.Error
 import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
@@ -113,6 +103,9 @@ import com.ohmyguide.app.ui.theme.PrimaryGradient
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalNaverMapApi::class)
 @Composable
@@ -129,25 +122,79 @@ fun CourseNaviScreen(
     val routeData by viewModel.routeData.collectAsState()
     val currentSpot = currentCourse.spots.getOrNull(uiState.currentSpotIndex) ?: return
     val totalSpots = currentCourse.spots.size
-    val progressPct = (uiState.currentSpotIndex + 1).toFloat() / totalSpots
 
-    var storyPlaceId by remember { mutableStateOf<String?>(null) }
     var showStopDialog by remember { mutableStateOf(false) }
-    var toastSpotName by remember { mutableStateOf<String?>(null) }
 
-    // Collect spot advance event → show toast
-    LaunchedEffect(Unit) {
-        viewModel.spotAdvanceEvent.collect { spotName ->
-            toastSpotName = spotName
-            delay(3000L)
-            toastSpotName = null
-        }
+    // TTS
+    val context = LocalContext.current
+    val ttsManager = remember { TtsManager(context) }
+    var isMuted by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+
+    DisposableEffect(Unit) {
+        onDispose { ttsManager.shutdown() }
     }
+
+    // 큐 기반 가이드: 하나씩 꺼내서 TTS + 팝업
+    val guideQueue = uiState.guideQueue
+    val currentGuideText = guideQueue.firstOrNull()
+    val isSpeakingTts by ttsManager.isSpeaking.collectAsState()
+
+    var popupText by remember { mutableStateOf("") }
+    var showPopup by remember { mutableStateOf(false) }
+
+    // 큐 처리: 하나씩 꺼내서 TTS + 팝업 → 끝나면 다음
+    LaunchedEffect(currentGuideText) {
+        if (currentGuideText == null) return@LaunchedEffect
+
+        // 특수 명령은 바로 소비
+        if (currentGuideText.startsWith("__")) {
+            viewModel.dequeueGuide()
+            delay(300L)
+            return@LaunchedEffect
+        }
+
+        // 팝업 표시 + TTS 재생
+        popupText = currentGuideText
+        showPopup = true
+
+        if (!isMuted) {
+            ttsManager.speak(currentGuideText)
+
+            // 다음 큐 프리페치 (현재 TTS 재생 중에 미리 다운로드)
+            val nextText = guideQueue.getOrNull(1)
+            if (nextText != null && !nextText.startsWith("__")) {
+                scope.launch { ttsManager.prefetch(nextText) }
+            }
+
+            // TTS 시작을 최대 3초 대기
+            var started = false
+            for (i in 0 until 30) {
+                delay(100L)
+                if (ttsManager.isSpeaking.value) { started = true; break }
+            }
+            // TTS 시작되었으면 끝날 때까지 대기
+            if (started) {
+                while (ttsManager.isSpeaking.value || ttsManager.isLoading.value) {
+                    delay(200L)
+                }
+            }
+        } else {
+            val readTimeMs = ((currentGuideText.length / 5.0) * 1000).toLong().coerceIn(3000L, 15000L)
+            delay(readTimeMs)
+        }
+
+        // 팝업 닫기 → 다음 큐
+        delay(500L)
+        showPopup = false
+        delay(300L)
+        viewModel.dequeueGuide()
+    }
+
 
     androidx.activity.compose.BackHandler { showStopDialog = true }
 
     // Image markers
-    val context = LocalContext.current
     val density = LocalDensity.current
     val markerSizePx = with(density) { 48.dp.roundToPx() }
     val markerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
@@ -178,324 +225,264 @@ fun CourseNaviScreen(
 
     val firstSpot = currentCourse.spots.first()
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition(LatLng(firstSpot.lat, firstSpot.lng), 13.0)
+        position = CameraPosition(LatLng(firstSpot.lat, firstSpot.lng), 15.0)
     }
-    val mapProperties = remember { MapProperties() }
+    val locationSource = com.naver.maps.map.compose.rememberFusedLocationSource()
+    val mapProperties = remember {
+        MapProperties(locationTrackingMode = com.naver.maps.map.compose.LocationTrackingMode.NoFollow)
+    }
     val mapUiSettings = remember {
         MapUiSettings(isZoomControlEnabled = false, isLocationButtonEnabled = false)
     }
-    val scaffoldState = rememberBottomSheetScaffoldState()
-    val listState = rememberLazyListState()
 
-    // Auto-scroll to bottom when new messages arrive
-    LaunchedEffect(uiState.chatMessages.size) {
-        if (uiState.chatMessages.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.chatMessages.size - 1)
-        }
-    }
-
-    // Zoom to current spot when it changes
+    // 스팟 변경 시 해당 스팟으로 카메라 이동
     LaunchedEffect(uiState.currentSpotIndex) {
         val spot = currentCourse.spots.getOrNull(uiState.currentSpotIndex) ?: return@LaunchedEffect
         cameraPositionState.animate(
-            com.naver.maps.map.CameraUpdate.scrollAndZoomTo(LatLng(spot.lat, spot.lng), 15.0),
+            com.naver.maps.map.CameraUpdate.scrollAndZoomTo(LatLng(spot.lat, spot.lng), 16.0),
             animation = com.naver.maps.map.CameraAnimation.Fly,
             durationMs = 1500,
         )
     }
 
+    val popupAlpha by animateFloatAsState(
+        targetValue = if (showPopup) 1f else 0f,
+        animationSpec = tween(600),
+        label = "popupAlpha",
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
-        BottomSheetScaffold(
-            scaffoldState = scaffoldState,
-            sheetPeekHeight = 280.dp,
-            sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
-            sheetContainerColor = BgWhite,
-            sheetDragHandle = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .width(40.dp)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(DragHandle),
+        // ── 지도 (전체 화면) ──
+
+        // ── Map (전체 화면) ──
+        Box(modifier = Modifier.fillMaxSize()) {
+            NaverMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                locationSource = locationSource,
+                properties = mapProperties,
+                uiSettings = mapUiSettings,
+            ) {
+                val mapLocale = LanguageManager.current.value.locale
+                MapEffect(mapLocale) { naverMap ->
+                    naverMap.setLocale(mapLocale)
+                }
+
+                routeData?.segments?.forEach { segment ->
+                    val coords = segment.coords.map { LatLng(it.lat, it.lng) }
+                    if (coords.size >= 2) {
+                        PathOverlay(
+                            coords = coords,
+                            width = 6.dp,
+                            color = segment.color,
+                            outlineWidth = 2.dp,
+                            outlineColor = segment.color.copy(alpha = 0.4f),
+                        )
+                    }
+                }
+
+                // Current spot pulsing ripple
+                val activeSpot = currentCourse.spots.getOrNull(uiState.currentSpotIndex)
+                if (activeSpot != null && activeSpot.lat != 0.0) {
+                    val pulseTransition = rememberInfiniteTransition(label = "spotPulse")
+                    val pulseRadius by pulseTransition.animateFloat(
+                        initialValue = 20f,
+                        targetValue = 45f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(2000),
+                            repeatMode = RepeatMode.Restart,
+                        ),
+                        label = "pulseR",
+                    )
+                    val pulseAlpha by pulseTransition.animateFloat(
+                        initialValue = 0.2f,
+                        targetValue = 0f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(2000),
+                            repeatMode = RepeatMode.Restart,
+                        ),
+                        label = "pulseA",
+                    )
+                    com.naver.maps.map.compose.CircleOverlay(
+                        center = LatLng(activeSpot.lat, activeSpot.lng),
+                        radius = pulseRadius.toDouble(),
+                        color = Primary.copy(alpha = pulseAlpha),
+                        outlineWidth = 0.dp,
+                        outlineColor = Primary.copy(alpha = 0f),
                     )
                 }
-            },
-            sheetContent = {
-                // Course header: spot info + progress + stop
-                CourseNaviSheetHeader(
-                    courseName = currentCourse.title,
-                    currentSpot = currentSpot,
-                    currentSpotIndex = uiState.currentSpotIndex,
-                    totalSpots = totalSpots,
-                    progressPct = progressPct,
-                    onStory = { storyPlaceId = currentSpot.id },
-                    onStop = { showStopDialog = true },
-                )
 
-                // Chat messages
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentPadding = PaddingValues(
-                        start = 16.dp, end = 16.dp,
-                        top = 12.dp, bottom = 80.dp,
-                    ),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    item {
-                        KkaebiHeader()
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
-                    items(uiState.chatMessages.size) { index ->
-                        val msg = uiState.chatMessages[index]
-                        val prevMsg = uiState.chatMessages.getOrNull(index - 1)
-                        val isNewTurn = prevMsg != null
-                            && prevMsg !is CourseNaviChatMessage.BotText
-                            && prevMsg !is CourseNaviChatMessage.BotTyping
-                            && msg is CourseNaviChatMessage.BotText
-
-                        if (isNewTurn) {
-                            Spacer(modifier = Modifier.height(12.dp))
-                            KkaebiLabel()
-                            Spacer(modifier = Modifier.height(4.dp))
-                        }
-
-                        AnimatedMessageItem {
-                            when (msg) {
-                                is CourseNaviChatMessage.BotText -> {
-                                    NaviBotBubble(text = msg.text)
-                                }
-                                is CourseNaviChatMessage.BotTyping -> {
-                                    TypingIndicator(showAvatar = false)
-                                }
-                                is CourseNaviChatMessage.SpotCard -> {
-                                    SpotGuideCard(
-                                        spot = msg.spot,
-                                        spotIndex = msg.spotIndex,
-                                        totalSpots = totalSpots,
-                                        onClick = { storyPlaceId = msg.spot.id },
-                                    )
-                                }
-                            }
-                        }
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(12.dp))
-                    }
-                }
-            },
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                NaverMap(
-                    modifier = Modifier.fillMaxSize(),
-                    cameraPositionState = cameraPositionState,
-                    properties = mapProperties,
-                    uiSettings = mapUiSettings,
-                ) {
-                    val mapLocale = LanguageManager.current.value.locale
-                    MapEffect(mapLocale) { naverMap ->
-                        naverMap.setLocale(mapLocale)
-                    }
-
-                    routeData?.segments?.forEach { segment ->
-                        val coords = segment.coords.map { LatLng(it.lat, it.lng) }
-                        if (coords.size >= 2) {
-                            PathOverlay(
-                                coords = coords,
-                                width = 6.dp,
-                                color = segment.color,
-                                outlineWidth = 2.dp,
-                                outlineColor = segment.color.copy(alpha = 0.4f),
+                currentCourse.spots.forEachIndexed { index, spot ->
+                    if (spot.lat != 0.0 && spot.lng != 0.0) {
+                        val icon = markerIcons[spot.id]
+                        val isCurrent = index == uiState.currentSpotIndex
+                        if (icon != null) {
+                            Marker(
+                                state = rememberMarkerState(
+                                    key = "spot_${spot.id}",
+                                    position = LatLng(spot.lat, spot.lng),
+                                ),
+                                icon = icon,
+                                captionText = "${index + 1}. ${spot.name}",
+                                width = if (isCurrent) 56.dp else 48.dp,
+                                height = if (isCurrent) 56.dp else 48.dp,
+                                zIndex = if (isCurrent) 1 else 0,
+                            )
+                        } else {
+                            Marker(
+                                state = rememberMarkerState(
+                                    key = "spot_${spot.id}",
+                                    position = LatLng(spot.lat, spot.lng),
+                                ),
+                                captionText = "${index + 1}. ${spot.name}",
                             )
                         }
                     }
-
-                    // Current spot pulsing ripple
-                    val activeSpot = currentCourse.spots.getOrNull(uiState.currentSpotIndex)
-                    if (activeSpot != null && activeSpot.lat != 0.0) {
-                        val pulseTransition = rememberInfiniteTransition(label = "spotPulse")
-                        val pulseRadius by pulseTransition.animateFloat(
-                            initialValue = 30f,
-                            targetValue = 80f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1500),
-                                repeatMode = RepeatMode.Restart,
-                            ),
-                            label = "pulseR",
-                        )
-                        val pulseAlpha by pulseTransition.animateFloat(
-                            initialValue = 0.35f,
-                            targetValue = 0f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1500),
-                                repeatMode = RepeatMode.Restart,
-                            ),
-                            label = "pulseA",
-                        )
-                        com.naver.maps.map.compose.CircleOverlay(
-                            center = LatLng(activeSpot.lat, activeSpot.lng),
-                            radius = pulseRadius.toDouble(),
-                            color = Primary.copy(alpha = pulseAlpha),
-                            outlineWidth = 0.dp,
-                            outlineColor = Primary.copy(alpha = 0f),
-                        )
-                    }
-
-                    currentCourse.spots.forEachIndexed { index, spot ->
-                        if (spot.lat != 0.0 && spot.lng != 0.0) {
-                            val icon = markerIcons[spot.id]
-                            val isCurrent = index == uiState.currentSpotIndex
-                            if (icon != null) {
-                                Marker(
-                                    state = rememberMarkerState(
-                                        key = "spot_${spot.id}",
-                                        position = LatLng(spot.lat, spot.lng),
-                                    ),
-                                    icon = icon,
-                                    captionText = "${index + 1}. ${spot.name}",
-                                    width = if (isCurrent) 56.dp else 48.dp,
-                                    height = if (isCurrent) 56.dp else 48.dp,
-                                    zIndex = if (isCurrent) 1 else 0,
-                                )
-                            } else {
-                                Marker(
-                                    state = rememberMarkerState(
-                                        key = "spot_${spot.id}",
-                                        position = LatLng(spot.lat, spot.lng),
-                                    ),
-                                    captionText = "${index + 1}. ${spot.name}",
-                                )
-                            }
-                        }
-                    }
-
-                    // GPS user position: blue dot + pulsing ripple
-                    if (userPosition != null) {
-                        val userPulse = rememberInfiniteTransition(label = "userPulse")
-                        val userRipple by userPulse.animateFloat(
-                            initialValue = 10f,
-                            targetValue = 50f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1200),
-                                repeatMode = RepeatMode.Restart,
-                            ),
-                            label = "userR",
-                        )
-                        val userAlpha by userPulse.animateFloat(
-                            initialValue = 0.4f,
-                            targetValue = 0f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1200),
-                                repeatMode = RepeatMode.Restart,
-                            ),
-                            label = "userA",
-                        )
-                        // Ripple circle
-                        com.naver.maps.map.compose.CircleOverlay(
-                            center = userPosition,
-                            radius = userRipple.toDouble(),
-                            color = Primary.copy(alpha = userAlpha),
-                            outlineWidth = 0.dp,
-                            outlineColor = Primary.copy(alpha = 0f),
-                        )
-                        // Blue dot center
-                        com.naver.maps.map.compose.CircleOverlay(
-                            center = userPosition,
-                            radius = 5.0,
-                            color = Primary,
-                            outlineWidth = 2.dp,
-                            outlineColor = BgWhite,
-                        )
-                    }
                 }
 
-                if (uiState.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(color = Primary)
-                    }
-                }
+                // GPS user position: SDK 파란 점으로 표시 (locationSource + NoFollow)
+            }
 
-                // Top bar: spot progress chips + close button
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .padding(top = 12.dp, end = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    val chipListState = androidx.compose.foundation.lazy.rememberLazyListState()
-                    // Auto-scroll chips to current spot
-                    LaunchedEffect(uiState.currentSpotIndex) {
-                        // Each spot has chip + arrow = index * 2
-                        val targetItem = (uiState.currentSpotIndex * 2).coerceAtMost(
-                            (currentCourse.spots.size * 2 - 2).coerceAtLeast(0)
-                        )
-                        chipListState.animateScrollToItem(targetItem)
-                    }
-                    LazyRow(
-                        state = chipListState,
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        contentPadding = PaddingValues(start = 12.dp, end = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        currentCourse.spots.forEachIndexed { index, spot ->
-                            item(key = "chip_$index") {
-                                SpotProgressChip(
-                                    index = index + 1,
-                                    name = spot.name,
-                                    isActive = index == uiState.currentSpotIndex,
-                                    isCompleted = index < uiState.currentSpotIndex,
-                                    onClick = { viewModel.selectSpot(index) },
-                                )
-                            }
-                            if (index < currentCourse.spots.lastIndex) {
-                                item(key = "arrow_$index") {
-                                    val arrowVisited = index < uiState.currentSpotIndex
-                                    val isCurrentArrow = index == uiState.currentSpotIndex
-                                    MovingArrow(
-                                        isActive = isCurrentArrow,
-                                        isVisited = arrowVisited,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                    Box(
+                    CircularProgressIndicator(color = Primary)
+                }
+            }
+        }
+
+        // ── 상단 네비바 (오버레이) ──
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .background(Primary.copy(alpha = 0.9f))
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(BgWhite.copy(alpha = 0.2f))
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = "${uiState.currentSpotIndex + 1} / $totalSpots",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = BgWhite,
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Text(
+                text = currentSpot.name,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = BgWhite,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(BgWhite.copy(alpha = 0.2f))
+                    .clickable {
+                        isMuted = !isMuted
+                        if (isMuted) ttsManager.stop()
+                        else if (popupText.isNotBlank()) scope.launch { ttsManager.speak(popupText) }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (isMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                    contentDescription = null,
+                    tint = BgWhite,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            Spacer(modifier = Modifier.width(6.dp))
+            Box(
+                modifier = Modifier
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(BgWhite.copy(alpha = 0.2f))
+                    .clickable { showStopDialog = true },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Close, contentDescription = null, tint = BgWhite, modifier = Modifier.size(16.dp))
+            }
+        }
+
+        // ── 깨비 팝업 카드 (오버레이) ──
+        if (popupAlpha > 0f) {
+            // 긴 텍스트는 문장 단위로 나눠서 TTS progress와 동기화
+            val ttsProgress by ttsManager.progress.collectAsState()
+            val popupSentences = remember(popupText) {
+                popupText.split(Regex("(?<=[.!?。])(\\s*)")).filter { it.isNotBlank() }
+                    .let { if (it.isEmpty()) listOf(popupText) else it }
+            }
+            val displaySentence = if (popupSentences.size <= 1) {
+                popupText
+            } else {
+                val totalChars = popupSentences.sumOf { it.length }
+                val cumWeights = popupSentences.runningFold(0f) { acc, s -> acc + s.length.toFloat() / totalChars }.drop(1)
+                val idx = cumWeights.indexOfFirst { it > ttsProgress }.let { if (it == -1) popupSentences.lastIndex else it }
+                popupSentences[idx]
+            }
+
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(start = 24.dp, end = 24.dp, top = 70.dp)
+                    .graphicsLayer { alpha = popupAlpha }
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(BgWhite.copy(alpha = 0.95f))
+                    .padding(20.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.masot),
+                        contentDescription = "Kkaebi",
                         modifier = Modifier
-                            .size(36.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
-                            .background(BgWhite.copy(alpha = 0.95f))
-                            .clickable { showStopDialog = true },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Filled.Close, contentDescription = "Close", modifier = Modifier.size(18.dp), tint = TextPrimary)
+                            .background(Primary.copy(alpha = 0.1f)),
+                        contentScale = ContentScale.Fit,
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = currentSpot.name,
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Primary,
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        AnimatedContent(
+                            targetState = displaySentence,
+                            transitionSpec = {
+                                (fadeIn(tween(400)) + slideInVertically(tween(400)) { it / 3 })
+                                    .togetherWith(fadeOut(tween(300)) + slideOutVertically(tween(300)) { -it / 3 })
+                            },
+                            label = "popupSentence",
+                        ) { sentence ->
+                            Text(
+                                text = sentence,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    lineHeight = 24.sp,
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                                color = TextPrimary,
+                            )
+                        }
                     }
                 }
             }
         }
-    }
-
-    // Story overlay (TTS)
-    val currentStoryId = storyPlaceId
-    if (currentStoryId != null) {
-        com.ohmyguide.app.ui.screen.story.StoryOverlay(
-            placeId = currentStoryId,
-            onDismiss = { storyPlaceId = null },
-        )
     }
 
     // Stop confirmation dialog
@@ -506,223 +493,109 @@ fun CourseNaviScreen(
             message = strings.endNaviMessage,
             confirmText = strings.confirm,
             dismissText = strings.cancel,
-            onConfirm = { navController.popBackStack() },
+            onConfirm = {
+                ttsManager.shutdown()
+                navController.popBackStack()
+            },
             onDismiss = { showStopDialog = false },
         )
     }
 
-    // Mascot toast popup
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        AnimatedVisibility(
-            visible = toastSpotName != null,
-            enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-            exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
-            modifier = Modifier.padding(top = 60.dp),
+    // 투어 완료 오버레이
+    if (uiState.tourCompleted) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center,
         ) {
-            SpotAdvanceToast(spotName = toastSpotName ?: "")
-        }
-    }
-}
-
-@Composable
-private fun CourseNaviSheetHeader(
-    courseName: String,
-    currentSpot: Spot,
-    currentSpotIndex: Int,
-    totalSpots: Int,
-    progressPct: Float,
-    onStory: () -> Unit,
-    onStop: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(BgWhite)
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(
+            Column(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(PrimaryBg),
-                contentAlignment = Alignment.Center,
+                    .padding(32.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(BgWhite)
+                    .padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(24.dp), tint = Primary)
-            }
-            Spacer(modifier = Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = currentSpot.name,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextPrimary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                Image(
+                    painter = painterResource(R.drawable.masot),
+                    contentDescription = "Kkaebi",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Fit,
                 )
+                Spacer(modifier = Modifier.height(16.dp))
                 Text(
-                    text = "$courseName · ${currentSpotIndex + 1}/$totalSpots",
-                    style = MaterialTheme.typography.labelSmall,
+                    text = "투어가 끝났어요!",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "이번 가이드는 어떠셨나요?",
+                    style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                 )
-            }
-
-            // Story (TTS) button
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(PrimaryGradient)
-                    .clickable(onClick = onStory)
-                    .padding(horizontal = 10.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Filled.Headphones, contentDescription = "Story", modifier = Modifier.size(14.dp), tint = BgWhite)
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "Story",
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = BgWhite,
-                )
-            }
-            Spacer(modifier = Modifier.width(6.dp))
-
-            // Stop button
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Error.copy(alpha = 0.1f))
-                    .clickable(onClick = onStop),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Filled.Close, contentDescription = "Stop", modifier = Modifier.size(18.dp), tint = Error)
-            }
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        // Progress bar
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            LinearProgressIndicator(
-                progress = { progressPct },
-                modifier = Modifier.weight(1f).height(4.dp).clip(RoundedCornerShape(2.dp)),
-                color = Primary,
-                trackColor = Border,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "${(progressPct * 100).toInt()}%",
-                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = TextCaption,
-            )
-        }
-    }
-    Box(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).height(1.dp).background(BorderLight),
-    )
-}
-
-@Composable
-private fun SpotGuideCard(
-    spot: Spot,
-    spotIndex: Int,
-    totalSpots: Int,
-    onClick: () -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(BgWhite)
-            .clickable(onClick = onClick)
-            .padding(2.dp),
-    ) {
-        // Spot image
-        if (spot.imageUrl != null) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(BgSub),
-            ) {
-                AsyncImage(
-                    model = spot.imageUrl,
-                    contentDescription = spot.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-                // Spot number badge
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Primary.copy(alpha = 0.9f))
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    Text(
-                        text = "${spotIndex + 1}/$totalSpots",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = BgWhite,
-                    )
-                }
-                // Listen badge
+                Spacer(modifier = Modifier.height(24.dp))
                 Row(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .padding(8.dp)
-                        .clip(RoundedCornerShape(100.dp))
-                        .background(PrimaryGradient)
-                        .padding(horizontal = 10.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Icon(Icons.Filled.Headphones, contentDescription = null, modifier = Modifier.size(12.dp), tint = BgWhite)
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "듣기",
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = BgWhite,
-                    )
+                    // 따봉
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(Primary.copy(alpha = 0.1f))
+                            .clickable {
+                                // TODO: "good" 저장
+                                ttsManager.shutdown()
+                                navController.popBackStack(Screen.Explore.route, inclusive = false)
+                            }
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("👍", fontSize = 32.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "좋았어요",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Primary,
+                        )
+                    }
+                    // 아쉬움
+                    Column(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(BgSub)
+                            .clickable {
+                                // TODO: "bad" 저장
+                                ttsManager.shutdown()
+                                navController.popBackStack(Screen.Explore.route, inclusive = false)
+                            }
+                            .padding(horizontal = 24.dp, vertical = 16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("😕", fontSize = 32.sp)
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "아쉬웠어요",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = TextCaption,
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "다른 투어도 둘러볼까요?",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Primary,
+                    modifier = Modifier.clickable {
+                        ttsManager.shutdown()
+                        navController.popBackStack(Screen.Explore.route, inclusive = false)
+                    },
+                )
             }
         }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = spot.name,
-            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-            color = TextPrimary,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
-        if (spot.nameKr.isNotBlank()) {
-            Text(
-                text = spot.nameKr,
-                style = MaterialTheme.typography.labelSmall,
-                color = TextCaption,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
-        }
-        if (spot.desc.isNotBlank()) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = spot.desc,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(horizontal = 4.dp),
-            )
-        }
-        Spacer(modifier = Modifier.height(4.dp))
     }
 }
 

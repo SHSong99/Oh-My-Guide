@@ -39,8 +39,17 @@ class LocationForegroundService : Service() {
         startLocationUpdates()
     }
 
-    private fun isGpsOrMock(location: android.location.Location): Boolean =
-        location.isFromMockProvider || location.provider == "gps"
+    // mock 위치가 한 번이라도 감지되면 mock만 수용 (Fake GPS 사용 시)
+    private var mockDetected = false
+
+    private fun shouldAccept(location: android.location.Location): Boolean {
+        if (location.isFromMockProvider) {
+            mockDetected = true
+            return true
+        }
+        // mock이 감지된 적 있으면 실제 위치는 무시
+        return !mockDetected
+    }
 
     private fun startLocationUpdates() {
         try {
@@ -55,7 +64,7 @@ class LocationForegroundService : Service() {
                             Log.d(TAG, "lastLocation: null")
                         }
                     }
-                    if (location != null && _locationFlow.value == null && isGpsOrMock(location)) {
+                    if (location != null && _locationFlow.value == null && shouldAccept(location)) {
                         _locationFlow.value = LocationData(location.latitude, location.longitude)
                     }
                 }
@@ -79,8 +88,7 @@ class LocationForegroundService : Service() {
                             "lat=${location.latitude}, lng=${location.longitude}, " +
                             "accuracy=${location.accuracy}m, mock=${location.isFromMockProvider}")
                     }
-                    // GPS 또는 Mock 위치만 수용, 네트워크 위치는 무시
-                    if (isGpsOrMock(location)) {
+                    if (shouldAccept(location)) {
                         _locationFlow.value = LocationData(location.latitude, location.longitude)
                     }
                 }
@@ -145,8 +153,8 @@ class LocationForegroundService : Service() {
         private const val TAG = "LocationService"
         private const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "location_channel"
-        private const val LOCATION_INTERVAL_MS = 3000L
-        private const val FASTEST_INTERVAL_MS = 1000L
+        private const val LOCATION_INTERVAL_MS = 1000L
+        private const val FASTEST_INTERVAL_MS = 500L
 
         private val _locationFlow = MutableStateFlow<LocationData?>(null)
         val locationFlow: StateFlow<LocationData?> = _locationFlow.asStateFlow()

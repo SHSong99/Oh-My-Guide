@@ -185,8 +185,6 @@ interface AppStrings {
     val storyAboutPlace: String
     val usefulPhrases: String
     val arrivedAt: String
-    val nearbyPlacesAlong: String
-    val nearbyPlacesLove: String
 
     // ── Map ──
     val locating: String
@@ -227,6 +225,11 @@ interface AppStrings {
 
     // ── Course Toast ──
     val movingToNextCourse: String
+
+    // ── Rating ──
+    val ratingTitle: String
+    val ratingSubtitle: String
+    val ratingSubmit: String
 
     // ── Empty State ──
     val noRecommendations: String
