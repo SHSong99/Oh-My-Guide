@@ -216,6 +216,11 @@ object EnStrings : AppStrings {
     override val cancel = "Cancel"
     override val movingToNextCourse = "Moving to the next spot!"
 
+    // ── Rating ──
+    override val ratingTitle = "How was your guide?"
+    override val ratingSubtitle = "Rate your experience at"
+    override val ratingSubmit = "Submit"
+
     override val noRecommendations = "No recommendations yet"
     override val noRecommendationsDesc = "Tell us your interests to get personalized spots"
     override val noSavedPhrases = "No saved phrases"

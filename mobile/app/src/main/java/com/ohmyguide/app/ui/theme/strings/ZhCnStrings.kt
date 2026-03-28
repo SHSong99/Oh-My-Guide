@@ -216,6 +216,11 @@ object ZhCnStrings : AppStrings {
     override val cancel = "取消"
     override val movingToNextCourse = "前往下一个景点！"
 
+    // ── Rating ──
+    override val ratingTitle = "导览体验如何？"
+    override val ratingSubtitle = "请评价您的体验"
+    override val ratingSubmit = "提交"
+
     override val noRecommendations = "暂无推荐景点"
     override val noRecommendationsDesc = "告诉我们你的兴趣，为你找到专属景点"
     override val noSavedPhrases = "没有保存的短语"

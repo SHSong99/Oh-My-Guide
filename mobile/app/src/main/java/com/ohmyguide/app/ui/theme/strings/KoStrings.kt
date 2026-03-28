@@ -216,6 +216,11 @@ object KoStrings : AppStrings {
     override val cancel = "취소"
     override val movingToNextCourse = "다음 코스로 이동할게요!"
 
+    // ── Rating ──
+    override val ratingTitle = "가이드는 어떠셨나요?"
+    override val ratingSubtitle = "방문 경험을 평가해주세요"
+    override val ratingSubmit = "제출"
+
     override val noRecommendations = "아직 추천 장소가 없어요"
     override val noRecommendationsDesc = "관심사를 알려주시면 맞춤 장소를 찾아드릴게요"
     override val noSavedPhrases = "저장된 회화가 없어요"

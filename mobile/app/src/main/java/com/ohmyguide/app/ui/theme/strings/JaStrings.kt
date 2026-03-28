@@ -216,6 +216,11 @@ object JaStrings : AppStrings {
     override val cancel = "キャンセル"
     override val movingToNextCourse = "次のスポットに移動します！"
 
+    // ── Rating ──
+    override val ratingTitle = "ガイドはいかがでしたか？"
+    override val ratingSubtitle = "体験を評価してください"
+    override val ratingSubmit = "送信"
+
     override val noRecommendations = "おすすめスポットがまだありません"
     override val noRecommendationsDesc = "興味を教えてくれたらぴったりの場所を探します"
     override val noSavedPhrases = "保存したフレーズがありません"
