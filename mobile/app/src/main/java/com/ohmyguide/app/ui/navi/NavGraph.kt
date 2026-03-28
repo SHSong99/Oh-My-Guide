@@ -34,6 +34,7 @@ import com.ohmyguide.app.ui.screen.map.MapScreen
 import com.ohmyguide.app.ui.screen.mypage.MyPageScreen
 import com.ohmyguide.app.ui.screen.navi.NaviScreen
 import com.ohmyguide.app.ui.screen.phrases.PhrasesScreen
+import com.ohmyguide.app.ui.screen.rating.RatingScreen
 import com.ohmyguide.app.ui.screen.place.PlaceScreen
 import com.ohmyguide.app.ui.screen.transport.TransitDetailScreen
 import com.ohmyguide.app.ui.screen.transport.TransportPickerScreen
@@ -180,6 +181,10 @@ fun NavGraph(
         ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransitDetailScreen(navController, placeId)
+        }
+        composable(Screen.Rating.route) { backStackEntry ->
+            val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
+            RatingScreen(navController)
         }
         composable(
             route = Screen.Navi.route,

@@ -45,6 +45,10 @@ sealed class Screen(val route: String) {
     object CourseNavi : Screen("course_navi/{courseId}/{mode}") {
         fun createRoute(courseId: String, mode: String = "car") = "course_navi/$courseId/$mode"
     }
+    object Rating : Screen("rating/{placeId}/{placeName}") {
+        fun createRoute(placeId: String, placeName: String) =
+            "rating/$placeId/${java.net.URLEncoder.encode(placeName, "UTF-8")}"
+    }
     object Navi : Screen("navi/{placeId}/{mode}?courseId={courseId}&spotIndex={spotIndex}") {
         fun createRoute(
             placeId: String,

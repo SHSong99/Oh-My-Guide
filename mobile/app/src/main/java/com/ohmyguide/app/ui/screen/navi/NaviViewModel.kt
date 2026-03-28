@@ -45,7 +45,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -119,8 +118,8 @@ data class NaviUiState(
     val chatMessages: List<NaviChatMessage> = emptyList(),
     val arrived: Boolean = false,
     val progressPct: Float = 0f,
-    val userLat: Double = 35.0950,
-    val userLng: Double = 128.8560,
+    val userLat: Double = 0.0,
+    val userLng: Double = 0.0,
     val guideReady: Boolean = false,
     val pickedNearbySpots: List<NearbySpotInfo> = emptyList(),
     // Course mode
@@ -203,8 +202,6 @@ class NaviViewModel @Inject constructor(
     }
 
     companion object {
-        private const val DEFAULT_LAT = 35.0950
-        private const val DEFAULT_LNG = 128.8560
         private val PLACE_COORDINATES = mapOf(
             "dm3" to (35.0807 to 128.8785),
             "dm4" to (35.1044 to 128.9459),
@@ -367,16 +364,11 @@ class NaviViewModel @Inject constructor(
 
     private fun fetchDirectionsRoute() {
         viewModelScope.launch {
+            // GPS가 잡힐 때까지 대기 (타임아웃 없음)
             val location = LocationForegroundService.locationFlow.value
-                ?: withTimeoutOrNull(5000L) {
-                    LocationForegroundService.locationFlow.filterNotNull().first()
-                }
-            val rawLat = location?.latitude
-            val rawLng = location?.longitude
-            val inKorea = rawLat != null && rawLng != null
-                && rawLat in 33.0..39.0 && rawLng in 124.0..132.0
-            val startLat = if (inKorea) rawLat!! else DEFAULT_LAT
-            val startLng = if (inKorea) rawLng!! else DEFAULT_LNG
+                ?: LocationForegroundService.locationFlow.filterNotNull().first()
+            val startLat = location.latitude
+            val startLng = location.longitude
 
             val result = when (mode) {
                 "car" -> directionsRepository.getDrivingRoute(
