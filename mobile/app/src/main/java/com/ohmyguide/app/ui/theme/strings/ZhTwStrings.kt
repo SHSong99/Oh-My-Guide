@@ -216,6 +216,11 @@ object ZhTwStrings : AppStrings {
     override val cancel = "取消"
     override val movingToNextCourse = "前往下一個景點！"
 
+    // ── Rating ──
+    override val ratingTitle = "導覽體驗如何？"
+    override val ratingSubtitle = "請評價您的體驗"
+    override val ratingSubmit = "提交"
+
     override val noRecommendations = "暫無推薦景點"
     override val noRecommendationsDesc = "告訴我們你的興趣，為你找到專屬景點"
     override val noSavedPhrases = "沒有儲存的短語"

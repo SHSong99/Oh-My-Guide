@@ -226,6 +226,11 @@ interface AppStrings {
     // ── Course Toast ──
     val movingToNextCourse: String
 
+    // ── Rating ──
+    val ratingTitle: String
+    val ratingSubtitle: String
+    val ratingSubmit: String
+
     // ── Empty State ──
     val noRecommendations: String
     val noRecommendationsDesc: String

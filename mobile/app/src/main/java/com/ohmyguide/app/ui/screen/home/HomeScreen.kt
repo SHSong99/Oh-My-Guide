@@ -91,6 +91,18 @@ fun HomeScreen(
     }
 
     val context = LocalContext.current
+
+    // 위치 권한이 있으면 LocationForegroundService 시작 (온보딩 이후 재실행 시 대비)
+    LaunchedEffect(Unit) {
+        val hasPerm = androidx.core.content.ContextCompat.checkSelfPermission(
+            context, android.Manifest.permission.ACCESS_FINE_LOCATION,
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        if (hasPerm && LocationForegroundService.locationFlow.value == null) {
+            val intent = android.content.Intent(context, LocationForegroundService::class.java)
+            context.startForegroundService(intent)
+        }
+    }
+
     val locationData by LocationForegroundService.locationFlow.collectAsState()
     val locationSource = rememberFusedLocationSource()
     var locationName by remember { mutableStateOf("") }
