@@ -38,6 +38,50 @@ _CATEGORY_DIM = {
     28: "activity", 38: "shopping", 39: "food", 32: "lodging",
 }
 
+# 카테고리 차원 목록 (8개)
+CATEGORY_DIMS = ["nature", "culture", "festival", "activity", "shopping", "food", "cafe", "lodging"]
+
+# 모바일 카테고리 이름 → 벡터 차원명
+_MOBILE_CAT_TO_DIM = {
+    "attraction": ["nature"],
+    "culture": ["culture"],
+    "festival": ["festival"],
+    "course": ["nature", "culture"],
+    "leports": ["activity"],
+    "cafe": ["cafe"],
+    "shopping": ["shopping"],
+    "food": ["food"],
+}
+
+
+def apply_category_filter(user_vec: 'np.ndarray', mobile_categories: list[str] | None) -> 'np.ndarray':
+    """
+    선택한 카테고리 차원은 1.0, 선택 안 한 카테고리 차원은 0.0으로 강제.
+    분위기/실용 차원은 건드리지 않음.
+    mobile_categories: ["cafe", "food", ...] 모바일에서 보낸 카테고리 이름 목록
+    """
+    if not mobile_categories:
+        return user_vec
+
+    result = user_vec.copy()
+    dim_index = {dim: i for i, dim in enumerate(DIM_ORDER)}
+
+    # 선택된 카테고리 차원 수집
+    selected_dims = set()
+    for cat in mobile_categories:
+        dims = _MOBILE_CAT_TO_DIM.get(cat.strip().lower(), [])
+        selected_dims.update(dims)
+
+    # 카테고리 8개 차원만 조작
+    for dim in CATEGORY_DIMS:
+        idx = dim_index[dim]
+        if dim in selected_dims:
+            result[idx] = 1.0
+        else:
+            result[idx] = 0.0
+
+    return result
+
 # 동행 유형 → 분위기 차원 부스트 (CLAUDE.md 설계 기반, 가장 강한 신호)
 _COMPANION_BOOST = {
     "couple":  {"romantic": 0.7, "aesthetic": 0.5, "nightlife": 0.4, "gourmet": 0.5},

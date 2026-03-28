@@ -159,6 +159,29 @@ object EnStrings : AppStrings {
     override val bookmarkEmpty = "No saved phrases yet. Tap to browse!"
     override val viewAllPhrases = "View All Phrases"
 
+    // ── Chat / Recommend ──
+    override val picksForYou = "Picks for You"
+    override val newPicksForYou = "New Picks for You"
+    override val noPlacesFound = "No places found"
+    override val sorryNoPlaces = "Sorry, no places matched your request"
+    override val freshPicks = "Fresh Picks"
+    override val mainFocusQuestion = "What's your main focus today?"
+    override val vibeQuestion = "What vibe are you going for?"
+    override val optionFood = "Food"
+    override val optionPhoto = "Photo Spots"
+    override val optionShopping = "Shopping"
+    override val optionActive = "Active"
+    override val optionCalm = "Calm"
+    override val optionNightlife = "Nightlife"
+    override val showMore = "Show More"
+    override val moreSpots = "More Spots"
+
+    // ── Navi Chat ──
+    override val guideToPlace = "Guide to this place"
+    override val storyAboutPlace = "Story about this place"
+    override val usefulPhrases = "Useful phrases nearby"
+    override val arrivedAt = "Arrived at"
+
     override val locating = "Locating..."
     override val mapView = "Map View"
     override val explorePlaces = "Explore places around you"
@@ -192,6 +215,11 @@ object EnStrings : AppStrings {
     override val confirm = "End"
     override val cancel = "Cancel"
     override val movingToNextCourse = "Moving to the next spot!"
+
+    // ── Rating ──
+    override val ratingTitle = "How was your guide?"
+    override val ratingSubtitle = "Rate your experience at"
+    override val ratingSubmit = "Submit"
 
     override val noRecommendations = "No recommendations yet"
     override val noRecommendationsDesc = "Tell us your interests to get personalized spots"

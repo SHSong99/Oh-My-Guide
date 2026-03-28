@@ -162,6 +162,16 @@ fun NaviScreen(
         label = "sheetPeek",
     )
 
+    // 도착 확인 후 1.5초 딜레이 → RatingScreen 전환
+    LaunchedEffect(state.arrived) {
+        if (state.arrived) {
+            delay(1500L)
+            navController.navigate(Screen.Rating.createRoute(placeId, placeName)) {
+                popUpTo(Screen.Home.route) { inclusive = false }
+            }
+        }
+    }
+
     // 줌인 완료 후 바텀시트를 화면 끝까지 올림
     LaunchedEffect(state.guideReady) {
         if (state.guideReady) {
@@ -247,6 +257,9 @@ fun NaviScreen(
                                 is NaviChatMessage.PlaceIntro -> { /* removed */ }
                                 is NaviChatMessage.TransitInfo -> {
                                     TransitInfoCard(info = msg.info)
+                                }
+                                is NaviChatMessage.TransitGuide -> {
+                                    TransitGuideCard(info = msg.info)
                                 }
                                 is NaviChatMessage.DestinationDetail -> {
                                     DestinationDetailCard(
@@ -400,13 +413,30 @@ private fun MapArea(
     // GPS 실시간 위치 가져오기 (GPS/Mock only)
     val locationData by LocationForegroundService.locationFlow.collectAsState()
     val userPosition = locationData?.let { LatLng(it.latitude, it.longitude) }
-        ?: DEFAULT_USER_POSITION
 
-    // 시작 시 전체 경로가 보이도록 줌아웃
-    val midLat = (userPosition.latitude + destinationPosition.latitude) / 2
-    val midLng = (userPosition.longitude + destinationPosition.longitude) / 2
+    // 시작 시 목적지 중심으로 보여주고, GPS 잡히면 전체 경로로 전환
+    val initialCenter = userPosition?.let {
+        val midLat = (it.latitude + destinationPosition.latitude) / 2
+        val midLng = (it.longitude + destinationPosition.longitude) / 2
+        LatLng(midLat, midLng)
+    } ?: destinationPosition
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition(LatLng(midLat, midLng), 10.0)
+        position = CameraPosition(initialCenter, 13.0)
+    }
+
+    // GPS가 처음 잡히면 전체 경로 보이도록 카메라 이동
+    var initialCameraSet by remember { mutableStateOf(userPosition != null) }
+    LaunchedEffect(userPosition) {
+        if (!initialCameraSet && userPosition != null) {
+            initialCameraSet = true
+            val midLat = (userPosition.latitude + destinationPosition.latitude) / 2
+            val midLng = (userPosition.longitude + destinationPosition.longitude) / 2
+            cameraPositionState.animate(
+                com.naver.maps.map.CameraUpdate.scrollAndZoomTo(LatLng(midLat, midLng), 10.0),
+                animation = com.naver.maps.map.CameraAnimation.Easing,
+                durationMs = 800,
+            )
+        }
     }
 
     // 줌인 상태 관리
@@ -416,9 +446,10 @@ private fun MapArea(
     LaunchedEffect(guideReady) {
         if (guideReady && zoomPhase == 0) {
             delay(3000L) // 깨비 인사 보여주는 시간
+            val target = userPosition ?: destinationPosition
             zoomPhase = 1
             cameraPositionState.animate(
-                com.naver.maps.map.CameraUpdate.scrollAndZoomTo(userPosition, 17.0),
+                com.naver.maps.map.CameraUpdate.scrollAndZoomTo(target, 17.0),
                 animation = com.naver.maps.map.CameraAnimation.Fly,
                 durationMs = 2500,
             )
@@ -428,7 +459,7 @@ private fun MapArea(
 
     // 줌인 완료 후에만 GPS 따라가기
     LaunchedEffect(userPosition, zoomPhase) {
-        if (zoomPhase == 2) {
+        if (zoomPhase == 2 && userPosition != null) {
             cameraPositionState.animate(
                 com.naver.maps.map.CameraUpdate.scrollTo(userPosition),
                 animation = com.naver.maps.map.CameraAnimation.Easing,
@@ -503,17 +534,19 @@ private fun MapArea(
                 )
             }
 
-            // 현재 위치 마커 (실시간 추적)
-            val currentMarkerState = rememberMarkerState(key = "current_pos")
-            LaunchedEffect(userPosition) {
-                currentMarkerState.position = userPosition
+            // 현재 위치 마커 (실시간 추적, GPS 잡힌 경우에만)
+            if (userPosition != null) {
+                val currentMarkerState = rememberMarkerState(key = "current_pos")
+                LaunchedEffect(userPosition) {
+                    currentMarkerState.position = userPosition
+                }
+                Marker(
+                    state = currentMarkerState,
+                    icon = OverlayImage.fromResource(R.drawable.ic_marker_startpoint),
+                    width = 30.dp,
+                    height = 45.dp,
+                )
             }
-            Marker(
-                state = currentMarkerState,
-                icon = OverlayImage.fromResource(R.drawable.ic_marker_startpoint),
-                width = 30.dp,
-                height = 45.dp,
-            )
 
             // 목적지 마커
             Marker(

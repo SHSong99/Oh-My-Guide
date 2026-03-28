@@ -39,7 +39,11 @@
       "Bash(docker exec:*)",
       "Bash(\"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.backup\")",
       "Bash(\"C:/Users/SSAFY/Desktop/OMG/S14P21E103/backend/ohmyguide_dump.sql\")",
-      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8099' 2>&1)"
+      "Bash(./gradlew bootRun --args='--spring.profiles.active=data-fill --server.port=8099' 2>&1)",
+      "Bash(./gradlew compileJava)",
+      "Bash(find C:UsersSSAFYDesktopOMG0325S14P21E103 -type f -name *.ts -o -name *.tsx -o -name *.js -o -name *.jsx)",
+      "Bash(find C:UsersSSAFYDesktopOMG0325S14P21E103backendsrcmainjava -type f -name *Kafka* -o -name *kafka*)",
+      "Bash(find C:UsersSSAFYDesktopOMG0325S14P21E103backendsrcmainjava -path *global/config* -type f -name *.java)"
     ]
   }
 }

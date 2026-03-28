@@ -50,6 +50,7 @@ class TtsManager(private val context: Context) {
     }
 
     private val client = OkHttpClient()
+    private val audioCache = mutableMapOf<String, ByteArray>()
 
     suspend fun speak(text: String) {
         stop()
@@ -57,11 +58,19 @@ class TtsManager(private val context: Context) {
         currentText = text
         isPaused = false
         _isLoading.value = true
-        val audioBytes = fetchAudio(text)
+        // 캐시에 있으면 즉시 사용
+        val audioBytes = audioCache.remove(text) ?: fetchAudio(text)
         if (gen != speakGeneration) return
         _isLoading.value = false
         if (audioBytes == null) return
         playAudio(audioBytes)
+    }
+
+    // 다음 텍스트를 미리 다운로드 (백그라운드)
+    suspend fun prefetch(text: String) {
+        if (audioCache.containsKey(text)) return
+        val bytes = fetchAudio(text) ?: return
+        audioCache[text] = bytes
     }
 
     fun pause() {

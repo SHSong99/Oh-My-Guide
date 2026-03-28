@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName
 data class GuideNavigationResponse(
     val startLocation: StartLocationDto,
     val destination: GuidePlaceDto,
-    val nearbyPlaces: List<GuidePlaceDto>,
+    val nearbyPlaces: List<GuidePlaceDto> = emptyList(),
 )
 
 data class StartLocationDto(

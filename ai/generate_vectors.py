@@ -56,6 +56,14 @@ CATEGORY_MAP = {
 }
 
 CAFE_TITLE_KW  = ["카페", "커피", "디저트", "베이커리", "빵집", "케이크", "로스터리", "브루어리"]
+CAFE_OVERVIEW_KW = ["카페", "커피", "디저트", "베이커리", "브런치", "라떼", "아메리카노",
+                    "핸드드립", "원두", "케이크", "마카롱", "티룸", "티하우스", "스콘",
+                    "베이글", "크로플", "와플", "빙수", "에스프레소", "로스팅", "카푸치노"]
+RESTAURANT_KW = ["맛집", "식당", "음식점", "레스토랑", "한식", "중식", "일식", "양식",
+                 "고기", "삼겹살", "갈비", "찌개", "탕", "국밥", "냉면", "비빔밥",
+                 "해물", "회", "초밥", "횟집", "구이", "백반", "정식", "뷔페",
+                 "치킨", "족발", "보쌈", "곱창", "막창", "분식", "떡볶이", "라멘",
+                 "우동", "짜장", "짬뽕", "피자", "파스타", "스테이크", "햄버거"]
 INDOOR_KW    = ["실내", "박물관", "미술관", "전시관", "공연장", "극장", "아쿠아리움",
                 "수족관", "과학관", "쇼핑몰", "백화점", "마트", "센터", "홀", "스튜디오"]
 OUTDOOR_KW   = ["야외", "공원", "해변", "해수욕장", "계곡", "폭포", "등산", "트레킹",
@@ -171,20 +179,36 @@ def load_llm_tagged() -> dict:
 
 # ── 카테고리/실용 차원 (규칙 기반) ────────────────────────────────────────────
 
-def category_dims(content_type_id: int, title: str, llm_aesthetic: float) -> dict:
+def category_dims(content_type_id: int, title: str, overview: str, llm_aesthetic: float) -> dict:
     vec = {dim: 0.0 for dim in CATEGORY_DIMS}
     cat_dim = CATEGORY_MAP.get(content_type_id)
     if cat_dim:
         vec[cat_dim] = 1.0
 
-    # cafe 판별
+    # cafe vs restaurant 판별 (content_type_id == 39 음식점)
     if content_type_id == 39:
-        is_cafe = any(kw in (title or "") for kw in CAFE_TITLE_KW)
-        if not is_cafe and llm_aesthetic >= 0.7:
-            is_cafe = True
-        if is_cafe:
+        t = (title or "")
+        o = (overview or "")
+        text = t + " " + o
+
+        cafe_score = sum(1 for kw in CAFE_TITLE_KW if kw in t) * 2  # title 매칭은 가중치 2배
+        cafe_score += sum(1 for kw in CAFE_OVERVIEW_KW if kw in o)
+        restaurant_score = sum(1 for kw in RESTAURANT_KW if kw in text)
+
+        if llm_aesthetic >= 0.7:
+            cafe_score += 2
+
+        if cafe_score > restaurant_score and cafe_score >= 1:
+            # 카페
             vec["cafe"] = 1.0
-            vec["food"] = 0.3
+            vec["food"] = 0.2
+        elif restaurant_score > 0:
+            # 식당
+            vec["food"] = 1.0
+            vec["cafe"] = 0.0
+        else:
+            # 판별 불가 — 기본 food
+            vec["food"] = 1.0
 
     return vec
 
@@ -282,7 +306,7 @@ def run():
         vec = {}
 
         # 카테고리 8개
-        vec.update(category_dims(ct_id, title, aesthetic))
+        vec.update(category_dims(ct_id, title, overview, aesthetic))
 
         # 분위기 10개 (CSV와 DB 키 이름 동일)
         for dim in csv_mood_dims:
