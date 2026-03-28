@@ -497,6 +497,127 @@ fun TransitInfoCard(info: TransitStopInfo) {
     }
 }
 
+// ── Transit Guide Card (Board / Alight) ──
+
+@Composable
+fun TransitGuideCard(info: TransitGuideInfo) {
+    val isBoard = info.type == "board"
+    val isBus = info.transitType == "bus"
+    val accentColor = if (isBus) Primary else InfoBlue
+    val bgColor = if (isBus) PrimaryBg else InfoBlueBg
+    val icon = if (isBus) Icons.Filled.DirectionsBus else Icons.Filled.DirectionsBus // subway uses same
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(bgColor)
+            .padding(16.dp),
+    ) {
+        // Header: Board / Alight badge + line name
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(accentColor)
+                    .padding(horizontal = 10.dp, vertical = 4.dp),
+            ) {
+                Text(
+                    text = if (isBoard) "BOARD" else "GET OFF",
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = BgWhite,
+                )
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp), tint = accentColor)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = info.lineName,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary,
+            )
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        if (isBoard) {
+            // Board: station + where to get off
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        modifier = Modifier.size(10.dp).clip(CircleShape).background(accentColor),
+                    )
+                    Box(
+                        modifier = Modifier.width(2.dp).height(28.dp).background(Border),
+                    )
+                    Box(
+                        modifier = Modifier.size(10.dp).clip(CircleShape).border(2.dp, accentColor, CircleShape),
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(
+                        text = info.stationNameEn,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = TextPrimary,
+                    )
+                    if (info.stationName != info.stationNameEn) {
+                        Text(
+                            text = info.stationName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextCaption,
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "${info.stopsCount} stops →",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextCaption,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = info.exitStationEn,
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        color = accentColor,
+                    )
+                    if (info.exitStation != info.exitStationEn) {
+                        Text(
+                            text = info.exitStation,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextCaption,
+                        )
+                    }
+                }
+            }
+        } else {
+            // Alight: exit station
+            Text(
+                text = "📍 Get off at ${info.stationNameEn}",
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                color = TextPrimary,
+            )
+            if (info.stationName != info.stationNameEn) {
+                Text(
+                    text = info.stationName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextCaption,
+                )
+            }
+            if (info.stopsCount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "${info.stopsCount} stops from boarding point",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TextCaption,
+                )
+            }
+        }
+    }
+}
+
 // ── Destination Detail Card ──
 
 @Composable
