@@ -312,6 +312,9 @@ class TransitDetailViewModel @Inject constructor(
                 lineName = seg.lineName,
                 fromName = seg.from,
                 toName = seg.to,
+                fromNameKr = seg.fromKr,
+                toNameKr = seg.toKr,
+                stopsCount = seg.stops,
             )
         }
         naviRouteCache.store(
