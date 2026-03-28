@@ -159,6 +159,29 @@ object JaStrings : AppStrings {
     override val bookmarkEmpty = "保存されたフレーズはありません"
     override val viewAllPhrases = "すべてのフレーズを見る"
 
+    // ── Chat / Recommend ──
+    override val picksForYou = "あなたへのおすすめ"
+    override val newPicksForYou = "新しいおすすめ"
+    override val noPlacesFound = "場所が見つかりません"
+    override val sorryNoPlaces = "ご要望に合う場所が見つかりませんでした"
+    override val freshPicks = "新着おすすめ"
+    override val mainFocusQuestion = "今日は何をしたいですか？"
+    override val vibeQuestion = "どんな雰囲気がお好みですか？"
+    override val optionFood = "グルメ"
+    override val optionPhoto = "フォトスポット"
+    override val optionShopping = "ショッピング"
+    override val optionActive = "アクティブ"
+    override val optionCalm = "癒し"
+    override val optionNightlife = "ナイトライフ"
+    override val showMore = "もっと見る"
+    override val moreSpots = "もっとスポット"
+
+    // ── Navi Chat ──
+    override val guideToPlace = "この場所のガイド"
+    override val storyAboutPlace = "この場所のストーリー"
+    override val usefulPhrases = "近くで使えるフレーズ"
+    override val arrivedAt = "到着:"
+
     override val locating = "位置を確認中..."
     override val mapView = "地図ビュー"
     override val explorePlaces = "周辺のスポットを探索"
@@ -192,6 +215,11 @@ object JaStrings : AppStrings {
     override val confirm = "終了"
     override val cancel = "キャンセル"
     override val movingToNextCourse = "次のスポットに移動します！"
+
+    // ── Rating ──
+    override val ratingTitle = "ガイドはいかがでしたか？"
+    override val ratingSubtitle = "体験を評価してください"
+    override val ratingSubmit = "送信"
 
     override val noRecommendations = "おすすめスポットがまだありません"
     override val noRecommendationsDesc = "興味を教えてくれたらぴったりの場所を探します"

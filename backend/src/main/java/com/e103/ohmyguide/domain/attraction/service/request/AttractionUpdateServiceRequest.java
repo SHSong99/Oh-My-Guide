@@ -12,18 +12,20 @@ public class AttractionUpdateServiceRequest {
     private final BigDecimal longitude;
     private final String firstImage1;
     private final String overview;
+    private final String overviewTts;
 
     private AttractionUpdateServiceRequest(String title, BigDecimal latitude, BigDecimal longitude,
-                                           String firstImage1, String overview) {
+                                           String firstImage1, String overview, String overviewTts) {
         this.title = title;
         this.latitude = latitude;
         this.longitude = longitude;
         this.firstImage1 = firstImage1;
         this.overview = overview;
+        this.overviewTts = overviewTts;
     }
 
     public static AttractionUpdateServiceRequest of(String title, BigDecimal latitude, BigDecimal longitude,
-                                                    String firstImage1, String overview) {
-        return new AttractionUpdateServiceRequest(title, latitude, longitude, firstImage1, overview);
+                                                    String firstImage1, String overview, String overviewTts) {
+        return new AttractionUpdateServiceRequest(title, latitude, longitude, firstImage1, overview, overviewTts);
     }
 }

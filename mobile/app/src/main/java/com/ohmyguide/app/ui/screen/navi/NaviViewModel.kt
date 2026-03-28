@@ -45,7 +45,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import javax.inject.Inject
 import kotlin.math.atan2
 import kotlin.math.cos
@@ -119,8 +118,8 @@ data class NaviUiState(
     val chatMessages: List<NaviChatMessage> = emptyList(),
     val arrived: Boolean = false,
     val progressPct: Float = 0f,
-    val userLat: Double = 35.0950,
-    val userLng: Double = 128.8560,
+    val userLat: Double = 0.0,
+    val userLng: Double = 0.0,
     val guideReady: Boolean = false,
     val pickedNearbySpots: List<NearbySpotInfo> = emptyList(),
     // Course mode
@@ -138,6 +137,8 @@ class NaviViewModel @Inject constructor(
     private val tmapRepository: TmapRepository,
     private val weatherRepository: WeatherRepository,
 ) : ViewModel() {
+
+    private val s get() = LanguageManager.current.value.strings
 
     val placeId: String = savedStateHandle["placeId"] ?: "dm3"
     val mode: String = savedStateHandle["mode"] ?: "walk"
@@ -201,8 +202,6 @@ class NaviViewModel @Inject constructor(
     }
 
     companion object {
-        private const val DEFAULT_LAT = 35.0950
-        private const val DEFAULT_LNG = 128.8560
         private val PLACE_COORDINATES = mapOf(
             "dm3" to (35.0807 to 128.8785),
             "dm4" to (35.1044 to 128.9459),
@@ -302,7 +301,7 @@ class NaviViewModel @Inject constructor(
             // t=8s — 깨비 인사(3s) + 줌인(2.5s) 완료 후 대화 시작
             delay(6000L)
             addMessage(NaviChatMessage.BotText(
-                "I'll guide you to $placeName! Keep going straight ahead.",
+                s.guideToPlace.replace("%s", placeName),
             ))
             notifyUser()
 
@@ -349,7 +348,7 @@ class NaviViewModel @Inject constructor(
                 delay(800L)
                 removeTyping()
                 addMessage(NaviChatMessage.BotText(
-                    "By the way, I know some interesting stories about $placeName!"
+                    s.storyAboutPlace.replace("%s", placeName)
                 ))
                 addMessage(NaviChatMessage.StoryPrompt(placeName = placeName))
                 notifyUser()
@@ -365,16 +364,11 @@ class NaviViewModel @Inject constructor(
 
     private fun fetchDirectionsRoute() {
         viewModelScope.launch {
+            // GPS가 잡힐 때까지 대기 (타임아웃 없음)
             val location = LocationForegroundService.locationFlow.value
-                ?: withTimeoutOrNull(5000L) {
-                    LocationForegroundService.locationFlow.filterNotNull().first()
-                }
-            val rawLat = location?.latitude
-            val rawLng = location?.longitude
-            val inKorea = rawLat != null && rawLng != null
-                && rawLat in 33.0..39.0 && rawLng in 124.0..132.0
-            val startLat = if (inKorea) rawLat!! else DEFAULT_LAT
-            val startLng = if (inKorea) rawLng!! else DEFAULT_LNG
+                ?: LocationForegroundService.locationFlow.filterNotNull().first()
+            val startLat = location.latitude
+            val startLng = location.longitude
 
             val result = when (mode) {
                 "car" -> directionsRepository.getDrivingRoute(
@@ -501,7 +495,7 @@ class NaviViewModel @Inject constructor(
             addMessage(NaviChatMessage.BotTyping)
             delay(800L)
             removeTyping()
-            addMessage(NaviChatMessage.BotText("Here are some useful Korean phrases:"))
+            addMessage(NaviChatMessage.BotText(s.usefulPhrases))
             addMessage(NaviChatMessage.Phrases(items = USEFUL_PHRASES))
         }
     }
@@ -743,7 +737,7 @@ class NaviViewModel @Inject constructor(
         viewModelScope.launch {
             removeArrivalConfirm()
             addMessage(NaviChatMessage.BotText(
-                "🎉 You've arrived at ${detail?.place?.name ?: "your destination"}! Enjoy your visit!"
+                s.arrivedAt.replace("%s", detail?.place?.name ?: s.destination)
             ))
             notifyUser()
         }

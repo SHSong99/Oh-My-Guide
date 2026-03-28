@@ -18,18 +18,17 @@ public class PopularPlaceController {
     private final PopularPlaceService popularPlaceService;
     private final SparkJobService sparkJobService;
 
-    // GET /api/pickRecommend?nationality=KR&ageGroup=20s&...
+    // GET /api/pickRecommend?nationality=KR&age=25&...
     // → 나와 비슷한 여행자들의 인기 장소 반환
     @GetMapping
     public ResponseEntity<List<PopularPlaceResponse>> getRecommendations(
             @RequestParam String nationality,
-            @RequestParam String ageGroup,
+            @RequestParam int age,
             @RequestParam String gender,
-            @RequestParam String travelPurpose,
-            @RequestParam String lifestyle
+            @RequestParam String travelPurpose
     ) {
         List<PopularPlaceResponse> results = popularPlaceService.getRecommendations(
-                nationality, ageGroup, gender, travelPurpose, lifestyle
+                nationality, age, gender, travelPurpose
         );
         return ResponseEntity.ok(results);
     }

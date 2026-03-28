@@ -74,6 +74,13 @@ interface ApiService {
     @DELETE("phrases/{phraseId}/bookmark")
     suspend fun removePhraseBookmark(@Path("phraseId") phraseId: Long)
 
+    // Rating (별점)
+    @POST("guide/star")
+    suspend fun submitRating(
+        @Query("attrId") attrId: Long,
+        @Query("star") star: Int,
+    )
+
     // Pick Recommend (빅데이터 분산 추천)
     @GET("pickRecommend")
     suspend fun getPickRecommend(

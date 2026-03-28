@@ -25,7 +25,6 @@ class PopularPlaceRepositoryTest extends IntegrationTestSupport {
                 .ageGroup("20s")
                 .gender("M")
                 .travelPurpose("LEISURE")
-                .lifestyle("ACTIVE")
                 .placeId(100L)
                 .visitCount(50L)
                 .totalScore(200L)
@@ -42,7 +41,6 @@ class PopularPlaceRepositoryTest extends IntegrationTestSupport {
         assertThat(found.get().getAgeGroup()).isEqualTo("20s");
         assertThat(found.get().getGender()).isEqualTo("M");
         assertThat(found.get().getTravelPurpose()).isEqualTo("LEISURE");
-        assertThat(found.get().getLifestyle()).isEqualTo("ACTIVE");
         assertThat(found.get().getPlaceId()).isEqualTo(100L);
         assertThat(found.get().getPlaceRank()).isEqualTo(1);
     }
@@ -57,8 +55,7 @@ class PopularPlaceRepositoryTest extends IntegrationTestSupport {
                     .ageGroup("20s")
                     .gender("M")
                     .travelPurpose("LEISURE")
-                    .lifestyle("ACTIVE")
-                    .placeId((long) rank * 100)
+                        .placeId((long) rank * 100)
                     .visitCount(50L)
                     .totalScore(200L)
                     .placeRank(rank)
@@ -67,7 +64,7 @@ class PopularPlaceRepositoryTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlace> result = popularPlaceRepository.findByCluster(
-                "KOR", "20s", "M", "LEISURE", "ACTIVE"
+                "KOR", "20s", "M", "LEISURE"
         );
 
         // then
@@ -85,7 +82,6 @@ class PopularPlaceRepositoryTest extends IntegrationTestSupport {
                 .ageGroup("20s")
                 .gender("M")
                 .travelPurpose("LEISURE")
-                .lifestyle("ACTIVE")
                 .placeId(100L)
                 .visitCount(50L)
                 .totalScore(200L)
@@ -97,7 +93,6 @@ class PopularPlaceRepositoryTest extends IntegrationTestSupport {
                 .ageGroup("30s")
                 .gender("F")
                 .travelPurpose("BUSINESS")
-                .lifestyle("RELAX")
                 .placeId(999L)
                 .visitCount(10L)
                 .totalScore(40L)
@@ -109,7 +104,7 @@ class PopularPlaceRepositoryTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlace> result = popularPlaceRepository.findByCluster(
-                "KOR", "20s", "M", "LEISURE", "ACTIVE"
+                "KOR", "20s", "M", "LEISURE"
         );
 
         // then
@@ -125,7 +120,7 @@ class PopularPlaceRepositoryTest extends IntegrationTestSupport {
 
         // when
         List<PopularPlace> result = popularPlaceRepository.findByCluster(
-                "KOR", "20s", "M", "LEISURE", "ACTIVE"
+                "KOR", "20s", "M", "LEISURE"
         );
 
         // then
