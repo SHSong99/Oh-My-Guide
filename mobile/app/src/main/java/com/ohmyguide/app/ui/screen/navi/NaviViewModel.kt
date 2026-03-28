@@ -216,7 +216,7 @@ class NaviViewModel @Inject constructor(
             "dh2" to (37.5563 to 126.9236),
             "dh3" to (37.5586 to 126.9267),
         )
-        private const val ARRIVAL_THRESHOLD_METERS = 50.0
+        private const val ARRIVAL_THRESHOLD_METERS = 30.0
         private const val ROUTE_NEARBY_RADIUS = 500.0      // 경로에서 500m 이내 장소만 선별
         private const val MAX_NEARBY_RECOMMENDATIONS = 5
 
