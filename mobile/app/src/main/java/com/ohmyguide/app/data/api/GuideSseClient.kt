@@ -6,6 +6,7 @@ import com.ohmyguide.app.data.model.GuideNavigationResponse
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
+import okhttp3.logging.HttpLoggingInterceptor
 import okhttp3.sse.EventSource
 import okhttp3.sse.EventSourceListener
 import okhttp3.sse.EventSources
@@ -32,6 +33,10 @@ class GuideSseClient @Inject constructor(
 
         val sseClient = okHttpClient.newBuilder()
             .readTimeout(0, TimeUnit.SECONDS)
+            .apply {
+                // SSE는 끝나지 않는 스트림 — Level.BODY가 본문 버퍼링 시도하면 이벤트 수신 불가
+                interceptors().removeAll { it is HttpLoggingInterceptor }
+            }
             .build()
 
 

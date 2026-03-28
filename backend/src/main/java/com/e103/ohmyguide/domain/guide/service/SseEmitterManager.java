@@ -20,19 +20,30 @@ public class SseEmitterManager {
 
         emitter.onCompletion(() -> {
             emitters.remove(userId, emitter);
-            log.debug("SSE emitter completed: userId={}", userId);
+            log.warn("SSE emitter completed: userId={}", userId);
         });
         emitter.onTimeout(() -> {
             emitters.remove(userId, emitter);
-            log.debug("SSE emitter timed out: userId={}", userId);
+            log.warn("SSE emitter timed out: userId={}", userId);
         });
         emitter.onError(e -> {
             emitters.remove(userId, emitter);
-            log.debug("SSE emitter error: userId={}", userId);
+            log.warn("SSE emitter error: userId={}", userId, e);
         });
 
         emitters.put(userId, emitter);
         return emitter;
+    }
+
+    public void sendConnected(Long userId) {
+        SseEmitter emitter = emitters.get(userId);
+        if (emitter == null) return;
+        try {
+            emitter.send(SseEmitter.event().name("connected").data("ok"));
+            log.info("Sent connected event: userId={}", userId);
+        } catch (Exception e) {
+            log.warn("Failed to send connected event: userId={}", userId, e);
+        }
     }
 
     public void send(Long userId, Object data) {
