@@ -468,11 +468,8 @@ class CourseNaviViewModel @Inject constructor(
                 val currentIdx = _uiState.value.currentSpotIndex
                 val currentSpot = spots.getOrNull(currentIdx) ?: return@collect
 
-<<<<<<< HEAD
-                // 모든 미도착 스팟의 도착을 감지 (순서 무관)
-=======
+
                 // 현재 스팟 + 아직 미도착 스팟 모두 감지 (이전 가이드 재생 중에도 미리 큐에 쌓기)
->>>>>>> 7a1f277ba82fbbdc065c0fa039aaee8ac4bce45d
                 for (checkIdx in 0..spots.lastIndex) {
                     if (checkIdx in arrivedSpots) continue
                     val checkSpot = spots[checkIdx]
@@ -482,7 +479,6 @@ class CourseNaviViewModel @Inject constructor(
                     }
                     if (dist < ARRIVAL_THRESHOLD_METERS) {
                         arrivedSpots.add(checkIdx)
-<<<<<<< HEAD
                     }
                 }
                 // 가이드 큐는 순서대로만 추가 (1→2→3→4)
@@ -490,11 +486,7 @@ class CourseNaviViewModel @Inject constructor(
                     enqueueSpotGuide(nextGuideIdx, spots)
                     nextGuideIdx++
                 }
-=======
-                        enqueueSpotGuide(checkIdx, spots)
-                    }
-                }
->>>>>>> 7a1f277ba82fbbdc065c0fa039aaee8ac4bce45d
+
             }
         }
     }

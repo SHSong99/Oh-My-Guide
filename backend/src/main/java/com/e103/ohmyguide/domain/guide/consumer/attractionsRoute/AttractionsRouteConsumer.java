@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 
-@Profile({"attractions-route-consumer", "default"})
+@Profile("attractions-route-consumer")
 @Slf4j
 @Service
 @RequiredArgsConstructor
