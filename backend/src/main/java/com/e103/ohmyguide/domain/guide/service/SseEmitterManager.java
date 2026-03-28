@@ -47,7 +47,6 @@ public class SseEmitterManager {
             emitter.send(SseEmitter.event()
                     .name("navigation")
                     .data(data));
-            emitter.complete();
         } catch (Exception e) {
             emitters.remove(userId, emitter);
             log.error("Failed to send SSE event: userId={}", userId, e);
