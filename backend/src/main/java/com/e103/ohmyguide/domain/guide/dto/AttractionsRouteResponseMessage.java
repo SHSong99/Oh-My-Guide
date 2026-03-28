@@ -5,14 +5,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class StartLocationResponse {
+public class AttractionsRouteResponseMessage {
 
-    private BigDecimal latitude;
-    private BigDecimal longitude;
+    private Long userId;
+    private GuideNavigationResponse navigationResponse;
 }
