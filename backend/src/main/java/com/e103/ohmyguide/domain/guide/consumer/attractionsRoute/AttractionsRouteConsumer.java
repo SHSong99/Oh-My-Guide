@@ -22,7 +22,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.List;
 
-@Profile("attractions-route-consumer")
+@Profile({"attractions-route-consumer", "default"})
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -41,6 +41,8 @@ public class AttractionsRouteConsumer {
     )
     @KafkaListener(topics = "user-go-log", groupId = "attractions-route-group")
     public void consume(String message) {
+        log.info("AttractionsRouteConsumer.consume: consumer 동작!!!! message = {}", message);
+
         UserGoLogMessage logMessage;
         try {
             logMessage = objectMapper.readValue(message, UserGoLogMessage.class);

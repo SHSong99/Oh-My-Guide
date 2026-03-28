@@ -34,6 +34,7 @@ class GuideSseClient @Inject constructor(
             .readTimeout(0, TimeUnit.SECONDS)
             .build()
 
+
         eventSource = EventSources.createFactory(sseClient)
             .newEventSource(request, object : EventSourceListener() {
                 override fun onEvent(
