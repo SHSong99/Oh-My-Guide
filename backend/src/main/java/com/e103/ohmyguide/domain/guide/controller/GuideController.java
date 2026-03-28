@@ -19,6 +19,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @RestController
@@ -66,6 +67,16 @@ public class GuideController {
 
         log.info("GuideController.connectSse: sse 연결 요청!! user id = {}", userId);
         SseEmitter emitter = sseEmitterManager.create(userId);
+
+        // Spring이 async 처리를 설정한 후 초기 이벤트 전송 (HTTP 응답 commit용)
+        CompletableFuture.runAsync(() -> {
+            try {
+                Thread.sleep(100);
+                sseEmitterManager.sendConnected(userId);
+            } catch (Exception e) {
+                log.warn("Failed to send initial SSE event: userId={}", userId, e);
+            }
+        });
 
         log.info("GuideController.connectSse: sse 반환!! userId = {} emitter = {}", userId, emitter);
         return emitter;
