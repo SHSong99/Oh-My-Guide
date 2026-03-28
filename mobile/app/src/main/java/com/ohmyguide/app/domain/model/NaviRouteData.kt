@@ -17,6 +17,9 @@ data class RouteSegmentGeo(
     val lineName: String,
     val fromName: String,
     val toName: String,
+    val fromNameKr: String = "",
+    val toNameKr: String = "",
+    val stopsCount: Int = 0,
     val stops: List<StopInfo> = emptyList(),
 )
 

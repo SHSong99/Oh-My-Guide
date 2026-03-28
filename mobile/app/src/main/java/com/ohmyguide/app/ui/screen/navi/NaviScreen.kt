@@ -258,6 +258,9 @@ fun NaviScreen(
                                 is NaviChatMessage.TransitInfo -> {
                                     TransitInfoCard(info = msg.info)
                                 }
+                                is NaviChatMessage.TransitGuide -> {
+                                    TransitGuideCard(info = msg.info)
+                                }
                                 is NaviChatMessage.DestinationDetail -> {
                                     DestinationDetailCard(
                                         detail = msg.detail,
