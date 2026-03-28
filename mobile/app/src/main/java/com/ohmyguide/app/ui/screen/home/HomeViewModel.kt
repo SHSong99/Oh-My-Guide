@@ -1,9 +1,11 @@
 package com.ohmyguide.app.ui.screen.home
 
 import android.util.Log
+import com.ohmyguide.app.BuildConfig
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ohmyguide.app.data.model.PlaceCardDto
+import com.ohmyguide.app.data.api.GuideSseClient
 import com.ohmyguide.app.data.model.RefreshRecommendRequest
 import com.ohmyguide.app.data.repository.RecommendRepository
 import com.ohmyguide.app.fixtures.HOME_RECOMMENDATIONS
@@ -20,6 +22,7 @@ import com.ohmyguide.app.ui.theme.CatLeports
 import com.ohmyguide.app.ui.theme.CatShopping
 import com.ohmyguide.app.ui.theme.CatFestival
 import com.ohmyguide.app.ui.theme.CatCafe
+import com.ohmyguide.app.ui.theme.LanguageManager
 import androidx.compose.ui.graphics.Color
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -78,7 +81,10 @@ data class HomeUiState(
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val recommendRepository: RecommendRepository,
+    private val guideSseClient: GuideSseClient,
 ) : ViewModel() {
+
+    private val s get() = LanguageManager.current.value.strings
 
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
@@ -113,10 +119,10 @@ class HomeViewModel @Inject constructor(
             val places = result.getOrNull()?.map { it.toPlace() }
 
             if (places.isNullOrEmpty()) {
-                addMessage(ChatMessage.BotText("No places found nearby. Try a different category!"))
+                addMessage(ChatMessage.BotText(s.noPlacesFound))
             } else {
                 val section = RecommendationSection(
-                    title = "Picks for You",
+                    title = s.picksForYou,
                     icon = HOME_RECOMMENDATIONS[0].icon,
                     label = "AI",
                     places = places,
@@ -181,10 +187,24 @@ class HomeViewModel @Inject constructor(
             val lng = location?.longitude ?: 128.8510
             val reachLat = place?.lat ?: lat
             val reachLng = place?.lng ?: lng
-            val result = recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
-            result.getOrNull()?.let { guide ->
-                PlaceDetailCache.putGuide(placeId, guide)
-            }
+
+            // 1) SSE 구독 → 연결 확인 후 REST 호출 → SSE로 nearbyPlaces 수신
+            guideSseClient.connect(
+                onOpen = {
+                    // 2) SSE 연결이 열린 후에만 안내 시작 (Kafka 발행 트리거)
+                    viewModelScope.launch {
+                        recommendRepository.startGuideNavigation(attrId, lat, lng, reachLat, reachLng)
+                    }
+                },
+                onResponse = { guide ->
+                    PlaceDetailCache.putGuide(placeId, guide)
+                    guideSseClient.close()
+                },
+                onError = {
+                    if (BuildConfig.DEBUG) Log.d("HomeViewModel", "SSE error", it)
+                    guideSseClient.close()
+                },
+            )
         }
     }
 
@@ -192,7 +212,7 @@ class HomeViewModel @Inject constructor(
 
     fun onShowMore(sectionTitle: String) {
         viewModelScope.launch {
-            addMessage(ChatMessage.UserText("Show more $sectionTitle"))
+            addMessage(ChatMessage.UserText("${s.showMore} $sectionTitle"))
             addMessage(ChatMessage.BotTyping)
 
             val location = getLatestLocation()
@@ -210,10 +230,10 @@ class HomeViewModel @Inject constructor(
                     places = extraPlaces,
                     btnText = "",
                 )
-                addMessage(ChatMessage.BotText("Here are more $sectionTitle spots!"))
+                addMessage(ChatMessage.BotText(s.moreSpots))
                 addMessage(ChatMessage.BotRecommendation(extraSection))
             } else {
-                addMessage(ChatMessage.BotText("No more places found nearby."))
+                addMessage(ChatMessage.BotText(s.noPlacesFound))
             }
         }
     }
@@ -223,14 +243,14 @@ class HomeViewModel @Inject constructor(
     fun onFindOtherPlaces() {
         viewModelScope.launch {
             removeFindBtn()
-            addMessage(ChatMessage.UserText("Find other places"))
+            addMessage(ChatMessage.UserText(s.findOtherPlaces))
             addMessage(ChatMessage.BotTyping)
             delay(1200L)
             removeTyping()
-            addMessage(ChatMessage.BotText("First, what's your main focus today?"))
+            addMessage(ChatMessage.BotText(s.mainFocusQuestion))
             addMessage(
                 ChatMessage.BotOptions(
-                    options = listOf("Local Food & Cafe", "Photo Spots", "Shopping & Trends"),
+                    options = listOf(s.optionFood, s.optionPhoto, s.optionShopping),
                 )
             )
             flowStep = FlowStep.AWAITING_FOCUS
@@ -267,10 +287,10 @@ class HomeViewModel @Inject constructor(
             addMessage(ChatMessage.BotTyping)
             delay(1000L)
             removeTyping()
-            addMessage(ChatMessage.BotText("And what kind of vibe?"))
+            addMessage(ChatMessage.BotText(s.vibeQuestion))
             addMessage(
                 ChatMessage.BotOptions(
-                    options = listOf("Active & Bustling", "Calm & Healing", "Nightlife"),
+                    options = listOf(s.optionActive, s.optionCalm, s.optionNightlife),
                 )
             )
             flowStep = FlowStep.AWAITING_VIBE
@@ -297,19 +317,25 @@ class HomeViewModel @Inject constructor(
             val result = recommendRepository.refreshRecommendation(request)
             removeTyping()
 
+            if (BuildConfig.DEBUG) {
+                result.exceptionOrNull()?.let {
+                    Log.e("HomeVM", "refreshRecommendation failed", it)
+                }
+            }
+
             val newPlaces = result.getOrNull()?.map { it.toPlace() }
 
             if (newPlaces.isNullOrEmpty()) {
-                addMessage(ChatMessage.BotText("Sorry, I couldn't find places right now. Please try again!"))
+                addMessage(ChatMessage.BotText(s.sorryNoPlaces))
             } else {
                 val newSection = RecommendationSection(
-                    title = "New Picks for You",
+                    title = s.newPicksForYou,
                     icon = HOME_RECOMMENDATIONS[0].icon,
                     label = "$selectedFocus · $option",
                     places = newPlaces,
                     btnText = "",
                 )
-                addMessage(ChatMessage.BotText("Here are fresh picks based on your taste!"))
+                addMessage(ChatMessage.BotText(s.freshPicks))
                 addMessage(ChatMessage.BotRecommendation(newSection))
                 _uiState.update { it.copy(spotCount = it.spotCount + newPlaces.size) }
             }

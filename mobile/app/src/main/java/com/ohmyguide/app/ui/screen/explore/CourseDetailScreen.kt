@@ -30,10 +30,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import com.ohmyguide.app.R
+import com.ohmyguide.app.service.TtsManager
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
@@ -114,6 +133,28 @@ private fun CourseDetailContent(
     navController: NavController,
     course: Course,
 ) {
+    val context = LocalContext.current
+    val ttsManager = remember { TtsManager(context) }
+    var showGuidePopup by remember { mutableStateOf(false) }
+    val guideMessage = "안녕하세요! ${course.title}를 소개드리겠습니다. " +
+        "체험을 원하시면 코스 시작하기를 눌러주세요!"
+
+    DisposableEffect(Unit) {
+        onDispose { ttsManager.shutdown() }
+    }
+
+    // 화면 진입 시 1초 후 깨비 팝업 + TTS 시작
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(1000L)
+        showGuidePopup = true
+        ttsManager.speak(guideMessage)
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(BgWhite),
+    ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -200,6 +241,74 @@ private fun CourseDetailContent(
             },
         )
     }
+
+    // 깨비 가이드 팝업 오버레이 (CourseNaviScreen과 동일 스타일)
+    if (showGuidePopup) {
+        val ttsProgress by ttsManager.progress.collectAsState()
+        val sentences = remember(guideMessage) {
+            guideMessage.split(Regex("(?<=[.!?。])(\\s*)")).filter { it.isNotBlank() }
+                .let { if (it.isEmpty()) listOf(guideMessage) else it }
+        }
+        val displaySentence = if (sentences.size <= 1) {
+            guideMessage
+        } else {
+            val totalChars = sentences.sumOf { it.length }
+            val cumWeights = sentences.runningFold(0f) { acc, s -> acc + s.length.toFloat() / totalChars }.drop(1)
+            val idx = cumWeights.indexOfFirst { it > ttsProgress }.let { if (it == -1) sentences.lastIndex else it }
+            sentences[idx]
+        }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(start = 24.dp, end = 24.dp, top = 70.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(BgWhite.copy(alpha = 0.95f))
+                .padding(20.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.masot),
+                    contentDescription = "Kkaebi",
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Primary.copy(alpha = 0.1f)),
+                    contentScale = ContentScale.Fit,
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = course.title,
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Primary,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    AnimatedContent(
+                        targetState = displaySentence,
+                        transitionSpec = {
+                            (fadeIn(tween(400)) + slideInVertically(tween(400)) { it / 3 })
+                                .togetherWith(fadeOut(tween(300)) + slideOutVertically(tween(300)) { -it / 3 })
+                        },
+                        label = "guidePopupSentence",
+                    ) { sentence ->
+                        Text(
+                            text = sentence,
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                lineHeight = 24.sp,
+                                fontWeight = FontWeight.Medium,
+                            ),
+                            color = TextPrimary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+    } // Box 닫기
 }
 
 @Composable

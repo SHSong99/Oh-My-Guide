@@ -4,10 +4,9 @@ import com.e103.ohmyguide.domain.attraction.controller.request.AttractionCreateR
 import com.e103.ohmyguide.domain.attraction.controller.request.AttractionUpdateRequest;
 import com.e103.ohmyguide.domain.attraction.controller.response.GuideMessageResponse;
 import com.e103.ohmyguide.domain.attraction.dto.AttractionDetailResponse;
-import com.e103.ohmyguide.domain.attraction.entity.Attraction;
-import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
 import com.e103.ohmyguide.domain.attraction.service.AttractionService;
-import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
+import com.e103.ohmyguide.domain.auth.security.CurrentUser;
+import com.e103.ohmyguide.domain.auth.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,14 +20,13 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class AttractionController {
 
-    private final AttractionRepository attractionRepository;
     private final AttractionService attractionService;
 
     @GetMapping("/{attrId}")
-    public AttractionDetailResponse getAttraction(@PathVariable Long attrId) {
-        Attraction attraction = attractionRepository.findById(attrId)
-                .orElseThrow(() -> new ResourceNotFoundException("Attraction", "id", attrId));
-        return AttractionDetailResponse.from(attraction);
+    public AttractionDetailResponse getAttraction(
+            @CurrentUser UserPrincipal userPrincipal,
+            @PathVariable Long attrId) {
+        return attractionService.getAttractionDetail(userPrincipal.getId(), attrId);
     }
 
     @PreAuthorize("hasRole('USER')")

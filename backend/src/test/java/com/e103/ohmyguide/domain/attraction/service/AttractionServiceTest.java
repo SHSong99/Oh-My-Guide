@@ -10,7 +10,6 @@ import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 
@@ -142,7 +141,7 @@ class AttractionServiceTest extends IntegrationTestSupport {
                 .longitude(new BigDecimal("126.53390800"))
                 .build());
         AttractionUpdateServiceRequest request = AttractionUpdateServiceRequest.of(
-                "한라산 국립공원", null, null, null, null);
+                "한라산 국립공원", null, null, null, null, null);
 
         // when
         attractionService.updateAttraction(attraction.getId(), request);
@@ -170,6 +169,7 @@ class AttractionServiceTest extends IntegrationTestSupport {
                 new BigDecimal("33.50000000"),
                 new BigDecimal("126.60000000"),
                 "new_image.jpg",
+                null,
                 null
         );
 
@@ -195,7 +195,7 @@ class AttractionServiceTest extends IntegrationTestSupport {
                 .longitude(new BigDecimal("126.53390800"))
                 .build());
         AttractionUpdateServiceRequest request = AttractionUpdateServiceRequest.of(
-                "한라산 국립공원", null, null, null, "새로운 개요");
+                "한라산 국립공원", null, null, null, "새로운 개요", null);
 
         // when
         AttractionDetailResponse response = attractionService.updateAttraction(attraction.getId(), request);
@@ -205,12 +205,36 @@ class AttractionServiceTest extends IntegrationTestSupport {
         assertThat(response.getOverview()).isEqualTo("새로운 개요");
     }
 
+    @DisplayName("관광지 overviewTts를 수정하면 DB에 반영되고 나머지 필드는 유지된다.")
+    @Test
+    void updateAttraction_overviewTtsUpdated() {
+        // given
+        Attraction attraction = attractionRepository.save(Attraction.builder()
+                .title("한라산")
+                .latitude(new BigDecimal("33.36160800"))
+                .longitude(new BigDecimal("126.53390800"))
+                .overview("기존 개요")
+                .overviewTts("기존 TTS")
+                .build());
+        AttractionUpdateServiceRequest request = AttractionUpdateServiceRequest.of(
+                null, null, null, null, null, "새로운 TTS");
+
+        // when
+        attractionService.updateAttraction(attraction.getId(), request);
+
+        // then
+        Attraction updated = attractionRepository.findById(attraction.getId()).get();
+        assertThat(updated.getOverviewTts()).isEqualTo("새로운 TTS");
+        assertThat(updated.getOverview()).isEqualTo("기존 개요");
+        assertThat(updated.getTitle()).isEqualTo("한라산");
+    }
+
     @DisplayName("존재하지 않는 관광지 ID로 수정하면 ResourceNotFoundException이 발생한다.")
     @Test
     void updateAttraction_throwsExceptionWhenNotFound() {
         // given
         AttractionUpdateServiceRequest request = AttractionUpdateServiceRequest.of(
-                "한라산", null, null, null, null);
+                "한라산", null, null, null, null, null);
 
         // when & then
         assertThatThrownBy(() -> attractionService.updateAttraction(999L, request))
@@ -218,18 +242,14 @@ class AttractionServiceTest extends IntegrationTestSupport {
     }
 
     private Attraction buildAttraction(String title, String overviewTts) {
-        Attraction attraction = Attraction.builder()
+        return Attraction.builder()
                 .contentId(12345)
                 .title(title)
                 .addr1("서울특별시 용산구")
                 .latitude(BigDecimal.valueOf(37.5511))
                 .longitude(BigDecimal.valueOf(126.9882))
                 .overview("Overview text")
+                .overviewTts(overviewTts)
                 .build();
-
-        // overviewTts는 Builder에 없으므로 Reflection으로 설정
-        ReflectionTestUtils.setField(attraction, "overviewTts", overviewTts);
-
-        return attraction;
     }
 }

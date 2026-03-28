@@ -63,7 +63,7 @@ sealed class MapUiState {
     data class Error(val message: String) : MapUiState()
 }
 
-private val DEFAULT_POSITION = LatLng(37.5700, 126.9920)
+private val DEFAULT_POSITION = LatLng(35.0950, 128.8560)
 
 @OptIn(ExperimentalNaverMapApi::class)
 @Composable

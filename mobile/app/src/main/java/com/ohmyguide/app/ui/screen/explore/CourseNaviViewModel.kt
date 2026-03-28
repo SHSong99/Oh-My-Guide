@@ -16,6 +16,7 @@ import com.ohmyguide.app.data.model.GuideNavigationResponse
 import com.ohmyguide.app.data.model.StartLocationDto
 import com.ohmyguide.app.data.model.ThemeDetailResponse
 import com.ohmyguide.app.data.repository.ThemeRepository
+import com.ohmyguide.app.data.repository.WeatherRepository
 import com.ohmyguide.app.domain.model.PlaceDetailCache
 import com.ohmyguide.app.domain.model.ThemeCourseCache
 import com.ohmyguide.app.fixtures.Course
@@ -60,6 +61,8 @@ data class CourseNaviUiState(
     val transportMode: String = "car",
     val chatMessages: List<CourseNaviChatMessage> = emptyList(),
     val isAdvancing: Boolean = false,
+    val guideQueue: List<String> = emptyList(),
+    val tourCompleted: Boolean = false,
 )
 
 @HiltViewModel
@@ -69,6 +72,7 @@ class CourseNaviViewModel @Inject constructor(
     private val directionsRepository: NaverDirectionsRepository,
     private val tmapRepository: TmapRepository,
     private val themeRepository: ThemeRepository,
+    private val weatherRepository: WeatherRepository,
 ) : ViewModel() {
 
     val courseId: String = savedStateHandle["courseId"] ?: ""
@@ -100,8 +104,8 @@ class CourseNaviViewModel @Inject constructor(
             _course.value = cached
             cacheSpotGuideData(cached)
             fetchCourseRoute()
-            startGpsTracking()
-            initCourseChat(cached)
+            initCourseChat(cached)   // 인사 큐 먼저
+            startGpsTracking()       // GPS는 그 후
             return
         }
         val themeId = courseId.toLongOrNull() ?: return
@@ -113,8 +117,8 @@ class CourseNaviViewModel @Inject constructor(
                     _course.value = c
                     cacheSpotGuideData(c)
                     fetchCourseRoute()
-                    startGpsTracking()
-                    initCourseChat(c)
+                    initCourseChat(c)   // 인사 큐 먼저
+                    startGpsTracking()  // GPS는 그 후
                 }
                 .onFailure {
                     _uiState.update { it.copy(isLoading = false) }
@@ -324,6 +328,35 @@ class CourseNaviViewModel @Inject constructor(
         _uiState.update { it.copy(chatMessages = it.chatMessages + msg) }
     }
 
+    // 가이드 큐에 텍스트 추가 (Screen에서 하나씩 꺼내서 TTS + 팝업)
+    fun enqueueGuide(text: String) {
+        // TTS가 자연스럽게 읽도록 치환
+        val ttsText = text.replace("SSAFY", "싸피")
+        if (com.ohmyguide.app.BuildConfig.DEBUG) {
+            android.util.Log.d("CourseNaviVM", "enqueue: ${ttsText.take(30)}... queueSize=${_uiState.value.guideQueue.size + 1}")
+        }
+        _uiState.update { it.copy(guideQueue = it.guideQueue + ttsText) }
+    }
+
+    // 큐 맨 앞 소비 → 특수 명령이면 처리
+    fun dequeueGuide() {
+        val queue = _uiState.value.guideQueue
+        if (queue.isEmpty()) return
+        val consumed = queue.first()
+        _uiState.update { it.copy(guideQueue = it.guideQueue.drop(1)) }
+
+        // 특수 명령 처리
+        if (consumed.startsWith("__ADVANCE__")) {
+            val nextIdx = consumed.removePrefix("__ADVANCE__").toIntOrNull() ?: return
+            val spots = _course.value?.spots ?: return
+            advanceToSpot(nextIdx, spots)
+        } else if (consumed == "__SOUND__") {
+            com.ohmyguide.app.service.NotificationSoundPlayer.play(appContext)
+        } else if (consumed == "__COMPLETE__") {
+            _uiState.update { it.copy(tourCompleted = true) }
+        }
+    }
+
     private fun removeTyping() {
         _uiState.update { state ->
             state.copy(chatMessages = state.chatMessages.filterNot { it is CourseNaviChatMessage.BotTyping })
@@ -332,20 +365,64 @@ class CourseNaviViewModel @Inject constructor(
 
     private fun initCourseChat(course: Course) {
         val firstSpot = course.spots.firstOrNull() ?: return
-        viewModelScope.launch {
-            delay(2000L)
-            addMessage(CourseNaviChatMessage.BotText(
-                "📍 ${course.title}에 오신 걸 환영해요! 총 ${course.spots.size}개의 장소를 함께 둘러볼게요."
-            ))
+        val lastSpot = course.spots.lastOrNull() ?: return
 
-            delay(2000L)
-            addMessage(CourseNaviChatMessage.BotTyping)
-            delay(800L)
-            removeTyping()
-            addMessage(CourseNaviChatMessage.BotText(
-                "첫 번째 장소: ${firstSpot.name}! 아래 카드를 탭하면 가이드를 들을 수 있어요."
-            ))
-            addMessage(CourseNaviChatMessage.SpotCard(spot = firstSpot, spotIndex = 0))
+        // 큐에 순서대로 넣기 (Screen에서 하나씩 꺼내서 TTS)
+        enqueueGuide(
+            "안녕하세요! 이번 ${course.title} 가이드를 맡은 깨비에요! " +
+            "총 ${course.spots.size}개의 장소를 함께 둘러볼 건데요, " +
+            "${firstSpot.name}을 시작으로 ${lastSpot.name}까지 가보도록 하겠습니다!"
+        )
+
+        // 날씨 비동기 조회 → 큐에 추가
+        viewModelScope.launch {
+            fetchWeatherAndEnqueue(firstSpot.lat, firstSpot.lng)
+        }
+
+        enqueueGuide(
+            "자, 그럼 첫 번째 장소인 ${firstSpot.name}(으)로 출발할게요! 천천히 걸어가면서 주변도 둘러보세요."
+        )
+    }
+
+    private suspend fun fetchWeatherAndEnqueue(lat: Double, lng: Double) {
+        when (val result = weatherRepository.getHourlyForecast(lat, lng)) {
+            is ApiResult.Success -> {
+                val hourly = result.data.hourly ?: return
+                val now = java.time.LocalTime.now().hour
+                val temp = hourly.temperature?.getOrNull(now)
+                val code = hourly.weatherCode?.getOrNull(now)
+                val weatherEmoji = when (code) {
+                    0 -> "☀️"; 1, 2, 3 -> "⛅"; 45, 48 -> "🌫️"
+                    51, 53, 55, 61, 63, 65 -> "🌧️"; 71, 73, 75 -> "❄️"
+                    95, 96, 99 -> "⛈️"; else -> "🌤️"
+                }
+                val weatherDesc = when (code) {
+                    0 -> "맑음"; 1, 2, 3 -> "구름 조금"; 45, 48 -> "안개"
+                    51, 53, 55, 61, 63, 65 -> "비"; 71, 73, 75 -> "눈"
+                    95, 96, 99 -> "천둥번개"; else -> "맑음"
+                }
+                // 인사 다음, 출발 전에 날씨를 끼워넣기 (큐의 1번 위치)
+                _uiState.update { state ->
+                    val queue = state.guideQueue.toMutableList()
+                    val insertIdx = 1.coerceAtMost(queue.size)
+                    val precip = hourly.precipitationProbability?.getOrNull(now) ?: 0
+                    val wind = hourly.windSpeed?.getOrNull(now) ?: 0.0
+                    val tip = buildString {
+                        append("출발 전에 날씨를 알려드릴게요! 지금 기온은 ${temp?.toInt() ?: "--"}도이고, ${weatherDesc}이에요. ")
+                        when {
+                            (temp ?: 20.0) >= 30 -> append("꽤 더운 날이니까 물 꼭 챙기시고, 그늘에서 쉬어가며 걸어주세요. ")
+                            (temp ?: 20.0) >= 20 -> append("산책하기 딱 좋은 날씨네요! ")
+                            (temp ?: 20.0) >= 10 -> append("살짝 쌀쌀할 수 있으니 가벼운 겉옷 하나 챙기시면 좋겠어요. ")
+                            else -> append("꽤 추운 날이에요. 따뜻하게 입고 나오셨죠? ")
+                        }
+                        if (precip >= 50) append("비 올 확률이 ${precip}퍼센트라서, 우산도 준비해주세요! ")
+                        if (wind >= 8) append("바람이 좀 불 수 있으니 모자 조심하세요! ")
+                    }
+                    queue.add(insertIdx, tip)
+                    state.copy(guideQueue = queue)
+                }
+            }
+            else -> {}
         }
     }
 
@@ -365,7 +442,7 @@ class CourseNaviViewModel @Inject constructor(
             delay(800L)
             removeTyping()
             addMessage(CourseNaviChatMessage.BotText(
-                "📍 ${index + 1}번째 장소: ${spot.name}(으)로 이동할게요!"
+                "${index + 1}번째 장소: ${spot.name}(으)로 이동할게요!"
             ))
             addMessage(CourseNaviChatMessage.SpotCard(spot = spot, spotIndex = index))
         }
@@ -373,26 +450,9 @@ class CourseNaviViewModel @Inject constructor(
 
     // ── GPS Tracking ──
 
+    // 스팟 전환 (큐에서 __ADVANCE__ 소비 시 호출됨)
     private fun advanceToSpot(nextIdx: Int, spots: List<Spot>) {
-        val nextSpot = spots.getOrNull(nextIdx) ?: return
-        if (_uiState.value.isAdvancing) return
-
-        viewModelScope.launch {
-            _uiState.update { it.copy(isAdvancing = true) }
-            _spotAdvanceEvent.tryEmit(nextSpot.name)
-            com.ohmyguide.app.service.NotificationSoundPlayer.play(appContext)
-
-            addMessage(CourseNaviChatMessage.BotTyping)
-            delay(800L)
-            removeTyping()
-            addMessage(CourseNaviChatMessage.BotText(
-                "🎉 다음 장소: ${nextSpot.name}(으)로 이동합니다!"
-            ))
-            addMessage(CourseNaviChatMessage.SpotCard(spot = nextSpot, spotIndex = nextIdx))
-
-            delay(1500L)
-            _uiState.update { it.copy(currentSpotIndex = nextIdx, isAdvancing = false) }
-        }
+        _uiState.update { it.copy(currentSpotIndex = nextIdx) }
     }
 
     private fun startGpsTracking() {
@@ -400,7 +460,6 @@ class CourseNaviViewModel @Inject constructor(
         gpsJob = viewModelScope.launch {
             LocationForegroundService.locationFlow.collect { location ->
                 location ?: return@collect
-                if (_uiState.value.isAdvancing) return@collect
                 val userLat = location.latitude
                 val userLng = location.longitude
 
@@ -408,45 +467,53 @@ class CourseNaviViewModel @Inject constructor(
                 val currentIdx = _uiState.value.currentSpotIndex
                 val currentSpot = spots.getOrNull(currentIdx) ?: return@collect
 
-                // Check arrival at current spot
-                val distCurrent = haversineMeters(userLat, userLng, currentSpot.lat, currentSpot.lng)
-                if (distCurrent < ARRIVAL_THRESHOLD_METERS && currentIdx !in arrivedSpots) {
-                    arrivedSpots.add(currentIdx)
-
-                    viewModelScope.launch {
-                        com.ohmyguide.app.service.NotificationSoundPlayer.play(appContext)
-                        addMessage(CourseNaviChatMessage.BotTyping)
-                        delay(800L)
-                        removeTyping()
-                        addMessage(CourseNaviChatMessage.BotText(
-                            "🎉 ${currentSpot.name}에 도착했어요! 카드를 탭하면 가이드를 들을 수 있어요."
-                        ))
-                        addMessage(CourseNaviChatMessage.SpotCard(spot = currentSpot, spotIndex = currentIdx))
-
-                        if (currentIdx < spots.lastIndex) {
-                            delay(5000L)
-                            arrivedSpots.add(currentIdx)
-                            advanceToSpot(currentIdx + 1, spots)
-                        } else {
-                            delay(2000L)
-                            addMessage(CourseNaviChatMessage.BotText(
-                                "🏁 축하합니다! 코스를 모두 완료했어요!"
-                            ))
-                        }
+                // 현재 스팟 + 아직 미도착 스팟 모두 감지 (이전 가이드 재생 중에도 미리 큐에 쌓기)
+                for (checkIdx in 0..spots.lastIndex) {
+                    if (checkIdx in arrivedSpots) continue
+                    val checkSpot = spots[checkIdx]
+                    val dist = haversineMeters(userLat, userLng, checkSpot.lat, checkSpot.lng)
+                    if (com.ohmyguide.app.BuildConfig.DEBUG && checkIdx == currentIdx) {
+                        android.util.Log.d("CourseNaviVM", "GPS: ($userLat, $userLng) → ${checkSpot.name}($checkIdx) dist=${dist.toInt()}m, arrived=$arrivedSpots")
                     }
-                    return@collect
-                }
-
-                // Check proximity to NEXT spot — auto-advance if closer to next than current
-                if (currentIdx < spots.lastIndex) {
-                    val nextSpot = spots[currentIdx + 1]
-                    val distNext = haversineMeters(userLat, userLng, nextSpot.lat, nextSpot.lng)
-                    if (distNext < ADVANCE_THRESHOLD_METERS && distNext < distCurrent) {
-                        arrivedSpots.add(currentIdx)
-                        advanceToSpot(currentIdx + 1, spots)
+                    if (dist < ARRIVAL_THRESHOLD_METERS) {
+                        arrivedSpots.add(checkIdx)
+                        enqueueSpotGuide(checkIdx, spots)
                     }
                 }
             }
+        }
+    }
+
+    private fun enqueueSpotGuide(spotIdx: Int, spots: List<com.ohmyguide.app.fixtures.Spot>) {
+        val spot = spots[spotIdx]
+
+        enqueueGuide("__SOUND__")
+
+        val guideText = spot.overviewTts ?: spot.desc
+        if (guideText.isNotBlank()) {
+            enqueueGuide(guideText)
+        }
+
+        // SSAFY 코스 전용: 마지막 스팟 후 삼성전기/SSAFY 설명
+        if (courseId == "6" && spotIdx == spots.lastIndex) {
+            enqueueGuide("원래 삼성자동차 부품을 만들려고 지은 공장인데, 외환위기로 자동차 사업이 접히면서 MLCC 공장으로 변신했어요. MLCC는 전자산업의 쌀이라 불리는 초소형 부품인데요. 스마트폰에 1,000개, 전기차에 3만 개, AI 서버에 2만 5천 개나 들어간답니다! 삼성전기가 글로벌 시장 점유율 약 24%를 차지하고 있어요.")
+            enqueueGuide("그리고 재미있는 사실! 이 공장 안에 SSAFY, 싸피 부산 캠퍼스가 숨어 있어요. 삼성의 SW·AI 인재 양성 프로그램인데, 2021년에 개소했답니다. 교육생들은 삼성전기 직원들과 같은 식당에서 밥 먹고, 보안 검색도 받으면서 코딩을 배워요!")
+            enqueueGuide("같은 주소에서 하나는 세계에서 가장 작은 부품을, 하나는 미래의 개발자를 만드는 곳. 삼성의 하드웨어와 소프트웨어, 두 개의 심장이랍니다!")
+        }
+
+        if (spotIdx < spots.lastIndex) {
+            val nextSpot = spots[spotIdx + 1]
+            enqueueGuide("다음 장소는 ${nextSpot.name}이에요. 이동해볼까요?")
+            // SSAFY 코스 전용: 3번→4번 이동 중 녹산공단 설명
+            if (courseId == "6" && spotIdx == 2) {
+                enqueueGuide("조금 더 덧붙여서 이야기 드리자면, 놀랍게도 이곳은 원래 바다였어요! 1990년에 매립을 시작해서 만든 곳이랍니다.")
+                enqueueGuide("약 27,000명이 일하고 있고, 특히 조선기자재 업체가 아주 많이 모여 있어서, 이곳 없으면 배를 못 만든다는 말이 있을 정도예요! 삼성전기, 농심, 대한제강 같은 큰 기업들도 여기 있답니다.")
+                enqueueGuide("바로 옆에 부산신항이 있고, 앞으로 가덕도신공항도 가까이 생길 예정이라 공항·항만·철도가 모이는 물류 중심지가 되고 있어요. 지금은 스마트그린산단으로 변신 중이랍니다!")
+            }
+            enqueueGuide("__ADVANCE__${spotIdx + 1}")
+        } else {
+            enqueueGuide("축하합니다! ${_course.value?.title ?: "코스"}를 모두 완료했어요! 즐거운 산책이었길 바랍니다.")
+            enqueueGuide("__COMPLETE__")
         }
     }
 
@@ -472,7 +539,7 @@ class CourseNaviViewModel @Inject constructor(
     }
 
     companion object {
-        private const val ARRIVAL_THRESHOLD_METERS = 50.0
+        private const val ARRIVAL_THRESHOLD_METERS = 30.0
         private const val ADVANCE_THRESHOLD_METERS = 150.0
     }
 }
