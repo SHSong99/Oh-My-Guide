@@ -119,21 +119,37 @@ class ExploreViewModel @Inject constructor(
                 setMediaItem(MediaItem.fromUri(uri))
                 repeatMode = Player.REPEAT_MODE_ONE
                 volume = 0f
-                prepare()
-                playWhenReady = index == _currentPage.value
+                // 현재 페이지만 prepare (메모리 절약)
+                if (index == _currentPage.value) {
+                    prepare()
+                    playWhenReady = true
+                }
             }
         }
     }
 
     fun onPageChanged(page: Int) {
         _currentPage.value = page
+        // 현재 페이지만 prepare + play, 나머지는 stop으로 메모리 해제
         players.forEach { (index, player) ->
-            player.playWhenReady = index == page
+            if (index == page) {
+                if (player.playbackState == Player.STATE_IDLE) {
+                    player.prepare()
+                }
+                player.playWhenReady = true
+            } else {
+                player.playWhenReady = false
+                player.stop()
+            }
         }
     }
 
     fun pauseAll() {
         players.values.forEach { it.playWhenReady = false }
+    }
+
+    fun setVolume(vol: Float) {
+        players.values.forEach { it.volume = vol }
     }
 
     override fun onCleared() {
