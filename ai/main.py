@@ -5,7 +5,7 @@ from typing import Optional
 
 import numpy as np
 
-from database import get_user_vector, get_places_in_radius, save_user_vector
+from database import get_user_vector, get_places_in_radius, save_user_vector, get_segment_vectors
 from vector_utils import (
     rank_places, build_cold_start_vector, DIM_ORDER,
     apply_vector_delta, apply_vector_choices, apply_category_filter,
@@ -42,7 +42,7 @@ class RecommendRequest(BaseModel):
     latitude: float
     longitude: float
     content_type_ids: list[int] = Field(description="카테고리 필터 (필수, 예: [12, 14])")
-    radius_km: float             = Field(default=10.0, ge=0.1, le=50.0)
+    radius_km: float             = Field(default=5.0, ge=0.1, le=50.0)
     user_profile: Optional[UserProfile] = Field(default=None, description="cold-start용 사용자 메타데이터")
 
 
@@ -51,7 +51,7 @@ class RefineRequest(BaseModel):
     latitude: float
     longitude: float
     content_type_ids: list[int]  = Field(description="카테고리 필터 (필수)")
-    radius_km: float              = Field(default=10.0, ge=0.1, le=50.0)
+    radius_km: float              = Field(default=5.0, ge=0.1, le=50.0)
     excluded_attr_ids: list[int]  = Field(default=[], description="이미 추천된 장소 attr_id 목록 (중복 제외)")
     refine_text: Optional[str]    = Field(default=None, description="자유 입력 텍스트 (학습률 0.25)")
     refine_choices: list[str]     = Field(default=[], description="선택지 차원명 목록 (학습률 0.20)")
@@ -63,7 +63,7 @@ class RefreshRequest(BaseModel):
     user_id: int
     latitude: float
     longitude: float
-    radius_km: float              = Field(default=10.0, ge=0.1, le=50.0)
+    radius_km: float              = Field(default=5.0, ge=0.1, le=50.0)
     category: Optional[str]       = Field(default=None, description="카테고리 자연어 입력 (예: 'nature', '맛집')")
     mood: Optional[str]           = Field(default=None, description="분위기 자연어 입력 (예: 'calm and healing')")
     free_text: Optional[str]      = Field(default=None, description="기타 자유 텍스트")
@@ -99,7 +99,7 @@ _CONTENT_TYPE_TAG = {
 class PlaceCardResult(BaseModel):
     """모바일 PlaceCard에 필요한 필드만 담은 응답."""
     attr_id: int
-    name: str                     = Field(description="장소명 (title)")
+    name: str                     = Field(description="장소명 (영어 우선, 없으면 한국어)")
     name_kr: str                  = Field(description="한국어 장소명")
     image_url: Optional[str]      = Field(default=None, description="대표 이미지 URL")
     distance: str                 = Field(description="거리 문자열 (예: '1.2km', '350m')")
@@ -165,6 +165,11 @@ def recommend(req: RecommendRequest):
     if cold_start:
         p = req.user_profile
         if p:
+            seg_nationality = _COUNTRY_TO_NATIONALITY.get((p.country or "").upper(), "Other")
+            seg_age = _to_segment_age(p.age)
+            seg_gender = _to_segment_gender(p.gender)
+            seg_vecs = get_segment_vectors(seg_nationality, seg_age, seg_gender)
+
             user_vec = build_cold_start_vector(
                 companion=p.companion,
                 age=p.age,
@@ -172,6 +177,7 @@ def recommend(req: RecommendRequest):
                 language=p.language,
                 country=p.country,
                 content_type_ids=req.content_type_ids,
+                segment_vectors=seg_vecs if seg_vecs else None,
             )
         else:
             user_vec = np.zeros(len(DIM_ORDER), dtype=np.float32)
@@ -265,6 +271,42 @@ _MOBILE_CATEGORY_MAP = {
 }
 
 
+_COUNTRY_TO_NATIONALITY = {
+    "JP": "Japan", "CN": "China", "TW": "Taiwan", "HK": "HongKong",
+    "TH": "Thailand", "SG": "Singapore", "MY": "Malaysia", "PH": "Philippines",
+    "VN": "Vietnam", "ID": "Indonesia", "IN": "India",
+    "US": "USA", "CA": "Canada", "GB": "UK", "AU": "Australia",
+    "FR": "France", "DE": "Germany", "RU": "Russia",
+}
+
+
+def _to_segment_age(age: int | None) -> str | None:
+    if age is None:
+        return None
+    if age < 20:
+        return "10s"
+    if age < 30:
+        return "20s"
+    if age < 40:
+        return "30s"
+    if age < 50:
+        return "40s"
+    if age < 60:
+        return "50s"
+    return "60s"
+
+
+def _to_segment_gender(gender: str | None) -> str | None:
+    if not gender:
+        return None
+    g = gender.strip().upper()
+    if g in ("M", "MALE"):
+        return "male"
+    if g in ("F", "FEMALE"):
+        return "female"
+    return None
+
+
 def _parse_mobile_categories(category_str: str | None) -> list[int]:
     """쉼표 구분 모바일 카테고리 → content_type_ids. 없으면 전체."""
     if not category_str:
@@ -283,7 +325,7 @@ def get_user_recommend(
     currentLat: float = 37.5665,
     currentLng: float = 126.978,
     userId: int = 1,
-    radiusKm: float = 10.0,
+    radiusKm: float = 5.0,
     excludedAttrIds: str | None = None,
     age: int | None = None,
     gender: str | None = None,
@@ -306,12 +348,18 @@ def get_user_recommend(
 
     # 3. cold-start 처리 (사용자 프로필 반영)
     if cold_start:
+        seg_nationality = _COUNTRY_TO_NATIONALITY.get((country or "").upper(), "Other")
+        seg_age = _to_segment_age(age)
+        seg_gender = _to_segment_gender(gender)
+        seg_vecs = get_segment_vectors(seg_nationality, seg_age, seg_gender)
+
         user_vec = build_cold_start_vector(
             companion=companion,
             age=age,
             gender=gender,
             country=country,
             content_type_ids=content_type_ids,
+            segment_vectors=seg_vecs if seg_vecs else None,
         )
         try:
             save_user_vector(userId, user_vec)
@@ -355,7 +403,7 @@ def get_user_recommend(
     for p in top5:
         results.append(PlaceCardResult(
             attr_id=p["attr_id"],
-            name=p.get("title") or "",
+            name=p.get("title_en") or p.get("title") or "",
             name_kr=p.get("title") or "",
             image_url=p.get("first_image1") or None,
             distance=_format_distance(p["distance_km"]),
@@ -442,7 +490,7 @@ def refresh_recommend(req: RefreshRequest):
     for p in top5:
         results.append(PlaceCardResult(
             attr_id=p["attr_id"],
-            name=p.get("title") or "",
+            name=p.get("title_en") or p.get("title") or "",
             name_kr=p.get("title") or "",
             image_url=p.get("first_image1") or None,
             distance=_format_distance(p["distance_km"]),
