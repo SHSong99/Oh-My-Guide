@@ -41,6 +41,7 @@ import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.LocalOffer
 import androidx.compose.material.icons.filled.Navigation
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.Icon
@@ -807,19 +808,37 @@ fun NaviQuickActions(
 // ── Phrases Dashboard ──
 
 @Composable
-fun PhrasesDashboard(items: List<PhraseItem>, onSpeak: (String) -> Unit) {
+fun PhrasesDashboard(
+    items: List<PhraseItem>,
+    onSpeak: (String) -> Unit,
+    speakingText: String? = null,
+    isSpeaking: Boolean = false,
+    isLoading: Boolean = false,
+) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         items.forEach { phrase ->
-            PhraseCard(phrase = phrase, onSpeak = onSpeak)
+            val isThisPlaying = speakingText == phrase.korean && isSpeaking
+            val isThisLoading = speakingText == phrase.korean && isLoading
+            PhraseCard(
+                phrase = phrase,
+                onSpeak = onSpeak,
+                isPlaying = isThisPlaying,
+                isLoading = isThisLoading,
+            )
         }
     }
 }
 
 @Composable
-private fun PhraseCard(phrase: PhraseItem, onSpeak: (String) -> Unit) {
+private fun PhraseCard(
+    phrase: PhraseItem,
+    onSpeak: (String) -> Unit,
+    isPlaying: Boolean = false,
+    isLoading: Boolean = false,
+) {
     val key = "navi-${phrase.korean}"
     val bookmarkMap by com.ohmyguide.app.domain.model.PhraseBookmarkStore.bookmarks.collectAsState()
     val bookmarked = bookmarkMap.containsKey(key)
@@ -882,15 +901,23 @@ private fun PhraseCard(phrase: PhraseItem, onSpeak: (String) -> Unit) {
                 .size(40.dp)
                 .clip(CircleShape)
                 .background(PrimaryGradient)
-                .clickable { onSpeak(phrase.korean) },
+                .clickable(enabled = !isLoading) { onSpeak(phrase.korean) },
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Filled.PlayArrow,
-                contentDescription = "Play",
-                modifier = Modifier.size(20.dp),
-                tint = BgWhite,
-            )
+            if (isLoading) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    color = BgWhite,
+                    strokeWidth = 2.dp,
+                )
+            } else {
+                Icon(
+                    if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (isPlaying) "Pause" else "Play",
+                    modifier = Modifier.size(20.dp),
+                    tint = BgWhite,
+                )
+            }
         }
     }
 }

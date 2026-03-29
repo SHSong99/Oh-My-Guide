@@ -77,7 +77,6 @@ fun ExploreScreen(
     val courses by viewModel.courses.collectAsState()
     val regions by viewModel.regions.collectAsState()
     val exploreUiState by viewModel.uiState.collectAsState()
-    // +1 trigger page (same video as last theme)
     val pagerState = rememberPagerState(pageCount = {
         if (isShowcase) themes.size + 1 else themes.size
     })
@@ -112,7 +111,7 @@ fun ExploreScreen(
         }
     }
 
-    // Trigger page settled → switch to home
+    // 트리거 페이지 도달 시 쇼케이스 종료 → 코스 목록 전환
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.settledPage }.collect { page ->
             if (page >= themes.size && isShowcase) {
@@ -162,13 +161,17 @@ fun ExploreScreen(
                         pageOffset = pageOffset,
                         compact = !isShowcase,
                         onExploreClick = {
+                            if (isShowcase) {
+                                viewModel.pauseAll()
+                                isShowcase = false
+                            }
                             navController.navigate(
                                 Screen.CourseDetail.createRoute(themes[page].courseId.toString())
                             )
                         },
                     )
                 } else {
-                    // Trigger page: color gradient only, no video
+                    // 트리거 페이지: 마지막 테마 색상 그라디언트
                     val lastTheme = themes.last()
                     Box(
                         modifier = Modifier

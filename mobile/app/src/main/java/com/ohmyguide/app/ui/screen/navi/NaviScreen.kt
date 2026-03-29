@@ -123,6 +123,9 @@ fun NaviScreen(
     val strings = LocalStrings.current
     val context = androidx.compose.ui.platform.LocalContext.current
     val ttsManager = remember { com.ohmyguide.app.service.TtsManager(context) }
+    val ttsSpeaking by ttsManager.isSpeaking.collectAsState()
+    val ttsLoading by ttsManager.isLoading.collectAsState()
+    var ttsSpeakingText by remember { mutableStateOf<String?>(null) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var storyPlaceId by remember { mutableStateOf<String?>(null) }
     var showStopDialog by remember { mutableStateOf(false) }
@@ -282,8 +285,18 @@ fun NaviScreen(
                                 is NaviChatMessage.Phrases -> {
                                     PhrasesDashboard(
                                         items = msg.items,
+                                        speakingText = ttsSpeakingText,
+                                        isSpeaking = ttsSpeaking,
+                                        isLoading = ttsLoading,
                                         onSpeak = { text ->
-                                            scope.launch { ttsManager.speak(text) }
+                                            if (ttsSpeakingText == text && ttsSpeaking) {
+                                                ttsManager.pause()
+                                            } else if (ttsSpeakingText == text && ttsManager.hasPaused()) {
+                                                ttsManager.resume()
+                                            } else {
+                                                ttsSpeakingText = text
+                                                scope.launch { ttsManager.speak(text) }
+                                            }
                                         },
                                     )
                                 }
