@@ -403,7 +403,7 @@ def get_user_recommend(
     for p in top5:
         results.append(PlaceCardResult(
             attr_id=p["attr_id"],
-            name=p.get("title_en") or p.get("title") or "",
+            name=p.get("title") or "",
             name_kr=p.get("title") or "",
             image_url=p.get("first_image1") or None,
             distance=_format_distance(p["distance_km"]),
@@ -490,7 +490,7 @@ def refresh_recommend(req: RefreshRequest):
     for p in top5:
         results.append(PlaceCardResult(
             attr_id=p["attr_id"],
-            name=p.get("title_en") or p.get("title") or "",
+            name=p.get("title") or "",
             name_kr=p.get("title") or "",
             image_url=p.get("first_image1") or None,
             distance=_format_distance(p["distance_km"]),
