@@ -17,6 +17,8 @@ import numpy as np
 import psycopg2
 from dotenv import load_dotenv
 
+from vector_utils import DIM_ORDER
+
 load_dotenv()
 
 DB_CONFIG = {
@@ -28,14 +30,6 @@ DB_CONFIG = {
 }
 
 CSV_FILE = os.path.join(os.path.dirname(__file__), "busan_tourist_data.csv")
-
-# ── 24차원 순서 (vector_utils.py와 동일) ──
-DIM_ORDER = [
-    "nature", "culture", "festival", "activity", "shopping", "food", "cafe", "lodging",
-    "healing", "aesthetic", "gourmet", "learning", "heritage", "mood_nature",
-    "romantic", "family", "active", "nightlife",
-    "free_entry", "parking_available", "pet_friendly", "baby_friendly", "indoor", "outdoor",
-]
 
 # ── CSV 종합 컬럼 인덱스 (0-based) ──
 # 20: 맛집탐방, 21: 레저스포츠, 22: 자연풍경, 23: 영화/드라마촬영지
