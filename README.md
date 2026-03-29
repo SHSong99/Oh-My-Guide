@@ -1,4 +1,4 @@
-# 🇰🇷 Oh My Guide
+# Oh My Guide
 
 > **외국인 관광객을 위한 AI 기반 맞춤형 한국 여행 추천 및 가이드 서비스**
 
@@ -6,13 +6,13 @@
 
 <div align="center">
 
-<img src="screenshots/01_login.png" width="180"/>  <img src="screenshots/02_category_select.png" width="180"/>  <img src="screenshots/03_place_detail.png" width="180"/>  <img src="screenshots/04_picks_for_you.png" width="180"/>
+<img src="screenshots/01_login.png" width="180"/>  <img src="screenshots/02_category_select.png" width="180"/>  
 
 </div>
 
 ---
 
-## 📖 프로젝트 소개
+## 프로젝트 소개
 
 **Oh My Guide**는 한국을 방문하는 외국인 관광객이 언어와 문화의 장벽 없이 편리하게 여행할 수 있도록 돕는 모바일 서비스입니다.
 
@@ -20,7 +20,7 @@
 
 ---
 
-## 📱 스크린샷
+## 스크린샷
 
 <div align="center">
 
@@ -28,7 +28,7 @@
 |:---:|:---:|:---:|:---:|
 |<img src="screenshots/01_login.png" width="180"/>|<img src="screenshots/02_category_select.png" width="180"/>|<img src="screenshots/03_map_guide.png" width="180"/>|<img src="screenshots/04_place_detail.png" width="180"/>|
 
-|AI 맞춤 추천|탐색 (Explore)|코스 상세|코스 목록|
+|K-Culture 테마 여행|탐색 (Explore)|코스 상세|코스 목록|
 |:---:|:---:|:---:|:---:|
 |<img src="screenshots/05_picks_for_you.png" width="180"/>|<img src="screenshots/06_explore_courses.png" width="180"/>|<img src="screenshots/07_course_detail.png" width="180"/>|<img src="screenshots/08_course_list.png" width="180"/>|
 
@@ -36,7 +36,7 @@
 
 ---
 
-## ✨ 주요 기능
+## 주요 기능
 
 ### 1. 실시간 위치 기반 개인 맞춤 추천
 - 관광객의 **국적, 나이, 동반 유형, 선호 카테고리/분위기**를 반영한 주변 여행지 추천
@@ -69,7 +69,7 @@
 
 ---
 
-## 🏗 아키텍처 & 기술 특징
+## 아키텍처 & 기술 특징
 
 ### Kafka 기반 실시간 이벤트 수집 & 점수화
 - 사용자 행동(상세보기, 선택, 별점)을 **이벤트 단위로 분리**하여 Kafka로 수집
@@ -88,7 +88,7 @@
 
 ---
 
-## 👥 팀원 및 역할
+## 팀원 및 역할
 
 | 역할 | 이름 |
 |------|------|
@@ -96,3 +96,9 @@
 | **Backend** | 송성현, 전준완, 정승현 |
 | **AI** | 이정현 |
 | **Infra** | 전준완 |
+
+## 시스템 아키텍처
+![스크린샷_2026-03-30_024925](/uploads/218a30d4c94672981172b3c9266859fb/스크린샷_2026-03-30_024925.png){width=900 height=546}
+
+## ERD
+![image](/uploads/fd9638b7732a76201df938ff354b5881/image.png){width=681 height=459}
