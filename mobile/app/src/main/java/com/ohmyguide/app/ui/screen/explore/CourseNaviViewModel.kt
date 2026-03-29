@@ -501,13 +501,6 @@ class CourseNaviViewModel @Inject constructor(
             enqueueGuide(guideText)
         }
 
-        // SSAFY 코스 전용: 마지막 스팟 후 삼성전기/SSAFY 설명
-        if (courseId == "6" && spotIdx == spots.lastIndex) {
-            enqueueGuide("원래 삼성자동차 부품을 만들려고 지은 공장인데, 외환위기로 자동차 사업이 접히면서 MLCC 공장으로 변신했어요. MLCC는 전자산업의 쌀이라 불리는 초소형 부품인데요. 스마트폰에 1,000개, 전기차에 3만 개, AI 서버에 2만 5천 개나 들어간답니다! 삼성전기가 글로벌 시장 점유율 약 24%를 차지하고 있어요.")
-            enqueueGuide("그리고 재미있는 사실! 이 공장 안에 SSAFY, 싸피 부산 캠퍼스가 숨어 있어요. 삼성의 SW·AI 인재 양성 프로그램인데, 2021년에 개소했답니다. 교육생들은 삼성전기 직원들과 같은 식당에서 밥 먹고, 보안 검색도 받으면서 코딩을 배워요!")
-            enqueueGuide("같은 주소에서 하나는 세계에서 가장 작은 부품을, 하나는 미래의 개발자를 만드는 곳. 삼성의 하드웨어와 소프트웨어, 두 개의 심장이랍니다!")
-        }
-
         if (spotIdx < spots.lastIndex) {
             val nextSpot = spots[spotIdx + 1]
             enqueueGuide("다음 장소는 ${nextSpot.name}이에요. 이동해볼까요?")
@@ -520,6 +513,7 @@ class CourseNaviViewModel @Inject constructor(
             enqueueGuide("__ADVANCE__${spotIdx + 1}")
         } else {
             enqueueGuide("축하합니다! ${_course.value?.title ?: "코스"}를 모두 완료했어요! 즐거운 산책이었길 바랍니다.")
+            enqueueGuide("깨비가 이번에 준비한 코스는 여기까지지만, 테마에 깨비가 준비한 다른 코스들도 많이 있으니 다음에도 꼭 함께해 주세요! 더 좋은 가이드로 찾아뵐게요!")
             enqueueGuide("__COMPLETE__")
         }
     }
