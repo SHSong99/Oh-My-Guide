@@ -38,6 +38,50 @@ _CATEGORY_DIM = {
     28: "activity", 38: "shopping", 39: "food", 32: "lodging",
 }
 
+# 카테고리 차원 목록 (8개)
+CATEGORY_DIMS = ["nature", "culture", "festival", "activity", "shopping", "food", "cafe", "lodging"]
+
+# 모바일 카테고리 이름 → 벡터 차원명
+_MOBILE_CAT_TO_DIM = {
+    "attraction": ["nature"],
+    "culture": ["culture"],
+    "festival": ["festival"],
+    "course": ["nature", "culture"],
+    "leports": ["activity"],
+    "cafe": ["cafe"],
+    "shopping": ["shopping"],
+    "food": ["food"],
+}
+
+
+def apply_category_filter(user_vec: 'np.ndarray', mobile_categories: list[str] | None) -> 'np.ndarray':
+    """
+    선택한 카테고리 차원은 1.0, 선택 안 한 카테고리 차원은 0.0으로 강제.
+    분위기/실용 차원은 건드리지 않음.
+    mobile_categories: ["cafe", "food", ...] 모바일에서 보낸 카테고리 이름 목록
+    """
+    if not mobile_categories:
+        return user_vec
+
+    result = user_vec.copy()
+    dim_index = {dim: i for i, dim in enumerate(DIM_ORDER)}
+
+    # 선택된 카테고리 차원 수집
+    selected_dims = set()
+    for cat in mobile_categories:
+        dims = _MOBILE_CAT_TO_DIM.get(cat.strip().lower(), [])
+        selected_dims.update(dims)
+
+    # 카테고리 8개 차원만 조작
+    for dim in CATEGORY_DIMS:
+        idx = dim_index[dim]
+        if dim in selected_dims:
+            result[idx] = 1.0
+        else:
+            result[idx] = 0.0
+
+    return result
+
 # 동행 유형 → 분위기 차원 부스트 (CLAUDE.md 설계 기반, 가장 강한 신호)
 _COMPANION_BOOST = {
     "couple":  {"romantic": 0.7, "aesthetic": 0.5, "nightlife": 0.4, "gourmet": 0.5},
@@ -75,44 +119,60 @@ def build_cold_start_vector(
     language: str | None = None,
     country: str | None = None,
     content_type_ids: list[int] | None = None,
+    segment_vectors: dict | None = None,
 ) -> np.ndarray:
     """
     사용자 메타데이터로 cold-start 임시 벡터 생성.
     학습된 벡터가 없을 때 코사인 유사도 계산에 사용.
 
-    우선순위:
-      1. companion (동행 유형) - 가장 강한 신호
-      2. content_type_ids (선택 카테고리) - 카테고리 차원 직접 설정
-      3. age (나이대) - 보조 신호
-      4. language (언어/국가) - 가장 약한 신호
+    segment_vectors가 있으면 (CSV 통계 기반) 가중 합산으로 base 생성.
+    없으면 기존 하드코딩 규칙으로 폴백.
     """
-    scores = {dim: 0.0 for dim in DIM_ORDER}
+    # ── 세그먼트 벡터 기반 (데이터 드리븐) ──
+    if segment_vectors and len(segment_vectors) > 0:
+        weights = {"nationality": 0.5, "age": 0.3, "gender": 0.2}
+        weighted_sum = np.zeros(len(DIM_ORDER), dtype=np.float32)
+        total_weight = 0.0
 
-    # 1. 동행 유형 → 분위기 차원 직접 부스트
-    if companion:
-        boost = _COMPANION_BOOST.get(companion.lower(), {})
-        for dim, val in boost.items():
-            scores[dim] = max(scores[dim], val)
+        for seg_type, vec in segment_vectors.items():
+            w = weights.get(seg_type, 0.1)
+            weighted_sum += w * vec
+            total_weight += w
 
-    # 2. 선택한 카테고리 → 카테고리 차원 1.0
+        if total_weight > 0:
+            weighted_sum /= total_weight
+
+        scores = {dim: float(weighted_sum[i]) for i, dim in enumerate(DIM_ORDER)}
+
+    else:
+        # ── 기존 하드코딩 규칙 폴백 ──
+        scores = {dim: 0.0 for dim in DIM_ORDER}
+
+        # 1. 동행 유형 → 분위기 차원 직접 부스트
+        if companion:
+            boost = _COMPANION_BOOST.get(companion.lower(), {})
+            for dim, val in boost.items():
+                scores[dim] = max(scores[dim], val)
+
+        # 2. 나이대 → 보조 부스트
+        if age:
+            for (low, high), boost in _AGE_BOOST:
+                if low <= age <= high:
+                    for dim, val in boost.items():
+                        scores[dim] = max(scores[dim], val * 0.6)
+                    break
+
+        # 3. 언어 → 약한 부스트
+        if language:
+            lang_boost = _LANGUAGE_BOOST.get(language.lower(), {})
+            for dim, val in lang_boost.items():
+                scores[dim] = max(scores[dim], val * 0.5)
+
+    # 카테고리 선택은 항상 적용 (세그먼트 벡터 위에 오버라이드)
     for ct_id in (content_type_ids or []):
         cat_dim = _CATEGORY_DIM.get(ct_id)
         if cat_dim:
             scores[cat_dim] = 1.0
-
-    # 3. 나이대 → 보조 부스트
-    if age:
-        for (low, high), boost in _AGE_BOOST:
-            if low <= age <= high:
-                for dim, val in boost.items():
-                    scores[dim] = max(scores[dim], val * 0.6)
-                break
-
-    # 4. 언어 → 약한 부스트
-    if language:
-        lang_boost = _LANGUAGE_BOOST.get(language.lower(), {})
-        for dim, val in lang_boost.items():
-            scores[dim] = max(scores[dim], val * 0.5)
 
     return np.array([scores[dim] for dim in DIM_ORDER], dtype=np.float32)
 

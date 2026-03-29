@@ -75,6 +75,40 @@ def save_user_vector(user_id: int, vec) -> None:
         conn.commit()
 
 
+# ── 세그먼트 벡터 (Cold Start) ─────────────────────────────────────────────────
+
+def get_segment_vectors(nationality: str | None, age_group: str | None, gender: str | None) -> dict:
+    """
+    segment_vectors 테이블에서 국적/연령/성별 세그먼트 벡터 조회.
+    반환: {"nationality": np.ndarray, "age": np.ndarray, "gender": np.ndarray}
+    매칭 없는 항목은 포함하지 않음.
+    """
+    result = {}
+    lookups = [
+        ("nationality", nationality),
+        ("age", age_group),
+        ("gender", gender),
+    ]
+
+    with get_conn() as conn:
+        with conn.cursor() as cur:
+            for seg_type, seg_key in lookups:
+                if not seg_key:
+                    continue
+                cur.execute(
+                    "SELECT segment_vector FROM segment_vectors WHERE segment_type = %s AND segment_key = %s",
+                    (seg_type, seg_key),
+                )
+                row = cur.fetchone()
+                if row:
+                    vec_dict = row["segment_vector"]
+                    if isinstance(vec_dict, str):
+                        vec_dict = json.loads(vec_dict)
+                    result[seg_type] = parse_vector(vec_dict)
+
+    return result
+
+
 # ── 반경 내 장소 + 벡터 조회 ─────────────────────────────────────────────────
 
 def get_places_in_radius(
@@ -115,6 +149,8 @@ def get_places_in_radius(
             a.content_type_id,
             a.first_image1,
             a.overview,
+            a.title_en,
+            a.overview_en,
             ST_Distance(
                 ST_MakePoint(a.longitude::float, a.latitude::float)::geography,
                 ST_MakePoint(%s, %s)::geography
@@ -155,6 +191,8 @@ def get_places_in_radius(
             "content_type_id": row["content_type_id"],
             "first_image1":    row["first_image1"],
             "overview":        row["overview"],
+            "title_en":        row.get("title_en"),
+            "overview_en":     row.get("overview_en"),
             "distance_km":     round(float(row["distance_km"]), 3),
             "attr_vector":     parse_vector(vec_dict),  # numpy 배열
         })
