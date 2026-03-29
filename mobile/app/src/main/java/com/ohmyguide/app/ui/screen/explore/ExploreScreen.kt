@@ -116,7 +116,6 @@ fun ExploreScreen(
         snapshotFlow { pagerState.settledPage }.collect { page ->
             if (page >= themes.size && isShowcase) {
                 viewModel.pauseAll()
-                viewModel.setVolume(0f)
                 isShowcase = false
                 pagerState.scrollToPage(0)
             }
@@ -164,7 +163,6 @@ fun ExploreScreen(
                         onExploreClick = {
                             if (isShowcase) {
                                 viewModel.pauseAll()
-                                viewModel.setVolume(0f)
                                 isShowcase = false
                             }
                             navController.navigate(

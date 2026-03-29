@@ -118,7 +118,6 @@ class ExploreViewModel @Inject constructor(
                 )
                 setMediaItem(MediaItem.fromUri(uri))
                 repeatMode = Player.REPEAT_MODE_ONE
-                volume = 0f
                 // 현재 페이지만 prepare (메모리 절약)
                 if (index == _currentPage.value) {
                     prepare()
@@ -146,10 +145,6 @@ class ExploreViewModel @Inject constructor(
 
     fun pauseAll() {
         players.values.forEach { it.playWhenReady = false }
-    }
-
-    fun setVolume(vol: Float) {
-        players.values.forEach { it.volume = vol }
     }
 
     override fun onCleared() {
