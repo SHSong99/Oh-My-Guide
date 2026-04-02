@@ -200,6 +200,10 @@ class NaviViewModel @Inject constructor(
             // 비프음
             val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60)
             tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+            viewModelScope.launch {
+                delay(200)
+                try { tone.release() } catch (_: Exception) {}
+            }
             // 약한 진동
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vm = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
