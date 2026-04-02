@@ -30,7 +30,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -43,6 +42,7 @@ import com.ohmyguide.app.ui.theme.BgScreen
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.Secondary
+import com.ohmyguide.app.ui.theme.Star
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 
@@ -123,7 +123,7 @@ private fun StarRow(
             Icon(
                 imageVector = if (filled) Icons.Filled.Star else Icons.Outlined.StarOutline,
                 contentDescription = "$i star",
-                tint = if (filled) Color(0xFFFFB800) else TextCaption,
+                tint = if (filled) Star else TextCaption,
                 modifier = Modifier
                     .size(52.dp)
                     .scale(scale)
