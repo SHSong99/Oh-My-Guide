@@ -1,5 +1,6 @@
 package com.ohmyguide.app.ui.screen.navi
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,12 +54,14 @@ import kotlin.math.sqrt
 
 // ── Chat Messages ──
 
+@Immutable
 data class PhraseItem(
     val korean: String,
     val romanization: String,
     val english: String,
 )
 
+@Immutable
 data class TransitStopInfo(
     val stopName: String,
     val busNumber: String,
@@ -66,6 +69,7 @@ data class TransitStopInfo(
     val exitStopName: String,
 )
 
+@Immutable
 data class TransitGuideInfo(
     val type: String,           // "board" or "alight"
     val transitType: String,    // "bus" or "subway"
@@ -77,6 +81,7 @@ data class TransitGuideInfo(
     val exitStationEn: String = "",
 )
 
+@Immutable
 data class WeatherInfo(
     val temperature: Double,
     val feelsLike: Double,
@@ -89,6 +94,7 @@ data class WeatherInfo(
     val hourlyForecast: List<HourForecast> = emptyList(),
 )
 
+@Immutable
 data class HourForecast(
     val hour: Int,
     val temp: Double,
@@ -96,6 +102,7 @@ data class HourForecast(
     val precipProb: Int,
 )
 
+@Immutable
 data class NearbySpotInfo(
     val placeId: String,
     val name: String,
@@ -126,6 +133,7 @@ sealed class NaviChatMessage {
 
 // ── UI State ──
 
+@Immutable
 data class NaviUiState(
     val chatMessages: List<NaviChatMessage> = emptyList(),
     val arrived: Boolean = false,
