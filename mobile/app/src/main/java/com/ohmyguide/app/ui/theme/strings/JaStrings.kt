@@ -156,6 +156,7 @@ object JaStrings : AppStrings {
     override val age = "年齢"
     override val gender = "性別"
     override val save = "保存"
+    override val profileFieldsRequired = "すべての項目を入力してください"
     override val bookmarkEmpty = "保存されたフレーズはありません"
     override val viewAllPhrases = "すべてのフレーズを見る"
 

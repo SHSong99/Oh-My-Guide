@@ -156,6 +156,7 @@ object EnStrings : AppStrings {
     override val age = "Age"
     override val gender = "Gender"
     override val save = "Save"
+    override val profileFieldsRequired = "Please fill in all fields"
     override val bookmarkEmpty = "No saved phrases yet. Tap to browse!"
     override val viewAllPhrases = "View All Phrases"
 

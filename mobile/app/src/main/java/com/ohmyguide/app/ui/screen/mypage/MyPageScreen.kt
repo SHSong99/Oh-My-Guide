@@ -264,32 +264,36 @@ private fun ProfileEditDialog(
     onDismiss: () -> Unit,
     onSave: (nationality: String, age: Int, gender: String) -> Unit,
 ) {
+    val strings = LocalStrings.current
     var nationality by remember { mutableStateOf(user?.nationality ?: "") }
     var ageText by remember { mutableStateOf(user?.age?.toString() ?: "") }
     var gender by remember { mutableStateOf(user?.gender ?: "") }
+    var showError by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(LocalStrings.current.editProfile) },
+        title = { Text(strings.editProfile) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = nationality,
-                    onValueChange = { nationality = it },
-                    label = { Text(LocalStrings.current.nationality) },
+                    onValueChange = { nationality = it; showError = false },
+                    label = { Text(strings.nationality) },
                     singleLine = true,
+                    isError = showError && nationality.isBlank(),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = ageText,
-                    onValueChange = { ageText = it.filter { c -> c.isDigit() } },
-                    label = { Text(LocalStrings.current.age) },
+                    onValueChange = { ageText = it.filter { c -> c.isDigit() }; showError = false },
+                    label = { Text(strings.age) },
                     singleLine = true,
+                    isError = showError && ageText.isBlank(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    text = LocalStrings.current.gender,
+                    text = strings.gender,
                     style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary,
                 )
@@ -299,8 +303,8 @@ private fun ProfileEditDialog(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (selected) Primary else PrimaryBgLight)
-                                .clickable { gender = g }
+                                .background(if (selected) Primary else if (showError && gender.isBlank()) Error.copy(alpha = 0.1f) else PrimaryBgLight)
+                                .clickable { gender = g; showError = false }
                                 .padding(horizontal = 20.dp, vertical = 10.dp),
                         ) {
                             Text(
@@ -311,20 +315,29 @@ private fun ProfileEditDialog(
                         }
                     }
                 }
+                if (showError) {
+                    Text(
+                        text = strings.profileFieldsRequired,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Error,
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    val age = ageText.toIntOrNull() ?: return@TextButton
-                    if (nationality.isNotBlank() && gender.isNotBlank()) {
-                        onSave(nationality, age, gender)
+                    val age = ageText.toIntOrNull()
+                    if (age == null || nationality.isBlank() || gender.isBlank()) {
+                        showError = true
+                        return@TextButton
                     }
+                    onSave(nationality, age, gender)
                 },
-            ) { Text(LocalStrings.current.save) }
+            ) { Text(strings.save) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(LocalStrings.current.back) }
+            TextButton(onClick = onDismiss) { Text(strings.back) }
         },
     )
 }

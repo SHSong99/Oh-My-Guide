@@ -156,6 +156,7 @@ object ZhTwStrings : AppStrings {
     override val age = "年齡"
     override val gender = "性別"
     override val save = "儲存"
+    override val profileFieldsRequired = "請填寫所有欄位"
     override val bookmarkEmpty = "暫無收藏短語"
     override val viewAllPhrases = "查看全部短語"
 

@@ -160,6 +160,7 @@ interface AppStrings {
     val age: String
     val gender: String
     val save: String
+    val profileFieldsRequired: String
     val bookmarkEmpty: String
     val viewAllPhrases: String
 

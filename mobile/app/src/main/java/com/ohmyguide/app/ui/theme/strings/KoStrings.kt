@@ -156,6 +156,7 @@ object KoStrings : AppStrings {
     override val age = "나이"
     override val gender = "성별"
     override val save = "저장"
+    override val profileFieldsRequired = "모든 항목을 입력해주세요"
     override val bookmarkEmpty = "저장된 구문이 없습니다. 탭하여 둘러보세요!"
     override val viewAllPhrases = "전체 구문 보기"
 

@@ -156,6 +156,7 @@ object ZhCnStrings : AppStrings {
     override val age = "年龄"
     override val gender = "性别"
     override val save = "保存"
+    override val profileFieldsRequired = "请填写所有字段"
     override val bookmarkEmpty = "暂无收藏短语"
     override val viewAllPhrases = "查看全部短语"
 
