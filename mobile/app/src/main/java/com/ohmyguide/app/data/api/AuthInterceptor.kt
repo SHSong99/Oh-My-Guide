@@ -33,6 +33,8 @@ class AuthInterceptor @Inject constructor(
         val response = chain.proceed(newRequest)
 
         if (response.code == 401 && token != null) {
+            // TODO: 토큰 갱신 API 구현 후 refreshToken으로 자동 갱신 추가
+            // 현재는 토큰 만료 시 clear하여 로그인 화면으로 유도
             runBlocking { tokenDataStore.clear() }
         }
 

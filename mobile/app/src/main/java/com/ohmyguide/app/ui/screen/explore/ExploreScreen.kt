@@ -305,20 +305,27 @@ fun ExploreScreen(
 
                             if (displayCourses.isEmpty()) {
                                 EmptyState()
-                            } else {
-                                displayCourses.forEach { course ->
-                                    CourseCard(
-                                        course = course,
-                                        onClick = {
-                                            navController.navigate(
-                                                Screen.CourseDetail.createRoute(course.id)
-                                            )
-                                        },
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
                             }
+                        }
+                        if (displayCourses.isNotEmpty()) {
+                            items(
+                                count = displayCourses.size,
+                                key = { displayCourses[it].id },
+                            ) { index ->
+                                val course = displayCourses[index]
+                                CourseCard(
+                                    course = course,
+                                    onClick = {
+                                        navController.navigate(
+                                            Screen.CourseDetail.createRoute(course.id)
+                                        )
+                                    },
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                            }
+                        }
+                        item {
                             Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
