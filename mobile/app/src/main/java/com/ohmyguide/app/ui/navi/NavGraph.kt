@@ -127,7 +127,12 @@ fun NavGraph(
                 },
             )
         }
-        composable("loading?category={category}") { backStackEntry ->
+        composable(
+            route = "loading?category={category}",
+            arguments = listOf(
+                navArgument("category") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { backStackEntry ->
             val category = backStackEntry.arguments?.getString("category") ?: ""
             LoadingScreen(
                 onFinish = {
@@ -138,7 +143,12 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.Home.route) { backStackEntry ->
+        composable(
+            route = Screen.Home.route,
+            arguments = listOf(
+                navArgument("category") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { backStackEntry ->
             val category = backStackEntry.arguments?.getString("category") ?: ""
             HomeScreen(navController, category = category)
         }
@@ -147,22 +157,39 @@ fun NavGraph(
         composable(Screen.Phrases.route) { PhrasesScreen(navController) }
         composable(Screen.MyPage.route) { MyPageScreen(navController) }
 
-        composable(Screen.CourseDetail.route) { backStackEntry ->
+        composable(
+            route = Screen.CourseDetail.route,
+            arguments = listOf(
+                navArgument("courseId") { type = NavType.StringType },
+            ),
+        ) { backStackEntry ->
             val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
             com.ohmyguide.app.ui.screen.explore.CourseDetailScreen(navController, courseId)
         }
-        composable(Screen.CourseNavi.route) { backStackEntry ->
+        composable(
+            route = Screen.CourseNavi.route,
+            arguments = listOf(
+                navArgument("courseId") { type = NavType.StringType },
+                navArgument("mode") { type = NavType.StringType; defaultValue = "car" },
+            ),
+        ) { backStackEntry ->
             val courseId = backStackEntry.arguments?.getString("courseId") ?: return@composable
             val mode = backStackEntry.arguments?.getString("mode") ?: "car"
             com.ohmyguide.app.ui.screen.explore.CourseNaviScreen(navController, courseId, mode)
         }
-        composable(Screen.Place.route) { backStackEntry ->
+        composable(
+            route = Screen.Place.route,
+            arguments = listOf(
+                navArgument("placeId") { type = NavType.StringType },
+            ),
+        ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             PlaceScreen(navController, placeId)
         }
         composable(
             route = Screen.Transport.route,
             arguments = listOf(
+                navArgument("placeId") { type = NavType.StringType },
                 navArgument("courseId") { type = NavType.StringType; defaultValue = "" },
                 navArgument("spotIndex") { type = NavType.StringType; defaultValue = "0" },
             ),
@@ -175,6 +202,7 @@ fun NavGraph(
         composable(
             route = Screen.TransitDetail.route,
             arguments = listOf(
+                navArgument("placeId") { type = NavType.StringType },
                 navArgument("destLat") { type = NavType.StringType; defaultValue = "0.0" },
                 navArgument("destLng") { type = NavType.StringType; defaultValue = "0.0" },
             ),
@@ -182,13 +210,21 @@ fun NavGraph(
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             TransitDetailScreen(navController, placeId)
         }
-        composable(Screen.Rating.route) { backStackEntry ->
+        composable(
+            route = Screen.Rating.route,
+            arguments = listOf(
+                navArgument("placeId") { type = NavType.StringType },
+                navArgument("placeName") { type = NavType.StringType; defaultValue = "" },
+            ),
+        ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
             RatingScreen(navController)
         }
         composable(
             route = Screen.Navi.route,
             arguments = listOf(
+                navArgument("placeId") { type = NavType.StringType },
+                navArgument("mode") { type = NavType.StringType; defaultValue = "walk" },
                 navArgument("courseId") { type = NavType.StringType; defaultValue = "" },
                 navArgument("spotIndex") { type = NavType.StringType; defaultValue = "0" },
             ),
