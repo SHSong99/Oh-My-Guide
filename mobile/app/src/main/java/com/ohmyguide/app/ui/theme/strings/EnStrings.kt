@@ -185,6 +185,7 @@ object EnStrings : AppStrings {
     override val locating = "Locating..."
     override val mapView = "Map View"
     override val explorePlaces = "Explore places around you"
+    override val storyPromptHint = "See the 🎧 button at the top? Tap it anytime to listen while you walk!"
 
     override val hours = "Hours"
     override val fee = "Fee"

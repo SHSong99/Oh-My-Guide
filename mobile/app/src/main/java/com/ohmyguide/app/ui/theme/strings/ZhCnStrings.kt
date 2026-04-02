@@ -185,6 +185,7 @@ object ZhCnStrings : AppStrings {
     override val locating = "定位中..."
     override val mapView = "地图视图"
     override val explorePlaces = "探索您周围的景点"
+    override val storyPromptHint = "看到顶部的🎧按钮了吗？走路时随时点击收听！"
 
     override val hours = "营业时间"
     override val fee = "费用"

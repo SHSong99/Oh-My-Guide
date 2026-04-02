@@ -191,6 +191,9 @@ interface AppStrings {
     val mapView: String
     val explorePlaces: String
 
+    // ── Navi Story ──
+    val storyPromptHint: String
+
     // ── Place ──
     val hours: String
     val fee: String

@@ -342,7 +342,7 @@ fun NaviScreen(
                                         showStorySpotlight = true
                                     }
                                     NaviBotBubble(
-                                        text = "See the 🎧 button at the top? Tap it anytime to listen while you walk!",
+                                        text = strings.storyPromptHint,
                                     )
                                 }
                             }

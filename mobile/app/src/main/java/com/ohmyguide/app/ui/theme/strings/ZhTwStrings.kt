@@ -185,6 +185,7 @@ object ZhTwStrings : AppStrings {
     override val locating = "定位中..."
     override val mapView = "地圖檢視"
     override val explorePlaces = "探索您周圍的景點"
+    override val storyPromptHint = "看到頂部的🎧按鈕了嗎？走路時隨時點擊收聽！"
 
     override val hours = "營業時間"
     override val fee = "費用"

@@ -185,6 +185,7 @@ object KoStrings : AppStrings {
     override val locating = "위치 확인 중..."
     override val mapView = "지도 보기"
     override val explorePlaces = "주변 장소를 탐색하세요"
+    override val storyPromptHint = "상단의 🎧 버튼이 보이시나요? 걸으면서 언제든 탭하여 들어보세요!"
 
     override val hours = "운영시간"
     override val fee = "요금"

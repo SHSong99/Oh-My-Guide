@@ -185,6 +185,7 @@ object JaStrings : AppStrings {
     override val locating = "位置を確認中..."
     override val mapView = "地図ビュー"
     override val explorePlaces = "周辺のスポットを探索"
+    override val storyPromptHint = "上部の🎧ボタンが見えますか？歩きながらいつでもタップして聴けます！"
 
     override val hours = "営業時間"
     override val fee = "料金"
