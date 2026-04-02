@@ -83,7 +83,8 @@ fun HomeScreen(
     category: String = "",
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val chatState by viewModel.chatState.collectAsState()
+    val sheetUiState by viewModel.sheetState.collectAsState()
 
     // 초기 추천 로드
     LaunchedEffect(Unit) {
@@ -152,8 +153,8 @@ fun HomeScreen(
     )
 
     // Collect all recommended places for map markers
-    val markerPlaces = remember(state.chatMessages) {
-        state.chatMessages
+    val markerPlaces = remember(chatState.chatMessages) {
+        chatState.chatMessages
             .filterIsInstance<ChatMessage.BotRecommendation>()
             .flatMap { it.section.places }
             .filter { it.lat != 0.0 && it.lng != 0.0 }
@@ -196,8 +197,8 @@ fun HomeScreen(
     }
 
     // When place selected → expand sheet & move camera
-    LaunchedEffect(state.selectedDetail) {
-        val detail = state.selectedDetail
+    LaunchedEffect(sheetUiState.selectedDetail) {
+        val detail = sheetUiState.selectedDetail
         if (detail != null) {
             sheetState.expand()
             val place = detail.place
@@ -212,7 +213,7 @@ fun HomeScreen(
     // When sheet collapses → clear selection
     LaunchedEffect(sheetState) {
         snapshotFlow { sheetState.currentValue }.collect { value ->
-            if (value == SheetValue.PartiallyExpanded && state.sheetMode == SheetMode.PLACE_DETAIL) {
+            if (value == SheetValue.PartiallyExpanded && sheetUiState.sheetMode == SheetMode.PLACE_DETAIL) {
                 viewModel.clearSelection()
             }
         }
@@ -232,8 +233,8 @@ fun HomeScreen(
         )
 
         Box(modifier = Modifier.weight(1f)) {
-            val showFindBtn = state.sheetMode == SheetMode.RECOMMENDATIONS &&
-                state.chatMessages.any { it is ChatMessage.FindOtherPlacesBtn }
+            val showFindBtn = sheetUiState.sheetMode == SheetMode.RECOMMENDATIONS &&
+                chatState.chatMessages.any { it is ChatMessage.FindOtherPlacesBtn }
 
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
@@ -257,9 +258,9 @@ fun HomeScreen(
                     }
                 },
                 sheetContent = {
-                    when (state.sheetMode) {
+                    when (sheetUiState.sheetMode) {
                         SheetMode.RECOMMENDATIONS -> RecommendationsSheet(
-                            state = state,
+                            chatState = chatState,
                             locationName = locationName,
                             showFindBtn = showFindBtn,
                             onPlaceClick = { placeId -> viewModel.selectPlace(placeId) },
@@ -268,7 +269,7 @@ fun HomeScreen(
                             onFindOtherPlaces = { viewModel.onFindOtherPlaces() },
                         )
                         SheetMode.PLACE_DETAIL -> {
-                            state.selectedDetail?.let { detail ->
+                            sheetUiState.selectedDetail?.let { detail ->
                                 PlaceDetailSheet(
                                     detail = detail,
                                     onBack = { viewModel.clearSelection() },
@@ -295,7 +296,7 @@ fun HomeScreen(
                         MapEffect(mapLocale) { naverMap ->
                             naverMap.setLocale(mapLocale)
                         }
-                        val selectedId = state.selectedDetail?.place?.id
+                        val selectedId = sheetUiState.selectedDetail?.place?.id
                         markerPlaces.forEach { place ->
                             val isSelected = place.id == selectedId
                             val icon = if (isSelected) selectedMarkerIcons[place.id] else markerIcons[place.id]
@@ -346,7 +347,7 @@ fun HomeScreen(
 
 @Composable
 private fun RecommendationsSheet(
-    state: HomeUiState,
+    chatState: HomeChatState,
     locationName: String,
     showFindBtn: Boolean,
     onPlaceClick: (String) -> Unit,
@@ -357,7 +358,7 @@ private fun RecommendationsSheet(
     val scrollState = rememberScrollState()
 
     // Auto-scroll when messages change
-    LaunchedEffect(state.chatMessages.size) {
+    LaunchedEffect(chatState.chatMessages.size) {
         scrollState.animateScrollTo(scrollState.maxValue)
     }
 
@@ -367,9 +368,9 @@ private fun RecommendationsSheet(
             .verticalScroll(scrollState)
             .padding(bottom = 12.dp),
     ) {
-        LocationBar(spotCount = state.spotCount, locationName = locationName)
+        LocationBar(spotCount = chatState.spotCount, locationName = locationName)
 
-        state.chatMessages.forEachIndexed { index, msg ->
+        chatState.chatMessages.forEachIndexed { index, msg ->
             if (msg is ChatMessage.FindOtherPlacesBtn) return@forEachIndexed
             val msgModifier = Modifier.padding(horizontal = 16.dp)
             when (msg) {
@@ -378,13 +379,13 @@ private fun RecommendationsSheet(
                         text = msg.text,
                         modifier = msgModifier.padding(vertical = 4.dp),
                         showAvatar = index == 0 ||
-                            state.chatMessages.getOrNull(index - 1) !is ChatMessage.BotText,
+                            chatState.chatMessages.getOrNull(index - 1) !is ChatMessage.BotText,
                     )
                 }
                 is ChatMessage.BotTyping -> {
                     TypingIndicator(
                         modifier = msgModifier.padding(vertical = 4.dp),
-                        showAvatar = state.chatMessages.getOrNull(index - 1)
+                        showAvatar = chatState.chatMessages.getOrNull(index - 1)
                             .let { it !is ChatMessage.BotText && it !is ChatMessage.BotRecommendation },
                     )
                 }
