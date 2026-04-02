@@ -418,19 +418,24 @@ private fun MapArea(
     val nearbyMarkerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
 
     LaunchedEffect(nearbySpots) {
-        nearbySpots.forEach { spot ->
-            if (!spot.imageUrl.isNullOrBlank() && spot.placeId !in nearbyMarkerIcons) {
-                val request = ImageRequest.Builder(mapContext)
-                    .data(spot.imageUrl)
-                    .size(nearbyMarkerSizePx)
-                    .allowHardware(false)
-                    .build()
-                val result = mapContext.imageLoader.execute(request)
-                val bitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
-                if (bitmap != null) {
-                    nearbyMarkerIcons[spot.placeId] = buildCircleMarker(
-                        bitmap, nearbyMarkerSizePx, nearbyBorderPx, android.graphics.Color.WHITE
-                    )
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            nearbySpots.forEach { spot ->
+                if (!spot.imageUrl.isNullOrBlank() && spot.placeId !in nearbyMarkerIcons) {
+                    val request = ImageRequest.Builder(mapContext)
+                        .data(spot.imageUrl)
+                        .size(nearbyMarkerSizePx)
+                        .allowHardware(false)
+                        .build()
+                    val result = mapContext.imageLoader.execute(request)
+                    val bitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                    if (bitmap != null) {
+                        val icon = buildCircleMarker(
+                            bitmap, nearbyMarkerSizePx, nearbyBorderPx, android.graphics.Color.WHITE
+                        )
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            nearbyMarkerIcons[spot.placeId] = icon
+                        }
+                    }
                 }
             }
         }

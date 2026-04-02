@@ -172,20 +172,24 @@ fun HomeScreen(
     val selectedMarkerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
 
     LaunchedEffect(markerPlaces) {
-        markerPlaces.forEach { place ->
-            if (place.imageUrl != null && place.id !in markerIcons) {
-                val request = ImageRequest.Builder(context)
-                    .data(place.imageUrl)
-                    .size(selectedMarkerSizePx)
-                    .allowHardware(false)
-                    .build()
-                val result = context.imageLoader.execute(request)
-                if (result is SuccessResult) {
-                    val srcBitmap = (result.drawable as android.graphics.drawable.BitmapDrawable).bitmap
-                    // Normal marker (white border)
-                    markerIcons[place.id] = buildCircleMarker(srcBitmap, markerSizePx, borderPx, android.graphics.Color.WHITE)
-                    // Selected marker (blue border, larger)
-                    selectedMarkerIcons[place.id] = buildCircleMarker(srcBitmap, selectedMarkerSizePx, selectedBorderPx, 0xFF5478FF.toInt())
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            markerPlaces.forEach { place ->
+                if (place.imageUrl != null && place.id !in markerIcons) {
+                    val request = ImageRequest.Builder(context)
+                        .data(place.imageUrl)
+                        .size(selectedMarkerSizePx)
+                        .allowHardware(false)
+                        .build()
+                    val result = context.imageLoader.execute(request)
+                    if (result is SuccessResult) {
+                        val srcBitmap = (result.drawable as android.graphics.drawable.BitmapDrawable).bitmap
+                        val normal = buildCircleMarker(srcBitmap, markerSizePx, borderPx, android.graphics.Color.WHITE)
+                        val selected = buildCircleMarker(srcBitmap, selectedMarkerSizePx, selectedBorderPx, 0xFF5478FF.toInt())
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            markerIcons[place.id] = normal
+                            selectedMarkerIcons[place.id] = selected
+                        }
+                    }
                 }
             }
         }
