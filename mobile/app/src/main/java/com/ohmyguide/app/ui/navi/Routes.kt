@@ -35,9 +35,9 @@ sealed class Screen(val route: String) {
             return route
         }
     }
-    object TransitDetail : Screen("transit_detail/{placeId}?destLat={destLat}&destLng={destLng}") {
-        fun createRoute(placeId: String, destLat: Double, destLng: Double) =
-            "transit_detail/$placeId?destLat=$destLat&destLng=$destLng"
+    object TransitDetail : Screen("transit_detail/{placeId}?destLat={destLat}&destLng={destLng}&courseId={courseId}") {
+        fun createRoute(placeId: String, destLat: Double, destLng: Double, courseId: String? = null) =
+            "transit_detail/$placeId?destLat=$destLat&destLng=$destLng&courseId=${courseId ?: ""}"
     }
     object CourseDetail : Screen("course/{courseId}") {
         fun createRoute(courseId: String) = "course/$courseId"

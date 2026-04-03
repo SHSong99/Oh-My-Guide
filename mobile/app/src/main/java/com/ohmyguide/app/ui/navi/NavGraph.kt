@@ -205,10 +205,12 @@ fun NavGraph(
                 navArgument("placeId") { type = NavType.StringType },
                 navArgument("destLat") { type = NavType.StringType; defaultValue = "0.0" },
                 navArgument("destLng") { type = NavType.StringType; defaultValue = "0.0" },
+                navArgument("courseId") { type = NavType.StringType; defaultValue = "" },
             ),
         ) { backStackEntry ->
             val placeId = backStackEntry.arguments?.getString("placeId") ?: return@composable
-            TransitDetailScreen(navController, placeId)
+            val courseId = backStackEntry.arguments?.getString("courseId")?.ifEmpty { null }
+            TransitDetailScreen(navController, placeId, courseId = courseId)
         }
         composable(
             route = Screen.Rating.route,
