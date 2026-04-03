@@ -128,6 +128,7 @@ fun NaviScreen(
     var ttsSpeakingText by remember { mutableStateOf<String?>(null) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     var storyPlaceId by remember { mutableStateOf<String?>(null) }
+    val onStoryPlaceClick = remember<(String) -> Unit> { { id -> storyPlaceId = id } }
     var showStopDialog by remember { mutableStateOf(false) }
     var showStorySpotlight by remember { mutableStateOf(false) }
     val state by viewModel.uiState.collectAsState()
@@ -235,7 +236,27 @@ fun NaviScreen(
                         Spacer(modifier = Modifier.height(8.dp))
                     }
 
-                    items(state.chatMessages.size) { index ->
+                    items(
+                        count = state.chatMessages.size,
+                        key = { index ->
+                            val msg = state.chatMessages[index]
+                            when (msg) {
+                                is NaviChatMessage.BotText -> "bot_$index"
+                                is NaviChatMessage.BotTyping -> "typing_$index"
+                                is NaviChatMessage.PlaceIntro -> "intro_${msg.detail.place.id}"
+                                is NaviChatMessage.TransitInfo -> "transit_$index"
+                                is NaviChatMessage.TransitGuide -> "guide_$index"
+                                is NaviChatMessage.DestinationDetail -> "dest_${msg.detail.place.id}"
+                                is NaviChatMessage.NearbyPlaces -> "nearby_$index"
+                                is NaviChatMessage.NearbySpotCard -> "spot_${msg.spot.placeId}"
+                                is NaviChatMessage.Phrases -> "phrases_$index"
+                                is NaviChatMessage.ArrivalConfirm -> "arrival_$index"
+                                is NaviChatMessage.NearbyRecommendations -> "reco_$index"
+                                is NaviChatMessage.Weather -> "weather_$index"
+                                is NaviChatMessage.StoryPrompt -> "story_$index"
+                            }
+                        },
+                    ) { index ->
                         val msg = state.chatMessages[index]
                         // Show Kkaebi label when a new "turn" starts
                         val prevMsg = state.chatMessages.getOrNull(index - 1)
@@ -267,19 +288,19 @@ fun NaviScreen(
                                 is NaviChatMessage.DestinationDetail -> {
                                     DestinationDetailCard(
                                         detail = msg.detail,
-                                        onClick = { storyPlaceId = msg.detail.place.id },
+                                        onClick = { onStoryPlaceClick(msg.detail.place.id) },
                                     )
                                 }
                                 is NaviChatMessage.NearbyPlaces -> {
                                     NearbyPlaceCarousel(
                                         places = msg.places,
-                                        onPlaceClick = { id -> storyPlaceId = id },
+                                        onPlaceClick = onStoryPlaceClick,
                                     )
                                 }
                                 is NaviChatMessage.NearbySpotCard -> {
                                     NearbySpotDashboard(
                                         spot = msg.spot,
-                                        onClick = { storyPlaceId = msg.spot.placeId },
+                                        onClick = { onStoryPlaceClick(msg.spot.placeId) },
                                     )
                                 }
                                 is NaviChatMessage.Phrases -> {
@@ -321,7 +342,7 @@ fun NaviScreen(
                                         showStorySpotlight = true
                                     }
                                     NaviBotBubble(
-                                        text = "See the 🎧 button at the top? Tap it anytime to listen while you walk!",
+                                        text = strings.storyPromptHint,
                                     )
                                 }
                             }
@@ -397,19 +418,24 @@ private fun MapArea(
     val nearbyMarkerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
 
     LaunchedEffect(nearbySpots) {
-        nearbySpots.forEach { spot ->
-            if (!spot.imageUrl.isNullOrBlank() && spot.placeId !in nearbyMarkerIcons) {
-                val request = ImageRequest.Builder(mapContext)
-                    .data(spot.imageUrl)
-                    .size(nearbyMarkerSizePx)
-                    .allowHardware(false)
-                    .build()
-                val result = mapContext.imageLoader.execute(request)
-                val bitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
-                if (bitmap != null) {
-                    nearbyMarkerIcons[spot.placeId] = buildCircleMarker(
-                        bitmap, nearbyMarkerSizePx, nearbyBorderPx, android.graphics.Color.WHITE
-                    )
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            nearbySpots.forEach { spot ->
+                if (!spot.imageUrl.isNullOrBlank() && spot.placeId !in nearbyMarkerIcons) {
+                    val request = ImageRequest.Builder(mapContext)
+                        .data(spot.imageUrl)
+                        .size(nearbyMarkerSizePx)
+                        .allowHardware(false)
+                        .build()
+                    val result = mapContext.imageLoader.execute(request)
+                    val bitmap = (result.drawable as? android.graphics.drawable.BitmapDrawable)?.bitmap
+                    if (bitmap != null) {
+                        val icon = buildCircleMarker(
+                            bitmap, nearbyMarkerSizePx, nearbyBorderPx, android.graphics.Color.WHITE
+                        )
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            nearbyMarkerIcons[spot.placeId] = icon
+                        }
+                    }
                 }
             }
         }

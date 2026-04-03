@@ -1,14 +1,8 @@
 package com.ohmyguide.app.ui.screen.explore
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -128,6 +123,12 @@ fun ExploreScreen(
     }
     val featuredCourse = filteredCourses.firstOrNull()
     val otherCourses = filteredCourses.drop(1)
+    val displayCourses = if (selectedCategory != null) filteredCourses else otherCourses
+    val strings = LocalStrings.current
+    val sectionTitle = if (selectedCategory != null) {
+        EXPLORE_CATEGORY_GROUPS.find { it.key == selectedCategory }?.label
+            ?: strings.courses
+    } else strings.allCourses
 
     // Hero section — outside LazyColumn to avoid touch conflict
     @Composable
@@ -220,20 +221,12 @@ fun ExploreScreen(
             LazyColumn(
                 modifier = Modifier.weight(1f),
             ) {
-                item {
+                item(key = "hero") {
                     HeroSection()
                 }
 
-            // Course list
-            item {
-                AnimatedVisibility(
-                    visible = !isShowcase,
-                    enter = expandVertically(
-                        animationSpec = spring(dampingRatio = 0.8f, stiffness = 200f),
-                        expandFrom = Alignment.Top,
-                    ) + fadeIn(tween(300, delayMillis = 100)),
-                    exit = shrinkVertically() + fadeOut(),
-                ) {
+                // Category + Region + Featured header
+                item(key = "header") {
                     Column {
                         CategoryCardsRow(
                             selectedCategory = selectedCategory,
@@ -260,8 +253,6 @@ fun ExploreScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
 
-                            val strings = LocalStrings.current
-
                             if (featuredCourse != null && selectedCategory == null) {
                                 SectionHeader(
                                     icon = Icons.Filled.Whatshot,
@@ -283,13 +274,6 @@ fun ExploreScreen(
                                 Spacer(modifier = Modifier.height(24.dp))
                             }
 
-                            val displayCourses =
-                                if (selectedCategory != null) filteredCourses else otherCourses
-                            val sectionTitle = if (selectedCategory != null) {
-                                EXPLORE_CATEGORY_GROUPS.find { it.key == selectedCategory }?.label
-                                    ?: strings.courses
-                            } else strings.allCourses
-
                             SectionHeader(
                                 icon = Icons.AutoMirrored.Filled.TrendingUp,
                                 iconTint = Primary,
@@ -302,28 +286,51 @@ fun ExploreScreen(
                                 count = displayCourses.size,
                             )
                             Spacer(modifier = Modifier.height(12.dp))
-
-                            if (displayCourses.isEmpty()) {
-                                EmptyState()
-                            } else {
-                                displayCourses.forEach { course ->
-                                    CourseCard(
-                                        course = course,
-                                        onClick = {
-                                            navController.navigate(
-                                                Screen.CourseDetail.createRoute(course.id)
-                                            )
-                                        },
-                                        modifier = Modifier.padding(horizontal = 16.dp),
-                                    )
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(32.dp))
                         }
                     }
                 }
-            }
+
+                // Virtualized course cards
+                if (displayCourses.isEmpty()) {
+                    item(key = "empty") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(PrimaryBg),
+                        ) { EmptyState() }
+                    }
+                } else {
+                    items(
+                        items = displayCourses,
+                        key = { it.id },
+                    ) { course ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(PrimaryBg),
+                        ) {
+                            CourseCard(
+                                course = course,
+                                onClick = {
+                                    navController.navigate(
+                                        Screen.CourseDetail.createRoute(course.id)
+                                    )
+                                },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                    }
+                }
+
+                item(key = "footer") {
+                    Spacer(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(32.dp)
+                            .background(PrimaryBg),
+                    )
+                }
             } // end LazyColumn
         } // end if/else
 

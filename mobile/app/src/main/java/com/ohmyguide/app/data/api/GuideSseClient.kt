@@ -59,6 +59,7 @@ class GuideSseClient @Inject constructor(
                     t: Throwable?,
                     response: Response?,
                 ) {
+                    eventSource.cancel()
                     onError(t ?: Exception("SSE connection failed: ${response?.code}"))
                 }
             })

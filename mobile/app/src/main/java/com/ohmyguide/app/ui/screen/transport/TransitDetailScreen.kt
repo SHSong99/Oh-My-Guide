@@ -44,6 +44,7 @@ import com.ohmyguide.app.ui.theme.TextSecondary
 fun TransitDetailScreen(
     navController: NavController,
     placeId: String,
+    courseId: String? = null,
     viewModel: TransitDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
@@ -154,7 +155,13 @@ fun TransitDetailScreen(
             text = LocalStrings.current.startNavigation,
             onClick = {
                 expandedRouteId?.let { viewModel.selectRouteForNavi(it) }
-                navController.navigate(Screen.Navi.createRoute(placeId, "transit"))
+                if (!courseId.isNullOrEmpty()) {
+                    navController.navigate(
+                        Screen.CourseNavi.createRoute(courseId, "transit")
+                    )
+                } else {
+                    navController.navigate(Screen.Navi.createRoute(placeId, "transit"))
+                }
             },
             modifier = Modifier.padding(16.dp),
         )

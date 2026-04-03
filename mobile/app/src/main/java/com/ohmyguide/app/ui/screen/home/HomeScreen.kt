@@ -1,16 +1,8 @@
 package com.ohmyguide.app.ui.screen.home
 
-import android.graphics.Bitmap
-import android.graphics.BitmapShader
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Shader
-import android.location.Geocoder
-import java.util.Locale
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,9 +21,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -45,7 +35,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
-import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.MapEffect
@@ -58,7 +47,6 @@ import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
 import com.ohmyguide.app.ui.common.buildCircleMarker
-import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.service.LocationForegroundService
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -71,7 +59,6 @@ import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.DragHandle
 import com.ohmyguide.app.ui.theme.LanguageManager
-import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 
 private val DEFAULT_POSITION = LatLng(35.0950, 128.8560)
@@ -83,7 +70,8 @@ fun HomeScreen(
     category: String = "",
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val state by viewModel.uiState.collectAsState()
+    val chatState by viewModel.chatState.collectAsState()
+    val sheetUiState by viewModel.sheetState.collectAsState()
 
     // 초기 추천 로드
     LaunchedEffect(Unit) {
@@ -105,27 +93,12 @@ fun HomeScreen(
 
     val locationData by LocationForegroundService.locationFlow.collectAsState()
     val locationSource = rememberFusedLocationSource()
-    var locationName by remember { mutableStateOf("") }
-    val strings = LocalStrings.current
+    val locationName by viewModel.locationName.collectAsState()
 
-    // GPS 좌표 → 영어 주소 변환
+    // GPS 좌표 → Naver Reverse Geocoding으로 주소 변환
     LaunchedEffect(locationData) {
-        if (locationName.isNotEmpty()) return@LaunchedEffect
         val loc = locationData ?: return@LaunchedEffect
-        try {
-            val locale = if (com.ohmyguide.app.ui.theme.LanguageManager.current.value == com.ohmyguide.app.ui.theme.AppLanguage.KO) Locale.KOREAN else Locale.ENGLISH
-            val geocoder = Geocoder(context, locale)
-            val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
-            val address = addresses?.firstOrNull()
-            if (address != null) {
-                val district = address.subLocality ?: address.locality ?: ""
-                val city = address.adminArea ?: ""
-                locationName = if (district.isNotEmpty() && city.isNotEmpty()) "$district, $city"
-                else city.ifEmpty { strings.yourArea }
-            }
-        } catch (_: Exception) {
-            locationName = strings.yourArea
-        }
+        viewModel.fetchLocationName(loc.latitude, loc.longitude)
     }
 
     val cameraPositionState = rememberCameraPositionState {
@@ -146,14 +119,16 @@ fun HomeScreen(
 
     val sheetState = rememberStandardBottomSheetState(
         initialValue = SheetValue.PartiallyExpanded,
+        skipHiddenState = true,
     )
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = sheetState,
     )
+    val isSheetExpanded = sheetState.currentValue == SheetValue.Expanded
 
     // Collect all recommended places for map markers
-    val markerPlaces = remember(state.chatMessages) {
-        state.chatMessages
+    val markerPlaces = remember(chatState.chatMessages) {
+        chatState.chatMessages
             .filterIsInstance<ChatMessage.BotRecommendation>()
             .flatMap { it.section.places }
             .filter { it.lat != 0.0 && it.lng != 0.0 }
@@ -172,43 +147,42 @@ fun HomeScreen(
     val selectedMarkerIcons = remember { mutableStateMapOf<String, OverlayImage>() }
 
     LaunchedEffect(markerPlaces) {
-        markerPlaces.forEach { place ->
-            if (place.imageUrl != null && place.id !in markerIcons) {
-                val request = ImageRequest.Builder(context)
-                    .data(place.imageUrl)
-                    .size(selectedMarkerSizePx)
-                    .allowHardware(false)
-                    .build()
-                val result = context.imageLoader.execute(request)
-                if (result is SuccessResult) {
-                    val srcBitmap = (result.drawable as android.graphics.drawable.BitmapDrawable).bitmap
-                    // Normal marker (white border)
-                    markerIcons[place.id] = buildCircleMarker(srcBitmap, markerSizePx, borderPx, android.graphics.Color.WHITE)
-                    // Selected marker (blue border, larger)
-                    selectedMarkerIcons[place.id] = buildCircleMarker(srcBitmap, selectedMarkerSizePx, selectedBorderPx, 0xFF5478FF.toInt())
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            markerPlaces.forEach { place ->
+                if (place.imageUrl != null && place.id !in markerIcons) {
+                    val request = ImageRequest.Builder(context)
+                        .data(place.imageUrl)
+                        .size(selectedMarkerSizePx)
+                        .allowHardware(false)
+                        .build()
+                    val result = context.imageLoader.execute(request)
+                    if (result is SuccessResult) {
+                        val srcBitmap = (result.drawable as android.graphics.drawable.BitmapDrawable).bitmap
+                        val normal = buildCircleMarker(srcBitmap, markerSizePx, borderPx, android.graphics.Color.WHITE)
+                        val selected = buildCircleMarker(srcBitmap, selectedMarkerSizePx, selectedBorderPx, 0xFF5478FF.toInt())
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            markerIcons[place.id] = normal
+                            selectedMarkerIcons[place.id] = selected
+                        }
+                    }
                 }
             }
         }
     }
 
-    // When place selected → expand sheet & move camera
-    LaunchedEffect(state.selectedDetail) {
-        val detail = state.selectedDetail
-        if (detail != null) {
+    // When place selected → expand sheet / when cleared → collapse
+    LaunchedEffect(sheetUiState.selectedDetail) {
+        if (sheetUiState.selectedDetail != null) {
             sheetState.expand()
-            val place = detail.place
-            if (place.lat != 0.0 && place.lng != 0.0) {
-                cameraPositionState.animate(
-                    CameraUpdate.scrollAndZoomTo(LatLng(place.lat, place.lng), 16.0),
-                )
-            }
+        } else {
+            sheetState.partialExpand()
         }
     }
 
     // When sheet collapses → clear selection
     LaunchedEffect(sheetState) {
         snapshotFlow { sheetState.currentValue }.collect { value ->
-            if (value == SheetValue.PartiallyExpanded && state.sheetMode == SheetMode.PLACE_DETAIL) {
+            if (value == SheetValue.PartiallyExpanded && sheetUiState.sheetMode == SheetMode.PLACE_DETAIL) {
                 viewModel.clearSelection()
             }
         }
@@ -225,15 +199,16 @@ fun HomeScreen(
                     popUpTo(Screen.Home.route) { inclusive = true }
                 }
             },
+            isLoading = chatState.isLoading,
         )
 
         Box(modifier = Modifier.weight(1f)) {
-            val showFindBtn = state.sheetMode == SheetMode.RECOMMENDATIONS &&
-                state.chatMessages.any { it is ChatMessage.FindOtherPlacesBtn }
+            val showFindBtn = sheetUiState.sheetMode == SheetMode.RECOMMENDATIONS &&
+                chatState.chatMessages.any { it is ChatMessage.FindOtherPlacesBtn }
 
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
-                sheetPeekHeight = 360.dp,
+                sheetPeekHeight = 100.dp,
                 sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 sheetContainerColor = BgWhite,
                 sheetDragHandle = {
@@ -253,10 +228,12 @@ fun HomeScreen(
                     }
                 },
                 sheetContent = {
-                    when (state.sheetMode) {
+                    when (sheetUiState.sheetMode) {
                         SheetMode.RECOMMENDATIONS -> RecommendationsSheet(
-                            state = state,
+                            chatState = chatState,
                             locationName = locationName,
+                            isLoading = chatState.isLoading,
+                            isExpanded = isSheetExpanded,
                             showFindBtn = showFindBtn,
                             onPlaceClick = { placeId -> viewModel.selectPlace(placeId) },
                             onShowMore = { title -> viewModel.onShowMore(title) },
@@ -264,7 +241,7 @@ fun HomeScreen(
                             onFindOtherPlaces = { viewModel.onFindOtherPlaces() },
                         )
                         SheetMode.PLACE_DETAIL -> {
-                            state.selectedDetail?.let { detail ->
+                            sheetUiState.selectedDetail?.let { detail ->
                                 PlaceDetailSheet(
                                     detail = detail,
                                     onBack = { viewModel.clearSelection() },
@@ -285,13 +262,15 @@ fun HomeScreen(
                         locationSource = locationSource,
                         properties = mapProperties,
                         uiSettings = mapUiSettings,
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 360.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            bottom = 100.dp,
+                        ),
                     ) {
                         val mapLocale = LanguageManager.current.value.locale
                         MapEffect(mapLocale) { naverMap ->
                             naverMap.setLocale(mapLocale)
                         }
-                        val selectedId = state.selectedDetail?.place?.id
+                        val selectedId = sheetUiState.selectedDetail?.place?.id
                         markerPlaces.forEach { place ->
                             val isSelected = place.id == selectedId
                             val icon = if (isSelected) selectedMarkerIcons[place.id] else markerIcons[place.id]
@@ -317,7 +296,6 @@ fun HomeScreen(
                 }
             }
 
-            // Find other places button removed from here — moved into RecommendationsSheet
         }
 
         BottomNavBar(
@@ -342,8 +320,10 @@ fun HomeScreen(
 
 @Composable
 private fun RecommendationsSheet(
-    state: HomeUiState,
+    chatState: HomeChatState,
     locationName: String,
+    isLoading: Boolean,
+    isExpanded: Boolean,
     showFindBtn: Boolean,
     onPlaceClick: (String) -> Unit,
     onShowMore: (String) -> Unit,
@@ -352,20 +332,25 @@ private fun RecommendationsSheet(
 ) {
     val scrollState = rememberScrollState()
 
-    // Auto-scroll when messages change
-    LaunchedEffect(state.chatMessages.size) {
-        scrollState.animateScrollTo(scrollState.maxValue)
+    // Auto-scroll when messages change (only when expanded)
+    LaunchedEffect(chatState.chatMessages.size, isExpanded) {
+        if (isExpanded) {
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
     }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(scrollState)
+            .then(
+                if (isExpanded) Modifier.verticalScroll(scrollState)
+                else Modifier
+            )
             .padding(bottom = 12.dp),
     ) {
-        LocationBar(spotCount = state.spotCount, locationName = locationName)
+        LocationBar(spotCount = chatState.spotCount, locationName = locationName, isLoading = isLoading)
 
-        state.chatMessages.forEachIndexed { index, msg ->
+        chatState.chatMessages.forEachIndexed { index, msg ->
             if (msg is ChatMessage.FindOtherPlacesBtn) return@forEachIndexed
             val msgModifier = Modifier.padding(horizontal = 16.dp)
             when (msg) {
@@ -374,13 +359,13 @@ private fun RecommendationsSheet(
                         text = msg.text,
                         modifier = msgModifier.padding(vertical = 4.dp),
                         showAvatar = index == 0 ||
-                            state.chatMessages.getOrNull(index - 1) !is ChatMessage.BotText,
+                            chatState.chatMessages.getOrNull(index - 1) !is ChatMessage.BotText,
                     )
                 }
                 is ChatMessage.BotTyping -> {
                     TypingIndicator(
                         modifier = msgModifier.padding(vertical = 4.dp),
-                        showAvatar = state.chatMessages.getOrNull(index - 1)
+                        showAvatar = chatState.chatMessages.getOrNull(index - 1)
                             .let { it !is ChatMessage.BotText && it !is ChatMessage.BotRecommendation },
                     )
                 }

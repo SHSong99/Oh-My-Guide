@@ -1,5 +1,6 @@
 package com.ohmyguide.app.ui.screen.navi
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -53,12 +54,14 @@ import kotlin.math.sqrt
 
 // ── Chat Messages ──
 
+@Immutable
 data class PhraseItem(
     val korean: String,
     val romanization: String,
     val english: String,
 )
 
+@Immutable
 data class TransitStopInfo(
     val stopName: String,
     val busNumber: String,
@@ -66,6 +69,7 @@ data class TransitStopInfo(
     val exitStopName: String,
 )
 
+@Immutable
 data class TransitGuideInfo(
     val type: String,           // "board" or "alight"
     val transitType: String,    // "bus" or "subway"
@@ -77,6 +81,7 @@ data class TransitGuideInfo(
     val exitStationEn: String = "",
 )
 
+@Immutable
 data class WeatherInfo(
     val temperature: Double,
     val feelsLike: Double,
@@ -89,6 +94,7 @@ data class WeatherInfo(
     val hourlyForecast: List<HourForecast> = emptyList(),
 )
 
+@Immutable
 data class HourForecast(
     val hour: Int,
     val temp: Double,
@@ -96,6 +102,7 @@ data class HourForecast(
     val precipProb: Int,
 )
 
+@Immutable
 data class NearbySpotInfo(
     val placeId: String,
     val name: String,
@@ -126,6 +133,7 @@ sealed class NaviChatMessage {
 
 // ── UI State ──
 
+@Immutable
 data class NaviUiState(
     val chatMessages: List<NaviChatMessage> = emptyList(),
     val arrived: Boolean = false,
@@ -200,6 +208,10 @@ class NaviViewModel @Inject constructor(
             // 비프음
             val tone = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60)
             tone.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+            viewModelScope.launch {
+                delay(200)
+                try { tone.release() } catch (_: Exception) {}
+            }
             // 약한 진동
             val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vm = appContext.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
@@ -266,13 +278,16 @@ class NaviViewModel @Inject constructor(
     }
 
     private fun initChat() {
-        val placeName = detail?.place?.name ?: "your destination"
+        val placeName = detail?.place?.name ?: s.destination
 
         if (isCourseMode) {
             val courseName = course?.title ?: ""
             val total = course?.spots?.size ?: 0
             addMessage(NaviChatMessage.BotText(
-                "\uD83D\uDCCD $courseName — Spot ${spotIndex + 1}/$total"
+                s.naviCourseSpotProgress
+                    .replaceFirst("%s", courseName)
+                    .replaceFirst("%d", "${spotIndex + 1}")
+                    .replaceFirst("%d", "$total")
             ))
         }
 
@@ -283,15 +298,8 @@ class NaviViewModel @Inject constructor(
             delay(2000L)
             _uiState.update { it.copy(guideReady = true) }
 
-            // t=8s — 깨비 인사(3s) + 줌인(2.5s) 완료 후 대화 시작
+            // t=8s — 깨비 인사(3s) + 줌인(2.5s) 완료 후 날씨로 바로 전환
             delay(6000L)
-            addMessage(NaviChatMessage.BotText(
-                s.guideToPlace.replace("%s", placeName),
-            ))
-            notifyUser()
-
-            // t=8s — 날씨
-            delay(4000L)
             addMessage(NaviChatMessage.BotTyping)
             delay(800L)
             removeTyping()
@@ -323,23 +331,23 @@ class NaviViewModel @Inject constructor(
                         ))
                         if (transitSegments.size > 1) {
                             addMessage(NaviChatMessage.BotText(
-                                "🔄 ${transitSegments.size - 1} transfer(s) ahead. I'll guide you when you're close!"
+                                s.naviTransferAhead.replace("%d", "${transitSegments.size - 1}")
                             ))
                         }
                     } else {
                         addMessage(NaviChatMessage.BotText(
-                            "🚶 Follow the transit route! About $totalDuration min."
+                            s.naviFollowTransit.replace("%d", "$totalDuration")
                         ))
                     }
                 }
                 "car" -> {
                     addMessage(NaviChatMessage.BotText(
-                        "🚗 Estimated drive time: about $totalDuration min. Follow the route on the map!"
+                        s.naviDriveTime.replace("%d", "$totalDuration")
                     ))
                 }
                 else -> {
                     addMessage(NaviChatMessage.BotText(
-                        "🚶 Estimated walk time: about $totalDuration min. Enjoy the walk!"
+                        s.naviWalkTime.replace("%d", "$totalDuration")
                     ))
                 }
             }
@@ -354,9 +362,6 @@ class NaviViewModel @Inject constructor(
                 addMessage(NaviChatMessage.BotTyping)
                 delay(800L)
                 removeTyping()
-                addMessage(NaviChatMessage.BotText(
-                    s.storyAboutPlace.replace("%s", placeName)
-                ))
                 addMessage(NaviChatMessage.StoryPrompt(placeName = placeName))
                 notifyUser()
             }
@@ -467,7 +472,7 @@ class NaviViewModel @Inject constructor(
 
                 // Update notification
                 val remainingMin = ((1f - progress) * totalDuration).toInt()
-                val placeName = detail?.place?.name ?: "destination"
+                val placeName = detail?.place?.name ?: s.destination
                 LocationForegroundService.updateNaviStatus(
                     "$placeName · ${remainingMin}min"
                 )
@@ -489,7 +494,7 @@ class NaviViewModel @Inject constructor(
                         delay(800L)
                         removeTyping()
                         addMessage(NaviChatMessage.BotText(
-                            "📍 You're close to ${detail?.place?.name ?: "your destination"}! Have you arrived?"
+                            s.naviArrivalPrompt.replace("%s", detail?.place?.name ?: s.destination)
                         ))
                         addMessage(NaviChatMessage.ArrivalConfirm)
                         notifyUser()
@@ -662,7 +667,7 @@ class NaviViewModel @Inject constructor(
                 delay(800L)
                 removeTyping()
                 addMessage(NaviChatMessage.BotText(
-                    "📍 There's a place called ${nextSpot.name} nearby! Want to hear about it?"
+                    s.naviNearbySpot.replace("%s", nextSpot.name)
                 ))
                 addMessage(NaviChatMessage.NearbySpotCard(spot = nextSpot))
                 notifyUser()
@@ -718,7 +723,7 @@ class NaviViewModel @Inject constructor(
                 )
             }
 
-            addMessage(NaviChatMessage.BotText("Before we start, let me check the weather for you!"))
+            addMessage(NaviChatMessage.BotText(s.weatherIntro))
             addMessage(NaviChatMessage.Weather(
                 WeatherInfo(
                     temperature = temp,
@@ -736,59 +741,59 @@ class NaviViewModel @Inject constructor(
     }
 
     private fun weatherCodeToDescEmoji(code: Int, isDay: Boolean): Pair<String, String> = when (code) {
-        0 -> "Clear sky" to if (isDay) "☀️" else "🌙"
-        1 -> "Mainly clear" to if (isDay) "🌤️" else "🌙"
-        2 -> "Partly cloudy" to if (isDay) "⛅" else "☁️"
-        3 -> "Overcast" to "☁️"
-        45, 48 -> "Foggy" to "🌫️"
-        51, 53, 55 -> "Drizzle" to "🌦️"
-        61, 63, 65 -> "Rain" to "🌧️"
-        66, 67 -> "Freezing rain" to "🌧️"
-        71, 73, 75 -> "Snow" to "🌨️"
-        77 -> "Snow grains" to "🌨️"
-        80, 81, 82 -> "Rain showers" to "🌧️"
-        85, 86 -> "Snow showers" to "🌨️"
-        95 -> "Thunderstorm" to "⛈️"
-        96, 99 -> "Thunderstorm with hail" to "⛈️"
-        else -> "Unknown" to "🌡️"
+        0 -> s.weatherClear to if (isDay) "☀️" else "🌙"
+        1 -> s.weatherMainlyClear to if (isDay) "🌤️" else "🌙"
+        2 -> s.weatherPartlyCloudy to if (isDay) "⛅" else "☁️"
+        3 -> s.weatherOvercast to "☁️"
+        45, 48 -> s.weatherFoggy to "🌫️"
+        51, 53, 55 -> s.weatherDrizzle to "🌦️"
+        61, 63, 65 -> s.weatherRain to "🌧️"
+        66, 67 -> s.weatherFreezingRain to "🌧️"
+        71, 73, 75 -> s.weatherSnow to "🌨️"
+        77 -> s.weatherSnowGrains to "🌨️"
+        80, 81, 82 -> s.weatherRainShowers to "🌧️"
+        85, 86 -> s.weatherSnowShowers to "🌨️"
+        95 -> s.weatherThunderstorm to "⛈️"
+        96, 99 -> s.weatherThunderstormHail to "⛈️"
+        else -> s.weatherUnknown to "🌡️"
     }
 
     private fun buildWeatherTip(
         temp: Double, feelsLike: Double, code: Int, precip: Int, wind: Double, isDay: Boolean,
     ): String {
         val tips = mutableListOf<String>()
+        val windStr = "%.1f".format(wind)
 
         // Temperature advice
-        val feelsLikeDiff = temp - feelsLike
         when {
-            temp >= 33 -> tips.add("It's very hot! Stay hydrated and find shade when possible.")
-            temp >= 28 -> tips.add("It's warm outside. Light clothing recommended.")
-            feelsLike < temp - 3 -> tips.add("Feels colder than it looks (${feelsLike.toInt()}°C). Layer up!")
-            temp in 10.0..20.0 -> tips.add("Mild weather. A light jacket might be nice.")
-            temp < 5 -> tips.add("It's cold! Bundle up warmly.")
+            temp >= 33 -> tips.add(s.weatherTipHot)
+            temp >= 28 -> tips.add(s.weatherTipWarm)
+            feelsLike < temp - 3 -> tips.add(s.weatherTipFeelsCold.replace("%s", "${feelsLike.toInt()}°C"))
+            temp in 10.0..20.0 -> tips.add(s.weatherTipMild)
+            temp < 5 -> tips.add(s.weatherTipCold)
         }
 
         // Wind advice
         when {
-            wind >= 14 -> tips.add("🌪️ Very strong wind (${"%.1f".format(wind)}m/s). Be careful outdoors!")
-            wind >= 8 -> tips.add("💨 Windy today (${"%.1f".format(wind)}m/s). Hold onto your hat!")
+            wind >= 14 -> tips.add(s.weatherTipStrongWind.replace("%s", windStr))
+            wind >= 8 -> tips.add(s.weatherTipWindy.replace("%s", windStr))
         }
 
         // Precipitation & weather code
         when {
-            code in 61..67 || code in 80..82 -> tips.add("☂️ Bring an umbrella — it's raining!")
-            code in 71..77 || code in 85..86 -> tips.add("🧤 Snow expected — dress warmly and watch your step.")
-            code == 95 || code == 96 || code == 99 -> tips.add("⚡ Thunderstorm alert! Consider staying indoors.")
-            precip >= 50 -> tips.add("☂️ ${precip}% chance of rain — umbrella recommended.")
+            code in 61..67 || code in 80..82 -> tips.add(s.weatherTipRaining)
+            code in 71..77 || code in 85..86 -> tips.add(s.weatherTipSnowing)
+            code == 95 || code == 96 || code == 99 -> tips.add(s.weatherTipThunderstorm)
+            precip >= 50 -> tips.add(s.weatherTipRainChance.replace("%s", "$precip"))
         }
 
         // Day/night advice
         if (!isDay) {
-            tips.add("🌙 It's getting dark. Stay on well-lit paths!")
+            tips.add(s.weatherTipDark)
         }
 
         return tips.joinToString(" ")
-            .ifEmpty { if (isDay) "Great weather for exploring!" else "Clear night. Enjoy the night views!" }
+            .ifEmpty { if (isDay) s.weatherTipGreat else s.weatherTipClearNight }
     }
 
     // ── Arrival Confirmation ──
@@ -798,10 +803,6 @@ class NaviViewModel @Inject constructor(
         _uiState.update { it.copy(arrived = true, progressPct = 1f) }
         viewModelScope.launch {
             removeArrivalConfirm()
-            addMessage(NaviChatMessage.BotText(
-                s.arrivedAt.replace("%s", detail?.place?.name ?: s.destination)
-            ))
-            notifyUser()
         }
     }
 

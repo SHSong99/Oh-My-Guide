@@ -178,6 +178,7 @@ fun TransportPickerScreen(
                             placeId,
                             firstSpot?.lat ?: detail?.place?.lat ?: 0.0,
                             firstSpot?.lng ?: detail?.place?.lng ?: 0.0,
+                            courseId = courseId,
                         )
                     )
                 } else if (!courseId.isNullOrEmpty()) {

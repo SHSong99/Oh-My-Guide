@@ -6,6 +6,7 @@ import com.ohmyguide.app.data.api.ApiService
 import com.ohmyguide.app.data.api.AuthInterceptor
 import com.ohmyguide.app.data.api.BusanBimsApi
 import com.ohmyguide.app.data.api.NaverDrivingApi
+import com.ohmyguide.app.data.api.NaverGeocodingApi
 import com.ohmyguide.app.data.api.NaverWalkingApi
 import com.ohmyguide.app.data.api.OdsayApi
 import com.ohmyguide.app.data.api.OpenMeteoApi
@@ -17,8 +18,10 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Cache
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import java.io.File
 import java.util.concurrent.TimeUnit
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -40,8 +43,13 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
+    fun provideOkHttpClient(
+        @ApplicationContext context: Context,
+        authInterceptor: AuthInterceptor,
+    ): OkHttpClient {
+        val cache = Cache(File(context.cacheDir, "http_cache"), 50L * 1024 * 1024)
         return OkHttpClient.Builder()
+            .cache(cache)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
             .writeTimeout(30, TimeUnit.SECONDS)
@@ -80,6 +88,17 @@ object AppModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(OdsayApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNaverGeocodingApi(client: OkHttpClient): NaverGeocodingApi {
+        return Retrofit.Builder()
+            .baseUrl("https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NaverGeocodingApi::class.java)
     }
 
     @Provides

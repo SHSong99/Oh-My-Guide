@@ -67,6 +67,7 @@ interface AppStrings {
 
     // ── Home ──
     val curatingSpots: String
+    val curatingDone: String
     val reset: String
     val near: String
     val spots: String
@@ -121,6 +122,7 @@ interface AppStrings {
     val prices: String
 
     // ── Story ──
+    val storyLabel: String
     val loading: String
     val nowPlaying: String
     val paused: String
@@ -160,6 +162,7 @@ interface AppStrings {
     val age: String
     val gender: String
     val save: String
+    val profileFieldsRequired: String
     val bookmarkEmpty: String
     val viewAllPhrases: String
 
@@ -185,11 +188,53 @@ interface AppStrings {
     val storyAboutPlace: String
     val usefulPhrases: String
     val arrivedAt: String
+    val naviCourseSpotProgress: String
+    val naviTransferAhead: String
+    val naviFollowTransit: String
+    val naviDriveTime: String
+    val naviWalkTime: String
+    val naviArrivalPrompt: String
+    val naviNearbySpot: String
+
+    // ── Weather ──
+    val weatherIntro: String
+    val weatherClear: String
+    val weatherMainlyClear: String
+    val weatherPartlyCloudy: String
+    val weatherOvercast: String
+    val weatherFoggy: String
+    val weatherDrizzle: String
+    val weatherRain: String
+    val weatherFreezingRain: String
+    val weatherSnow: String
+    val weatherSnowGrains: String
+    val weatherRainShowers: String
+    val weatherSnowShowers: String
+    val weatherThunderstorm: String
+    val weatherThunderstormHail: String
+    val weatherUnknown: String
+    val weatherTipHot: String
+    val weatherTipWarm: String
+    val weatherTipFeelsCold: String
+    val weatherTipMild: String
+    val weatherTipCold: String
+    val weatherTipStrongWind: String
+    val weatherTipWindy: String
+    val weatherTipRaining: String
+    val weatherTipSnowing: String
+    val weatherTipThunderstorm: String
+    val weatherTipRainChance: String
+    val weatherTipDark: String
+    val weatherTipGreat: String
+    val weatherTipClearNight: String
 
     // ── Map ──
     val locating: String
     val mapView: String
     val explorePlaces: String
+
+    // ── Navi Story ──
+    val storyPromptHint: String
 
     // ── Place ──
     val hours: String
