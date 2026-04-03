@@ -54,6 +54,7 @@ import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
+import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 
@@ -175,14 +176,15 @@ fun MapScreen(
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
+                    val strings = LocalStrings.current
                     Text(
-                        text = "Map View",
+                        text = strings.mapView,
                         style = MaterialTheme.typography.titleSmall,
                         color = TextPrimary,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
-                        text = "Explore places around you",
+                        text = strings.explorePlaces,
                         style = MaterialTheme.typography.labelMedium,
                         color = TextCaption,
                     )

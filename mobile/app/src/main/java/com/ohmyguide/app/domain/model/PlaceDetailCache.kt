@@ -2,10 +2,11 @@ package com.ohmyguide.app.domain.model
 
 import com.ohmyguide.app.data.model.GuideNavigationResponse
 import com.ohmyguide.app.fixtures.PlaceDetail
+import java.util.concurrent.ConcurrentHashMap
 
 object PlaceDetailCache {
-    private val cache = mutableMapOf<String, PlaceDetail>()
-    private val guideCache = mutableMapOf<String, GuideNavigationResponse>()
+    private val cache = ConcurrentHashMap<String, PlaceDetail>()
+    private val guideCache = ConcurrentHashMap<String, GuideNavigationResponse>()
 
     fun put(placeId: String, detail: PlaceDetail) {
         cache[placeId] = detail

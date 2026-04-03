@@ -284,9 +284,9 @@ data class CountryOption(val id: String, val flag: String, val name: String)
 val LANGUAGE_OPTIONS = listOf(
     LanguageOption("en", "English", "\uD83C\uDDFA\uD83C\uDDF8"),
     LanguageOption("ko", "\uD55C\uAD6D\uC5B4", "\uD83C\uDDF0\uD83C\uDDF7"),
-    LanguageOption("ja", "\u65E5\u672C\u8A9E", "\uD83C\uDDEF\uD83C\uDDF5", available = false),
-    LanguageOption("zh-CN", "\u7B80\u4F53\u4E2D\u6587", "\uD83C\uDDE8\uD83C\uDDF3", available = false),
-    LanguageOption("zh-TW", "\u7E41\u9AD4\u4E2D\u6587", "\uD83C\uDDF9\uD83C\uDDFC", available = false),
+    LanguageOption("ja", "\u65E5\u672C\u8A9E", "\uD83C\uDDEF\uD83C\uDDF5"),
+    LanguageOption("zh-CN", "\u7B80\u4F53\u4E2D\u6587", "\uD83C\uDDE8\uD83C\uDDF3"),
+    LanguageOption("zh-TW", "\u7E41\u9AD4\u4E2D\u6587", "\uD83C\uDDF9\uD83C\uDDFC"),
 )
 
 data class GenderOption(val id: String, val label: String)
@@ -315,6 +315,7 @@ val COUNTRY_OPTIONS = listOf(
     CountryOption("sg", "\uD83C\uDDF8\uD83C\uDDEC", "Singapore"),
     CountryOption("th", "\uD83C\uDDF9\uD83C\uDDED", "Thailand"),
     CountryOption("vn", "\uD83C\uDDFB\uD83C\uDDF3", "Vietnam"),
+    CountryOption("kr", "\uD83C\uDDF0\uD83C\uDDF7", "South Korea"),
     CountryOption("other", "\uD83C\uDF0D", "Other"),
 )
 

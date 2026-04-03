@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ohmyguide.app.data.model.PlaceCardDto
 import com.ohmyguide.app.data.api.GuideSseClient
+import com.ohmyguide.app.data.api.NaverGeocodingApi
 import com.ohmyguide.app.data.model.RefreshRecommendRequest
 import com.ohmyguide.app.data.repository.RecommendRepository
 import com.ohmyguide.app.fixtures.HOME_RECOMMENDATIONS
@@ -69,11 +70,15 @@ private enum class FlowStep {
     AWAITING_VIBE,
 }
 
-// ── UI State ──
+// ── UI State (분리: 채팅은 자주 변경, 시트는 사용자 인터랙션 시만 변경) ──
 
-data class HomeUiState(
+data class HomeChatState(
     val chatMessages: List<ChatMessage> = emptyList(),
     val spotCount: Int = 6,
+    val isLoading: Boolean = true,
+)
+
+data class HomeSheetState(
     val sheetMode: SheetMode = SheetMode.RECOMMENDATIONS,
     val selectedDetail: PlaceDetail? = null,
 )
@@ -82,16 +87,25 @@ data class HomeUiState(
 class HomeViewModel @Inject constructor(
     private val recommendRepository: RecommendRepository,
     private val guideSseClient: GuideSseClient,
+    private val naverGeocodingApi: NaverGeocodingApi,
 ) : ViewModel() {
 
     private val s get() = LanguageManager.current.value.strings
 
-    private val _uiState = MutableStateFlow(HomeUiState())
-    val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
+    private val _chatState = MutableStateFlow(HomeChatState())
+    val chatState: StateFlow<HomeChatState> = _chatState.asStateFlow()
+
+    private val _sheetState = MutableStateFlow(HomeSheetState())
+    val sheetState: StateFlow<HomeSheetState> = _sheetState.asStateFlow()
+
+    private val _locationName = MutableStateFlow("")
+    val locationName: StateFlow<String> = _locationName.asStateFlow()
 
     private var flowStep = FlowStep.IDLE
     private var selectedFocus: String? = null
     private var initialLoaded = false
+    private var lastGeocodedLat = 0.0
+    private var lastGeocodedLng = 0.0
 
     private suspend fun getLatestLocation(): LocationData {
         // 이미 값이 있으면 즉시 반환
@@ -100,6 +114,39 @@ class HomeViewModel @Inject constructor(
         return withTimeoutOrNull(5000L) {
             LocationForegroundService.locationFlow.filterNotNull().first()
         } ?: LocationData(DEFAULT_LAT, DEFAULT_LNG)
+    }
+
+    fun fetchLocationName(lat: Double, lng: Double) {
+        // 같은 좌표(소수점 3자리)에 대해 중복 호출 방지
+        val roundedLat = "%.3f".format(lat).toDouble()
+        val roundedLng = "%.3f".format(lng).toDouble()
+        if (roundedLat == lastGeocodedLat && roundedLng == lastGeocodedLng) return
+        lastGeocodedLat = roundedLat
+        lastGeocodedLng = roundedLng
+
+        viewModelScope.launch {
+            try {
+                val coords = "$lng,$lat"
+                val response = naverGeocodingApi.reverseGeocode(
+                    clientId = BuildConfig.NAVER_MAP_CLIENT_ID,
+                    clientSecret = BuildConfig.NAVER_MAP_CLIENT_SECRET,
+                    coords = coords,
+                )
+                val region = response.results?.firstOrNull()?.region
+                val city = region?.area1?.name ?: ""
+                val district = region?.area2?.name ?: ""
+                _locationName.value = when {
+                    district.isNotEmpty() && city.isNotEmpty() -> "$district, $city"
+                    city.isNotEmpty() -> city
+                    else -> s.yourArea
+                }
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) Log.e("HomeVM", "Naver geocoding failed", e)
+                if (_locationName.value.isEmpty()) {
+                    _locationName.value = s.yourArea
+                }
+            }
+        }
     }
 
     fun loadInitialRecommendation(category: String) {
@@ -129,8 +176,9 @@ class HomeViewModel @Inject constructor(
                     btnText = "",
                 )
                 addMessage(ChatMessage.BotRecommendation(section))
-                _uiState.update { it.copy(spotCount = places.size) }
+                _chatState.update { it.copy(spotCount = places.size) }
             }
+            _chatState.update { it.copy(isLoading = false) }
             addMessage(ChatMessage.FindOtherPlacesBtn)
         }
     }
@@ -141,7 +189,7 @@ class HomeViewModel @Inject constructor(
         val attrId = placeId.toLongOrNull()
 
         // 추천 결과에서 Place 찾기 (카드에 표시된 기본 정보)
-        val place = _uiState.value.chatMessages
+        val place = _chatState.value.chatMessages
             .filterIsInstance<ChatMessage.BotRecommendation>()
             .flatMap { it.section.places }
             .find { it.id == placeId }
@@ -159,14 +207,14 @@ class HomeViewModel @Inject constructor(
                 walkTime = place.distance,
             )
             PlaceDetailCache.put(placeId, detail)
-            _uiState.update {
+            _sheetState.update {
                 it.copy(sheetMode = SheetMode.PLACE_DETAIL, selectedDetail = detail)
             }
         }
     }
 
     fun clearSelection() {
-        _uiState.update {
+        _sheetState.update {
             it.copy(
                 sheetMode = SheetMode.RECOMMENDATIONS,
                 selectedDetail = null,
@@ -176,7 +224,7 @@ class HomeViewModel @Inject constructor(
 
     fun startGuide(placeId: String) {
         val attrId = placeId.toLongOrNull() ?: return
-        val place = _uiState.value.chatMessages
+        val place = _chatState.value.chatMessages
             .filterIsInstance<ChatMessage.BotRecommendation>()
             .flatMap { it.section.places }
             .find { it.id == placeId }
@@ -274,12 +322,6 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun removeUserInput() {
-        _uiState.update { state ->
-            state.copy(chatMessages = state.chatMessages.filterNot { it is ChatMessage.UserInput })
-        }
-    }
-
     private fun onFocusSelected(option: String) {
         selectedFocus = option
         viewModelScope.launch {
@@ -338,7 +380,7 @@ class HomeViewModel @Inject constructor(
                 )
                 addMessage(ChatMessage.BotText(s.freshPicks))
                 addMessage(ChatMessage.BotRecommendation(newSection))
-                _uiState.update { it.copy(spotCount = it.spotCount + newPlaces.size) }
+                _chatState.update { it.copy(spotCount = it.spotCount + newPlaces.size) }
             }
 
             addMessage(ChatMessage.FindOtherPlacesBtn)
@@ -389,11 +431,11 @@ class HomeViewModel @Inject constructor(
     // ── Message helpers ──
 
     private fun addMessage(msg: ChatMessage) {
-        _uiState.update { it.copy(chatMessages = it.chatMessages + msg) }
+        _chatState.update { it.copy(chatMessages = it.chatMessages + msg) }
     }
 
     private fun removeTyping() {
-        _uiState.update { state ->
+        _chatState.update { state ->
             state.copy(
                 chatMessages = state.chatMessages.filterNot { it is ChatMessage.BotTyping },
             )
@@ -401,7 +443,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun removeFindBtn() {
-        _uiState.update { state ->
+        _chatState.update { state ->
             state.copy(
                 chatMessages = state.chatMessages.filterNot { it is ChatMessage.FindOtherPlacesBtn },
             )
@@ -409,7 +451,7 @@ class HomeViewModel @Inject constructor(
     }
 
     private fun markOptionAnswered(selected: String) {
-        _uiState.update { state ->
+        _chatState.update { state ->
             state.copy(
                 chatMessages = state.chatMessages.map { msg ->
                     if (msg is ChatMessage.BotOptions && !msg.answered) {
@@ -417,6 +459,12 @@ class HomeViewModel @Inject constructor(
                     } else msg
                 },
             )
+        }
+    }
+
+    private fun removeUserInput() {
+        _chatState.update { state ->
+            state.copy(chatMessages = state.chatMessages.filterNot { it is ChatMessage.UserInput })
         }
     }
 }

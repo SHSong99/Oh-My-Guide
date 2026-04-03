@@ -10,6 +10,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -68,18 +70,20 @@ class MyPageViewModel @Inject constructor(
 
             val picks = result.getOrNull() ?: emptyList()
             if (picks.isNotEmpty()) {
-                val places = picks.take(5).mapNotNull { pick ->
-                    val detail = userRepository.getAttractionDetail(pick.placeId).getOrNull()
-                    if (detail != null) {
-                        PickPlace(
-                            attrId = pick.placeId,
-                            title = detail.title ?: "",
-                            imageUrl = detail.firstImage1,
-                            addr = detail.addr1,
-                            rank = pick.placeRank ?: 0,
-                        )
-                    } else null
-                }
+                val places = picks.take(5).map { pick ->
+                    async {
+                        val detail = userRepository.getAttractionDetail(pick.placeId).getOrNull()
+                        if (detail != null) {
+                            PickPlace(
+                                attrId = pick.placeId,
+                                title = detail.title ?: "",
+                                imageUrl = detail.firstImage1,
+                                addr = detail.addr1,
+                                rank = pick.placeRank ?: 0,
+                            )
+                        } else null
+                    }
+                }.awaitAll().filterNotNull()
                 _uiState.update { it.copy(pickPlaces = places, pickLoading = false) }
             } else {
                 _uiState.update { it.copy(pickLoading = false) }

@@ -211,49 +211,106 @@ private fun LanguagePickerDialog(
     onSelect: (AppLanguage) -> Unit,
 ) {
     val current = LanguageManager.current.value
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(LocalStrings.current.language) },
-        text = {
-            Column {
-                AppLanguage.entries.forEach { lang ->
-                    val label = when (lang) {
-                        AppLanguage.EN -> "English"
-                        AppLanguage.KO -> "\uD55C\uAD6D\uC5B4"
-                        AppLanguage.JA -> "\u65E5\u672C\u8A9E"
-                        AppLanguage.ZH_TW -> "\u7E41\u9AD4\u4E2D\u6587"
-                        AppLanguage.ZH_CN -> "\u7B80\u4F53\u4E2D\u6587"
-                    }
-                    val isSelected = lang == current
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(if (isSelected) PrimaryBgLight else BgWhite)
-                            .clickable { onSelect(lang) }
-                            .padding(horizontal = 16.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            ),
-                            color = if (isSelected) Primary else TextPrimary,
-                            modifier = Modifier.weight(1f),
+
+    androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(BgWhite)
+                .padding(24.dp),
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Filled.Language,
+                    contentDescription = null,
+                    modifier = Modifier.size(24.dp),
+                    tint = Primary,
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = LocalStrings.current.language,
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    color = TextPrimary,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = "Close",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onDismiss)
+                        .padding(4.dp),
+                    tint = TextCaption,
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Language options
+            val languages = listOf(
+                Triple(AppLanguage.EN, "\uD83C\uDDFA\uD83C\uDDF8", "English"),
+                Triple(AppLanguage.KO, "\uD83C\uDDF0\uD83C\uDDF7", "\uD55C\uAD6D\uC5B4"),
+                Triple(AppLanguage.JA, "\uD83C\uDDEF\uD83C\uDDF5", "\u65E5\u672C\u8A9E"),
+                Triple(AppLanguage.ZH_CN, "\uD83C\uDDE8\uD83C\uDDF3", "\u7B80\u4F53\u4E2D\u6587"),
+                Triple(AppLanguage.ZH_TW, "\uD83C\uDDF9\uD83C\uDDFC", "\u7E41\u9AD4\u4E2D\u6587"),
+            )
+
+            languages.forEach { (lang, flag, label) ->
+                val isSelected = lang == current
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 3.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(if (isSelected) PrimaryBg else BgScreen)
+                        .border(
+                            width = if (isSelected) 1.5.dp else 0.dp,
+                            color = if (isSelected) Primary else BgScreen,
+                            shape = RoundedCornerShape(14.dp),
                         )
-                        if (isSelected) {
-                            Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(20.dp), tint = Primary)
+                        .clickable { onSelect(lang) }
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = flag,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Spacer(modifier = Modifier.width(14.dp))
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                        ),
+                        color = if (isSelected) Primary else TextPrimary,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(Primary),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Filled.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = BgWhite,
+                            )
                         }
                     }
                 }
             }
-        },
-        confirmButton = {},
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(LocalStrings.current.back) }
-        },
-    )
+        }
+    }
 }
 
 // ── Profile Edit Dialog ──
@@ -264,32 +321,36 @@ private fun ProfileEditDialog(
     onDismiss: () -> Unit,
     onSave: (nationality: String, age: Int, gender: String) -> Unit,
 ) {
+    val strings = LocalStrings.current
     var nationality by remember { mutableStateOf(user?.nationality ?: "") }
     var ageText by remember { mutableStateOf(user?.age?.toString() ?: "") }
     var gender by remember { mutableStateOf(user?.gender ?: "") }
+    var showError by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(LocalStrings.current.editProfile) },
+        title = { Text(strings.editProfile) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = nationality,
-                    onValueChange = { nationality = it },
-                    label = { Text(LocalStrings.current.nationality) },
+                    onValueChange = { nationality = it; showError = false },
+                    label = { Text(strings.nationality) },
                     singleLine = true,
+                    isError = showError && nationality.isBlank(),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = ageText,
-                    onValueChange = { ageText = it.filter { c -> c.isDigit() } },
-                    label = { Text(LocalStrings.current.age) },
+                    onValueChange = { ageText = it.filter { c -> c.isDigit() }; showError = false },
+                    label = { Text(strings.age) },
                     singleLine = true,
+                    isError = showError && ageText.isBlank(),
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    text = LocalStrings.current.gender,
+                    text = strings.gender,
                     style = MaterialTheme.typography.labelMedium,
                     color = TextSecondary,
                 )
@@ -299,8 +360,8 @@ private fun ProfileEditDialog(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(10.dp))
-                                .background(if (selected) Primary else PrimaryBgLight)
-                                .clickable { gender = g }
+                                .background(if (selected) Primary else if (showError && gender.isBlank()) Error.copy(alpha = 0.1f) else PrimaryBgLight)
+                                .clickable { gender = g; showError = false }
                                 .padding(horizontal = 20.dp, vertical = 10.dp),
                         ) {
                             Text(
@@ -311,20 +372,29 @@ private fun ProfileEditDialog(
                         }
                     }
                 }
+                if (showError) {
+                    Text(
+                        text = strings.profileFieldsRequired,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Error,
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    val age = ageText.toIntOrNull() ?: return@TextButton
-                    if (nationality.isNotBlank() && gender.isNotBlank()) {
-                        onSave(nationality, age, gender)
+                    val age = ageText.toIntOrNull()
+                    if (age == null || nationality.isBlank() || gender.isBlank()) {
+                        showError = true
+                        return@TextButton
                     }
+                    onSave(nationality, age, gender)
                 },
-            ) { Text(LocalStrings.current.save) }
+            ) { Text(strings.save) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(LocalStrings.current.back) }
+            TextButton(onClick = onDismiss) { Text(strings.back) }
         },
     )
 }

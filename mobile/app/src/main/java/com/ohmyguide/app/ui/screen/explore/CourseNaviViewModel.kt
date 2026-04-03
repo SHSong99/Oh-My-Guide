@@ -132,24 +132,18 @@ class CourseNaviViewModel @Inject constructor(
         if (spots.size < 2) return
 
         viewModelScope.launch {
-            val location = LocationForegroundService.locationFlow.value
-                ?: kotlinx.coroutines.withTimeoutOrNull(5000L) {
-                    LocationForegroundService.locationFlow.filterNotNull().first()
+            // 코스 경로는 항상 1번 스팟부터 시작 (GPS 위치를 시작점으로 사용하지 않음)
+            val allPoints = spots.map { it.lat to it.lng }
+
+            // 좌표 0.0 검증 — 유효하지 않은 좌표가 있으면 fallback
+            val hasInvalidCoords = allPoints.any { (lat, lng) -> lat == 0.0 || lng == 0.0 }
+            if (hasInvalidCoords) {
+                if (BuildConfig.DEBUG) {
+                    Log.w("CourseNaviVM", "Invalid spot coordinates detected, using fallback")
                 }
-            val rawLat = location?.latitude
-            val rawLng = location?.longitude
-            val inKorea = rawLat != null && rawLng != null
-                    && rawLat in 33.0..39.0 && rawLng in 124.0..132.0
-
-            // Use first spot as start if GPS not in Korea
-            val startLat = if (inKorea) rawLat!! else spots.first().lat
-            val startLng = if (inKorea) rawLng!! else spots.first().lng
-
-            // Build waypoints: intermediate spots (skip first if using GPS, skip last = goal)
-            val allPoints = if (inKorea) {
-                listOf(startLat to startLng) + spots.map { it.lat to it.lng }
-            } else {
-                spots.map { it.lat to it.lng }
+                buildFallbackRoute(allPoints.filter { (lat, lng) -> lat != 0.0 && lng != 0.0 })
+                _uiState.update { it.copy(isLoading = false) }
+                return@launch
             }
 
             val start = allPoints.first()

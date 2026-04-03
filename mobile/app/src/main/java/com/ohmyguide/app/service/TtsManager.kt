@@ -50,7 +50,29 @@ class TtsManager(private val context: Context) {
     }
 
     private val client = OkHttpClient()
-    private val audioCache = mutableMapOf<String, ByteArray>()
+    private val audioCache = object : LinkedHashMap<String, ByteArray>(16, 0.75f, true) {
+        private var totalBytes = 0L
+        override fun put(key: String, value: ByteArray): ByteArray? {
+            totalBytes += value.size
+            val prev = super.put(key, value)
+            if (prev != null) totalBytes -= prev.size
+            trimToSize()
+            return prev
+        }
+        override fun remove(key: String): ByteArray? {
+            val removed = super.remove(key)
+            if (removed != null) totalBytes -= removed.size
+            return removed
+        }
+        private fun trimToSize() {
+            val iter = entries.iterator()
+            while (totalBytes > MAX_CACHE_BYTES && iter.hasNext()) {
+                val entry = iter.next()
+                totalBytes -= entry.value.size
+                iter.remove()
+            }
+        }
+    }
 
     suspend fun speak(text: String) {
         stop()
@@ -207,5 +229,6 @@ class TtsManager(private val context: Context) {
         private const val RATE = 1.1
         private const val PITCH = 5.0
         private const val PROGRESS_INTERVAL = 150L
+        private const val MAX_CACHE_BYTES = 20L * 1024 * 1024  // 20MB
     }
 }

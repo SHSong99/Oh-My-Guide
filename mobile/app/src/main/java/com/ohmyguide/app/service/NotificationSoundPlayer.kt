@@ -11,13 +11,17 @@ import com.ohmyguide.app.R
 object NotificationSoundPlayer {
 
     fun play(context: Context) {
+        var player: MediaPlayer? = null
         try {
-            MediaPlayer.create(context, R.raw.notification)?.apply {
+            player = MediaPlayer.create(context, R.raw.notification)?.apply {
                 setOnCompletionListener { it.release() }
+                setOnErrorListener { mp, _, _ -> mp.release(); true }
                 start()
             }
             vibrate(context)
-        } catch (_: Exception) {}
+        } catch (_: Exception) {
+            player?.release()
+        }
     }
 
     private fun vibrate(context: Context) {
