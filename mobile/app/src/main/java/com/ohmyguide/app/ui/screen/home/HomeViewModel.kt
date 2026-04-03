@@ -74,6 +74,7 @@ private enum class FlowStep {
 data class HomeChatState(
     val chatMessages: List<ChatMessage> = emptyList(),
     val spotCount: Int = 6,
+    val isLoading: Boolean = true,
 )
 
 data class HomeSheetState(
