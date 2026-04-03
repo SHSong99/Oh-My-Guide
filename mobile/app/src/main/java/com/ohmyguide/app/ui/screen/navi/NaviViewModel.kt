@@ -278,13 +278,16 @@ class NaviViewModel @Inject constructor(
     }
 
     private fun initChat() {
-        val placeName = detail?.place?.name ?: "your destination"
+        val placeName = detail?.place?.name ?: s.destination
 
         if (isCourseMode) {
             val courseName = course?.title ?: ""
             val total = course?.spots?.size ?: 0
             addMessage(NaviChatMessage.BotText(
-                "\uD83D\uDCCD $courseName — Spot ${spotIndex + 1}/$total"
+                s.naviCourseSpotProgress
+                    .replaceFirst("%s", courseName)
+                    .replaceFirst("%d", "${spotIndex + 1}")
+                    .replaceFirst("%d", "$total")
             ))
         }
 
@@ -295,15 +298,8 @@ class NaviViewModel @Inject constructor(
             delay(2000L)
             _uiState.update { it.copy(guideReady = true) }
 
-            // t=8s — 깨비 인사(3s) + 줌인(2.5s) 완료 후 대화 시작
+            // t=8s — 깨비 인사(3s) + 줌인(2.5s) 완료 후 날씨로 바로 전환
             delay(6000L)
-            addMessage(NaviChatMessage.BotText(
-                s.guideToPlace.replace("%s", placeName),
-            ))
-            notifyUser()
-
-            // t=8s — 날씨
-            delay(4000L)
             addMessage(NaviChatMessage.BotTyping)
             delay(800L)
             removeTyping()
@@ -335,23 +331,23 @@ class NaviViewModel @Inject constructor(
                         ))
                         if (transitSegments.size > 1) {
                             addMessage(NaviChatMessage.BotText(
-                                "🔄 ${transitSegments.size - 1} transfer(s) ahead. I'll guide you when you're close!"
+                                s.naviTransferAhead.replace("%d", "${transitSegments.size - 1}")
                             ))
                         }
                     } else {
                         addMessage(NaviChatMessage.BotText(
-                            "🚶 Follow the transit route! About $totalDuration min."
+                            s.naviFollowTransit.replace("%d", "$totalDuration")
                         ))
                     }
                 }
                 "car" -> {
                     addMessage(NaviChatMessage.BotText(
-                        "🚗 Estimated drive time: about $totalDuration min. Follow the route on the map!"
+                        s.naviDriveTime.replace("%d", "$totalDuration")
                     ))
                 }
                 else -> {
                     addMessage(NaviChatMessage.BotText(
-                        "🚶 Estimated walk time: about $totalDuration min. Enjoy the walk!"
+                        s.naviWalkTime.replace("%d", "$totalDuration")
                     ))
                 }
             }
@@ -479,7 +475,7 @@ class NaviViewModel @Inject constructor(
 
                 // Update notification
                 val remainingMin = ((1f - progress) * totalDuration).toInt()
-                val placeName = detail?.place?.name ?: "destination"
+                val placeName = detail?.place?.name ?: s.destination
                 LocationForegroundService.updateNaviStatus(
                     "$placeName · ${remainingMin}min"
                 )
@@ -501,7 +497,7 @@ class NaviViewModel @Inject constructor(
                         delay(800L)
                         removeTyping()
                         addMessage(NaviChatMessage.BotText(
-                            "📍 You're close to ${detail?.place?.name ?: "your destination"}! Have you arrived?"
+                            s.naviArrivalPrompt.replace("%s", detail?.place?.name ?: s.destination)
                         ))
                         addMessage(NaviChatMessage.ArrivalConfirm)
                         notifyUser()
@@ -674,7 +670,7 @@ class NaviViewModel @Inject constructor(
                 delay(800L)
                 removeTyping()
                 addMessage(NaviChatMessage.BotText(
-                    "📍 There's a place called ${nextSpot.name} nearby! Want to hear about it?"
+                    s.naviNearbySpot.replace("%s", nextSpot.name)
                 ))
                 addMessage(NaviChatMessage.NearbySpotCard(spot = nextSpot))
                 notifyUser()

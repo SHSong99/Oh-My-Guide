@@ -182,6 +182,13 @@ object EnStrings : AppStrings {
     override val storyAboutPlace = "Story about this place"
     override val usefulPhrases = "Useful phrases nearby"
     override val arrivedAt = "Arrived at"
+    override val naviCourseSpotProgress = "\uD83D\uDCCD %s — Spot %d/%d"
+    override val naviTransferAhead = "\uD83D\uDD04 %d transfer(s) ahead. I'll guide you when you're close!"
+    override val naviFollowTransit = "\uD83D\uDEB6 Follow the transit route! About %d min."
+    override val naviDriveTime = "\uD83D\uDE97 Estimated drive time: about %d min. Follow the route on the map!"
+    override val naviWalkTime = "\uD83D\uDEB6 Estimated walk time: about %d min. Enjoy the walk!"
+    override val naviArrivalPrompt = "\uD83D\uDCCD You're close to %s! Have you arrived?"
+    override val naviNearbySpot = "\uD83D\uDCCD There's a place called %s nearby! Want to hear about it?"
 
     override val locating = "Locating..."
     override val mapView = "Map View"

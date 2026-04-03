@@ -186,6 +186,13 @@ interface AppStrings {
     val storyAboutPlace: String
     val usefulPhrases: String
     val arrivedAt: String
+    val naviCourseSpotProgress: String
+    val naviTransferAhead: String
+    val naviFollowTransit: String
+    val naviDriveTime: String
+    val naviWalkTime: String
+    val naviArrivalPrompt: String
+    val naviNearbySpot: String
 
     // ── Map ──
     val locating: String

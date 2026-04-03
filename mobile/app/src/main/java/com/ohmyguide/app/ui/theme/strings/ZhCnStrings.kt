@@ -182,6 +182,13 @@ object ZhCnStrings : AppStrings {
     override val storyAboutPlace = "这个地方的故事"
     override val usefulPhrases = "附近实用用语"
     override val arrivedAt = "已到达"
+    override val naviCourseSpotProgress = "\uD83D\uDCCD %s — 第%d/%d站"
+    override val naviTransferAhead = "\uD83D\uDD04 还需换乘%d次，靠近时会为您导航！"
+    override val naviFollowTransit = "\uD83D\uDE8C 请沿公交路线前行！大约%d分钟。"
+    override val naviDriveTime = "\uD83D\uDE97 预计驾车时间：约%d分钟。请沿地图路线行驶！"
+    override val naviWalkTime = "\uD83D\uDEB6 预计步行时间：约%d分钟。祝您散步愉快！"
+    override val naviArrivalPrompt = "\uD83D\uDCCD 您已接近%s！到达了吗？"
+    override val naviNearbySpot = "\uD83D\uDCCD 附近有一个叫%s的地方！想了解一下吗？"
 
     override val locating = "定位中..."
     override val mapView = "地图视图"

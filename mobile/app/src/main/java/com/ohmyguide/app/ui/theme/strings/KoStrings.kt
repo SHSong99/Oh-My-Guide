@@ -182,6 +182,13 @@ object KoStrings : AppStrings {
     override val storyAboutPlace = "이 장소 이야기"
     override val usefulPhrases = "주변 유용한 표현"
     override val arrivedAt = "도착:"
+    override val naviCourseSpotProgress = "\uD83D\uDCCD %s — %d번째/%d곳"
+    override val naviTransferAhead = "\uD83D\uDD04 환승 %d회 남았어요. 가까워지면 안내해 드릴게요!"
+    override val naviFollowTransit = "\uD83D\uDE8C 대중교통 경로를 따라가세요! 약 %d분 소요됩니다."
+    override val naviDriveTime = "\uD83D\uDE97 예상 운전 시간: 약 %d분. 지도의 경로를 따라가세요!"
+    override val naviWalkTime = "\uD83D\uDEB6 예상 도보 시간: 약 %d분. 즐거운 산책 되세요!"
+    override val naviArrivalPrompt = "\uD83D\uDCCD %s 근처에 도착했어요! 도착하셨나요?"
+    override val naviNearbySpot = "\uD83D\uDCCD 근처에 %s이(가) 있어요! 들어보시겠어요?"
 
     override val locating = "위치 확인 중..."
     override val mapView = "지도 보기"

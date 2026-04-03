@@ -182,6 +182,13 @@ object JaStrings : AppStrings {
     override val storyAboutPlace = "この場所のストーリー"
     override val usefulPhrases = "近くで使えるフレーズ"
     override val arrivedAt = "到着:"
+    override val naviCourseSpotProgress = "\uD83D\uDCCD %s — スポット %d/%d"
+    override val naviTransferAhead = "\uD83D\uDD04 乗り換え%d回あり。近づいたらご案内します！"
+    override val naviFollowTransit = "\uD83D\uDE8C 交通ルートに沿って進んでください！約%d分です。"
+    override val naviDriveTime = "\uD83D\uDE97 予想運転時間：約%d分。地図のルートに沿ってください！"
+    override val naviWalkTime = "\uD83D\uDEB6 予想徒歩時間：約%d分。散歩を楽しんでください！"
+    override val naviArrivalPrompt = "\uD83D\uDCCD %sの近くです！到着しましたか？"
+    override val naviNearbySpot = "\uD83D\uDCCD 近くに%sがあります！聞いてみますか？"
 
     override val locating = "位置を確認中..."
     override val mapView = "地図ビュー"
