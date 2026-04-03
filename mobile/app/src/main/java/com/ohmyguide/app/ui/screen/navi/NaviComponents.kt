@@ -177,7 +177,7 @@ fun NaviSheetHeader(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Listen to Place Guide",
+                text = LocalStrings.current.listenToGuide,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 color = TextPrimary,
             )
@@ -200,7 +200,7 @@ fun NaviSheetHeader(
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
-                text = "Korean Phrases",
+                text = LocalStrings.current.koreanPhrasesTitle,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 color = TextPrimary,
             )
@@ -332,7 +332,7 @@ fun KkaebiHeader(
                 Icon(Icons.Filled.Headphones, contentDescription = null, modifier = Modifier.size(14.dp), tint = BgWhite)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Story",
+                    text = LocalStrings.current.storyLabel,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = BgWhite,
                 )
@@ -351,7 +351,7 @@ fun KkaebiHeader(
                 Icon(Icons.Filled.Translate, contentDescription = null, modifier = Modifier.size(14.dp), tint = TextPrimary)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Phrases",
+                    text = LocalStrings.current.navPhrases,
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = TextPrimary,
                 )

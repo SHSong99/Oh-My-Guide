@@ -62,7 +62,7 @@ import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 
 @Composable
-fun HomeHeader(onReset: () -> Unit = {}) {
+fun HomeHeader(onReset: () -> Unit = {}, isLoading: Boolean = true) {
     val strings = LocalStrings.current
     Row(
         modifier = Modifier
@@ -97,7 +97,7 @@ fun HomeHeader(onReset: () -> Unit = {}) {
                 color = TextPrimary,
             )
             Text(
-                text = strings.curatingSpots,
+                text = if (isLoading) strings.curatingSpots else strings.curatingDone,
                 style = MaterialTheme.typography.labelMedium,
                 color = TextCaption,
             )
@@ -123,7 +123,7 @@ fun HomeHeader(onReset: () -> Unit = {}) {
 }
 
 @Composable
-fun LocationBar(spotCount: Int, locationName: String = "") {
+fun LocationBar(spotCount: Int, locationName: String = "", isLoading: Boolean = false) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -140,11 +140,19 @@ fun LocationBar(spotCount: Int, locationName: String = "") {
                 color = TextPrimary,
             )
         }
-        Text(
-            text = "$spotCount ${LocalStrings.current.spots}",
-            style = MaterialTheme.typography.labelSmall,
-            color = TextCaption,
-        )
+        if (isLoading) {
+            androidx.compose.material3.CircularProgressIndicator(
+                modifier = Modifier.size(14.dp),
+                strokeWidth = 2.dp,
+                color = Primary,
+            )
+        } else {
+            Text(
+                text = "$spotCount ${LocalStrings.current.spots}",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextCaption,
+            )
+        }
     }
     Box(
         modifier = Modifier

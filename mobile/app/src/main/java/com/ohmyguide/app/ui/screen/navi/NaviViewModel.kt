@@ -726,7 +726,7 @@ class NaviViewModel @Inject constructor(
                 )
             }
 
-            addMessage(NaviChatMessage.BotText("Before we start, let me check the weather for you!"))
+            addMessage(NaviChatMessage.BotText(s.weatherIntro))
             addMessage(NaviChatMessage.Weather(
                 WeatherInfo(
                     temperature = temp,
@@ -744,59 +744,59 @@ class NaviViewModel @Inject constructor(
     }
 
     private fun weatherCodeToDescEmoji(code: Int, isDay: Boolean): Pair<String, String> = when (code) {
-        0 -> "Clear sky" to if (isDay) "☀️" else "🌙"
-        1 -> "Mainly clear" to if (isDay) "🌤️" else "🌙"
-        2 -> "Partly cloudy" to if (isDay) "⛅" else "☁️"
-        3 -> "Overcast" to "☁️"
-        45, 48 -> "Foggy" to "🌫️"
-        51, 53, 55 -> "Drizzle" to "🌦️"
-        61, 63, 65 -> "Rain" to "🌧️"
-        66, 67 -> "Freezing rain" to "🌧️"
-        71, 73, 75 -> "Snow" to "🌨️"
-        77 -> "Snow grains" to "🌨️"
-        80, 81, 82 -> "Rain showers" to "🌧️"
-        85, 86 -> "Snow showers" to "🌨️"
-        95 -> "Thunderstorm" to "⛈️"
-        96, 99 -> "Thunderstorm with hail" to "⛈️"
-        else -> "Unknown" to "🌡️"
+        0 -> s.weatherClear to if (isDay) "☀️" else "🌙"
+        1 -> s.weatherMainlyClear to if (isDay) "🌤️" else "🌙"
+        2 -> s.weatherPartlyCloudy to if (isDay) "⛅" else "☁️"
+        3 -> s.weatherOvercast to "☁️"
+        45, 48 -> s.weatherFoggy to "🌫️"
+        51, 53, 55 -> s.weatherDrizzle to "🌦️"
+        61, 63, 65 -> s.weatherRain to "🌧️"
+        66, 67 -> s.weatherFreezingRain to "🌧️"
+        71, 73, 75 -> s.weatherSnow to "🌨️"
+        77 -> s.weatherSnowGrains to "🌨️"
+        80, 81, 82 -> s.weatherRainShowers to "🌧️"
+        85, 86 -> s.weatherSnowShowers to "🌨️"
+        95 -> s.weatherThunderstorm to "⛈️"
+        96, 99 -> s.weatherThunderstormHail to "⛈️"
+        else -> s.weatherUnknown to "🌡️"
     }
 
     private fun buildWeatherTip(
         temp: Double, feelsLike: Double, code: Int, precip: Int, wind: Double, isDay: Boolean,
     ): String {
         val tips = mutableListOf<String>()
+        val windStr = "%.1f".format(wind)
 
         // Temperature advice
-        val feelsLikeDiff = temp - feelsLike
         when {
-            temp >= 33 -> tips.add("It's very hot! Stay hydrated and find shade when possible.")
-            temp >= 28 -> tips.add("It's warm outside. Light clothing recommended.")
-            feelsLike < temp - 3 -> tips.add("Feels colder than it looks (${feelsLike.toInt()}°C). Layer up!")
-            temp in 10.0..20.0 -> tips.add("Mild weather. A light jacket might be nice.")
-            temp < 5 -> tips.add("It's cold! Bundle up warmly.")
+            temp >= 33 -> tips.add(s.weatherTipHot)
+            temp >= 28 -> tips.add(s.weatherTipWarm)
+            feelsLike < temp - 3 -> tips.add(s.weatherTipFeelsCold.replace("%s", "${feelsLike.toInt()}°C"))
+            temp in 10.0..20.0 -> tips.add(s.weatherTipMild)
+            temp < 5 -> tips.add(s.weatherTipCold)
         }
 
         // Wind advice
         when {
-            wind >= 14 -> tips.add("🌪️ Very strong wind (${"%.1f".format(wind)}m/s). Be careful outdoors!")
-            wind >= 8 -> tips.add("💨 Windy today (${"%.1f".format(wind)}m/s). Hold onto your hat!")
+            wind >= 14 -> tips.add(s.weatherTipStrongWind.replace("%s", windStr))
+            wind >= 8 -> tips.add(s.weatherTipWindy.replace("%s", windStr))
         }
 
         // Precipitation & weather code
         when {
-            code in 61..67 || code in 80..82 -> tips.add("☂️ Bring an umbrella — it's raining!")
-            code in 71..77 || code in 85..86 -> tips.add("🧤 Snow expected — dress warmly and watch your step.")
-            code == 95 || code == 96 || code == 99 -> tips.add("⚡ Thunderstorm alert! Consider staying indoors.")
-            precip >= 50 -> tips.add("☂️ ${precip}% chance of rain — umbrella recommended.")
+            code in 61..67 || code in 80..82 -> tips.add(s.weatherTipRaining)
+            code in 71..77 || code in 85..86 -> tips.add(s.weatherTipSnowing)
+            code == 95 || code == 96 || code == 99 -> tips.add(s.weatherTipThunderstorm)
+            precip >= 50 -> tips.add(s.weatherTipRainChance.replace("%s", "$precip"))
         }
 
         // Day/night advice
         if (!isDay) {
-            tips.add("🌙 It's getting dark. Stay on well-lit paths!")
+            tips.add(s.weatherTipDark)
         }
 
         return tips.joinToString(" ")
-            .ifEmpty { if (isDay) "Great weather for exploring!" else "Clear night. Enjoy the night views!" }
+            .ifEmpty { if (isDay) s.weatherTipGreat else s.weatherTipClearNight }
     }
 
     // ── Arrival Confirmation ──

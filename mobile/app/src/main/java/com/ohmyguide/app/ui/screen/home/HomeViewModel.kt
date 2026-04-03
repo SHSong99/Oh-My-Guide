@@ -138,6 +138,7 @@ class HomeViewModel @Inject constructor(
                 addMessage(ChatMessage.BotRecommendation(section))
                 _chatState.update { it.copy(spotCount = places.size) }
             }
+            _chatState.update { it.copy(isLoading = false) }
             addMessage(ChatMessage.FindOtherPlacesBtn)
         }
     }

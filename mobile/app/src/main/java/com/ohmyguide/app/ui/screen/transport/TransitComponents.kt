@@ -36,6 +36,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ohmyguide.app.ui.theme.AppLanguage
+import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
@@ -389,16 +391,25 @@ private fun SegmentRow(segment: TransitSegment, isLast: Boolean) {
             // Station names (bus/subway only)
             if (segment.type != "walk" && segment.fromKr.isNotEmpty() && segment.toKr.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(3.dp))
-                Text(
-                    text = "${segment.from} \u2192 ${segment.to}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextPrimary,
-                )
-                Text(
-                    text = "${segment.fromKr} \u2192 ${segment.toKr}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = TextCaption,
-                )
+                val isKorean = LanguageManager.current.value == AppLanguage.KO
+                if (isKorean) {
+                    Text(
+                        text = "${segment.fromKr} \u2192 ${segment.toKr}",
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = TextPrimary,
+                    )
+                } else {
+                    Text(
+                        text = "${segment.from} \u2192 ${segment.to}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TextPrimary,
+                    )
+                    Text(
+                        text = "${segment.fromKr} \u2192 ${segment.toKr}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextCaption,
+                    )
+                }
             }
 
             if (!isLast) {

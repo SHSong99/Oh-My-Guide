@@ -61,13 +61,14 @@ fun PlaceDetailSheet(
 ) {
     val place = detail.place
 
-    // 텍스트 스크롤이 시트를 당기지 않도록 nestedScroll 차단
+    // 텍스트 스크롤 오버플로가 시트를 당기지 않도록 post-scroll에서 차단
     val consumeNestedScroll = remember {
         object : androidx.compose.ui.input.nestedscroll.NestedScrollConnection {
-            override fun onPreScroll(
+            override fun onPostScroll(
+                consumed: androidx.compose.ui.geometry.Offset,
                 available: androidx.compose.ui.geometry.Offset,
                 source: androidx.compose.ui.input.nestedscroll.NestedScrollSource,
-            ) = available.copy(x = 0f) // 세로 스크롤 소비하여 시트 전파 차단
+            ) = available.copy(x = 0f) // 오버플로만 소비하여 시트 전파 차단
         }
     }
 
