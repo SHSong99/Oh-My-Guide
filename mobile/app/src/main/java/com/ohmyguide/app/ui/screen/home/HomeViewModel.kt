@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ohmyguide.app.data.model.PlaceCardDto
 import com.ohmyguide.app.data.api.GuideSseClient
+import com.ohmyguide.app.data.api.NaverGeocodingApi
 import com.ohmyguide.app.data.model.RefreshRecommendRequest
 import com.ohmyguide.app.data.repository.RecommendRepository
 import com.ohmyguide.app.fixtures.HOME_RECOMMENDATIONS
@@ -86,6 +87,7 @@ data class HomeSheetState(
 class HomeViewModel @Inject constructor(
     private val recommendRepository: RecommendRepository,
     private val guideSseClient: GuideSseClient,
+    private val naverGeocodingApi: NaverGeocodingApi,
 ) : ViewModel() {
 
     private val s get() = LanguageManager.current.value.strings
@@ -96,9 +98,14 @@ class HomeViewModel @Inject constructor(
     private val _sheetState = MutableStateFlow(HomeSheetState())
     val sheetState: StateFlow<HomeSheetState> = _sheetState.asStateFlow()
 
+    private val _locationName = MutableStateFlow("")
+    val locationName: StateFlow<String> = _locationName.asStateFlow()
+
     private var flowStep = FlowStep.IDLE
     private var selectedFocus: String? = null
     private var initialLoaded = false
+    private var lastGeocodedLat = 0.0
+    private var lastGeocodedLng = 0.0
 
     private suspend fun getLatestLocation(): LocationData {
         // 이미 값이 있으면 즉시 반환
@@ -107,6 +114,39 @@ class HomeViewModel @Inject constructor(
         return withTimeoutOrNull(5000L) {
             LocationForegroundService.locationFlow.filterNotNull().first()
         } ?: LocationData(DEFAULT_LAT, DEFAULT_LNG)
+    }
+
+    fun fetchLocationName(lat: Double, lng: Double) {
+        // 같은 좌표(소수점 3자리)에 대해 중복 호출 방지
+        val roundedLat = "%.3f".format(lat).toDouble()
+        val roundedLng = "%.3f".format(lng).toDouble()
+        if (roundedLat == lastGeocodedLat && roundedLng == lastGeocodedLng) return
+        lastGeocodedLat = roundedLat
+        lastGeocodedLng = roundedLng
+
+        viewModelScope.launch {
+            try {
+                val coords = "$lng,$lat"
+                val response = naverGeocodingApi.reverseGeocode(
+                    clientId = BuildConfig.NAVER_MAP_CLIENT_ID,
+                    clientSecret = BuildConfig.NAVER_MAP_CLIENT_SECRET,
+                    coords = coords,
+                )
+                val region = response.results?.firstOrNull()?.region
+                val city = region?.area1?.name ?: ""
+                val district = region?.area2?.name ?: ""
+                _locationName.value = when {
+                    district.isNotEmpty() && city.isNotEmpty() -> "$district, $city"
+                    city.isNotEmpty() -> city
+                    else -> s.yourArea
+                }
+            } catch (e: Exception) {
+                if (BuildConfig.DEBUG) Log.e("HomeVM", "Naver geocoding failed", e)
+                if (_locationName.value.isEmpty()) {
+                    _locationName.value = s.yourArea
+                }
+            }
+        }
     }
 
     fun loadInitialRecommendation(category: String) {

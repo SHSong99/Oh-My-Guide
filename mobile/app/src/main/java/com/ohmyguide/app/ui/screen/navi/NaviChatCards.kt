@@ -49,6 +49,8 @@ import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.InfoBlue
 import com.ohmyguide.app.ui.theme.InfoBlueBg
+import com.ohmyguide.app.ui.theme.AppLanguage
+import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.PrimaryBg
@@ -148,6 +150,8 @@ fun TransitGuideCard(info: TransitGuideInfo) {
     val accentColor = if (isBus) Primary else InfoBlue
     val bgColor = if (isBus) PrimaryBg else InfoBlueBg
     val icon = if (isBus) Icons.Filled.DirectionsBus else Icons.Filled.DirectionsBus // subway uses same
+    val isKorean = LanguageManager.current.value == AppLanguage.KO
+    val strings = LocalStrings.current
 
     Column(
         modifier = Modifier
@@ -165,7 +169,11 @@ fun TransitGuideCard(info: TransitGuideInfo) {
                     .padding(horizontal = 10.dp, vertical = 4.dp),
             ) {
                 Text(
-                    text = if (isBoard) "BOARD" else "GET OFF",
+                    text = if (isBoard) {
+                        if (isKorean) "승차" else "BOARD"
+                    } else {
+                        if (isKorean) "하차" else "GET OFF"
+                    },
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
                     color = BgWhite,
                 )
@@ -201,47 +209,64 @@ fun TransitGuideCard(info: TransitGuideInfo) {
                 }
                 Spacer(modifier = Modifier.width(12.dp))
                 Column {
-                    Text(
-                        text = info.stationNameEn,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = TextPrimary,
-                    )
-                    if (info.stationName != info.stationNameEn) {
+                    if (isKorean) {
                         Text(
                             text = info.stationName,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextCaption,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = TextPrimary,
                         )
+                    } else {
+                        Text(
+                            text = info.stationNameEn,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
+                            color = TextPrimary,
+                        )
+                        if (info.stationName != info.stationNameEn) {
+                            Text(
+                                text = info.stationName,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextCaption,
+                            )
+                        }
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "${info.stopsCount} stops \u2192",
+                        text = "${info.stopsCount} ${strings.stopsUnit} \u2192",
                         style = MaterialTheme.typography.labelSmall,
                         color = TextCaption,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = info.exitStationEn,
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        color = accentColor,
-                    )
-                    if (info.exitStation != info.exitStationEn) {
+                    if (isKorean) {
                         Text(
                             text = info.exitStation,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = TextCaption,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = accentColor,
                         )
+                    } else {
+                        Text(
+                            text = info.exitStationEn,
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            color = accentColor,
+                        )
+                        if (info.exitStation != info.exitStationEn) {
+                            Text(
+                                text = info.exitStation,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextCaption,
+                            )
+                        }
                     }
                 }
             }
         } else {
             // Alight: exit station
+            val stationDisplay = if (isKorean) info.stationName else info.stationNameEn
             Text(
-                text = "\uD83D\uDCCD Get off at ${info.stationNameEn}",
+                text = "\uD83D\uDCCD ${strings.getOffAt} $stationDisplay",
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
                 color = TextPrimary,
             )
-            if (info.stationName != info.stationNameEn) {
+            if (!isKorean && info.stationName != info.stationNameEn) {
                 Text(
                     text = info.stationName,
                     style = MaterialTheme.typography.bodySmall,
@@ -251,7 +276,7 @@ fun TransitGuideCard(info: TransitGuideInfo) {
             if (info.stopsCount > 0) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "${info.stopsCount} stops from boarding point",
+                    text = "${info.stopsCount} ${strings.stopsUnit}",
                     style = MaterialTheme.typography.labelSmall,
                     color = TextCaption,
                 )
@@ -459,13 +484,13 @@ fun StoryPromptBubble(placeName: String) {
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
-            text = "I have a story about $placeName!",
+            text = LocalStrings.current.storyAboutPlace.replace("%s", placeName),
             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
             color = TextPrimary,
         )
         Spacer(modifier = Modifier.height(2.dp))
         Text(
-            text = "Tap the \uD83C\uDFA7 Story button above to listen while you walk.",
+            text = LocalStrings.current.storyPromptHint,
             style = MaterialTheme.typography.bodySmall,
             color = TextSecondary,
         )

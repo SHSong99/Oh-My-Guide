@@ -1,46 +1,27 @@
 package com.ohmyguide.app.ui.screen.home
 
-import android.graphics.Bitmap
-import android.graphics.BitmapShader
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.Shader
-import android.location.Geocoder
-import java.util.Locale
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
-import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.launch
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -54,7 +35,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.naver.maps.geometry.LatLng
 import com.naver.maps.map.CameraPosition
-import com.naver.maps.map.CameraUpdate
 import com.naver.maps.map.compose.ExperimentalNaverMapApi
 import com.naver.maps.map.compose.LocationTrackingMode
 import com.naver.maps.map.compose.MapEffect
@@ -67,7 +47,6 @@ import com.naver.maps.map.compose.rememberFusedLocationSource
 import com.naver.maps.map.compose.rememberMarkerState
 import com.naver.maps.map.overlay.OverlayImage
 import com.ohmyguide.app.ui.common.buildCircleMarker
-import com.ohmyguide.app.fixtures.Place
 import com.ohmyguide.app.service.LocationForegroundService
 import coil.imageLoader
 import coil.request.ImageRequest
@@ -80,7 +59,6 @@ import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.DragHandle
 import com.ohmyguide.app.ui.theme.LanguageManager
-import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 
 private val DEFAULT_POSITION = LatLng(35.0950, 128.8560)
@@ -115,38 +93,12 @@ fun HomeScreen(
 
     val locationData by LocationForegroundService.locationFlow.collectAsState()
     val locationSource = rememberFusedLocationSource()
-    var locationName by remember { mutableStateOf("") }
-    val strings = LocalStrings.current
+    val locationName by viewModel.locationName.collectAsState()
 
-    // GPS 좌표 → 영어 주소 변환
+    // GPS 좌표 → Naver Reverse Geocoding으로 주소 변환
     LaunchedEffect(locationData) {
-        if (locationName.isNotEmpty()) return@LaunchedEffect
         val loc = locationData ?: return@LaunchedEffect
-        try {
-            val locale = if (com.ohmyguide.app.ui.theme.LanguageManager.current.value == com.ohmyguide.app.ui.theme.AppLanguage.KO) Locale.KOREAN else Locale.ENGLISH
-            val geocoder = Geocoder(context, locale)
-            val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
-            val address = addresses?.firstOrNull()
-            if (address != null) {
-                var district = address.subLocality
-                    ?: address.subAdminArea
-                    ?: address.locality
-                    ?: ""
-                val city = address.adminArea ?: ""
-                // fallback: parse 구/시 from full address line
-                if (district.isEmpty() && address.maxAddressLineIndex >= 0) {
-                    val fullLine = address.getAddressLine(0) ?: ""
-                    val guMatch = Regex("[가-힣]+[구시군]").find(
-                        fullLine.substringAfter(city).trim()
-                    )
-                    district = guMatch?.value ?: ""
-                }
-                locationName = if (district.isNotEmpty() && city.isNotEmpty()) "$district, $city"
-                else city.ifEmpty { strings.yourArea }
-            }
-        } catch (_: Exception) {
-            locationName = strings.yourArea
-        }
+        viewModel.fetchLocationName(loc.latitude, loc.longitude)
     }
 
     val cameraPositionState = rememberCameraPositionState {
@@ -167,14 +119,12 @@ fun HomeScreen(
 
     val sheetState = rememberStandardBottomSheetState(
         initialValue = SheetValue.PartiallyExpanded,
-        skipHiddenState = false,
+        skipHiddenState = true,
     )
     val scaffoldState = rememberBottomSheetScaffoldState(
         bottomSheetState = sheetState,
     )
-    val scope = rememberCoroutineScope()
     val isSheetExpanded = sheetState.currentValue == SheetValue.Expanded
-    val isSheetHidden = sheetState.currentValue == SheetValue.Hidden
 
     // Collect all recommended places for map markers
     val markerPlaces = remember(chatState.chatMessages) {
@@ -220,17 +170,12 @@ fun HomeScreen(
         }
     }
 
-    // When place selected → expand sheet & move camera
+    // When place selected → expand sheet / when cleared → collapse
     LaunchedEffect(sheetUiState.selectedDetail) {
-        val detail = sheetUiState.selectedDetail
-        if (detail != null) {
+        if (sheetUiState.selectedDetail != null) {
             sheetState.expand()
-            val place = detail.place
-            if (place.lat != 0.0 && place.lng != 0.0) {
-                cameraPositionState.animate(
-                    CameraUpdate.scrollAndZoomTo(LatLng(place.lat, place.lng), 16.0),
-                )
-            }
+        } else {
+            sheetState.partialExpand()
         }
     }
 
@@ -263,7 +208,7 @@ fun HomeScreen(
 
             BottomSheetScaffold(
                 scaffoldState = scaffoldState,
-                sheetPeekHeight = 360.dp,
+                sheetPeekHeight = 100.dp,
                 sheetShape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 sheetContainerColor = BgWhite,
                 sheetDragHandle = {
@@ -318,7 +263,7 @@ fun HomeScreen(
                         properties = mapProperties,
                         uiSettings = mapUiSettings,
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            bottom = if (isSheetHidden) 16.dp else 360.dp,
+                            bottom = 100.dp,
                         ),
                     ) {
                         val mapLocale = LanguageManager.current.value.locale
@@ -351,23 +296,6 @@ fun HomeScreen(
                 }
             }
 
-            // Sheet hidden → show restore FAB
-            if (isSheetHidden) {
-                FloatingActionButton(
-                    onClick = { scope.launch { sheetState.partialExpand() } },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = 16.dp),
-                    shape = CircleShape,
-                    containerColor = BgWhite,
-                ) {
-                    Icon(
-                        Icons.Filled.KeyboardArrowUp,
-                        contentDescription = null,
-                        tint = com.ohmyguide.app.ui.theme.Primary,
-                    )
-                }
-            }
         }
 
         BottomNavBar(

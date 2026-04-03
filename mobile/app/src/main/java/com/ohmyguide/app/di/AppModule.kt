@@ -6,6 +6,7 @@ import com.ohmyguide.app.data.api.ApiService
 import com.ohmyguide.app.data.api.AuthInterceptor
 import com.ohmyguide.app.data.api.BusanBimsApi
 import com.ohmyguide.app.data.api.NaverDrivingApi
+import com.ohmyguide.app.data.api.NaverGeocodingApi
 import com.ohmyguide.app.data.api.NaverWalkingApi
 import com.ohmyguide.app.data.api.OdsayApi
 import com.ohmyguide.app.data.api.OpenMeteoApi
@@ -87,6 +88,17 @@ object AppModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(OdsayApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNaverGeocodingApi(client: OkHttpClient): NaverGeocodingApi {
+        return Retrofit.Builder()
+            .baseUrl("https://naveropenapi.apigw.ntruss.com/map-reversegeocode/v2/")
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(NaverGeocodingApi::class.java)
     }
 
     @Provides

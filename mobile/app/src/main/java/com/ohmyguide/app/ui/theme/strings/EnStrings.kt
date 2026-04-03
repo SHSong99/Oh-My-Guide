@@ -181,7 +181,7 @@ object EnStrings : AppStrings {
 
     // ── Navi Chat ──
     override val guideToPlace = "Guide to this place"
-    override val storyAboutPlace = "Story about this place"
+    override val storyAboutPlace = "I have a story about %s!"
     override val usefulPhrases = "Useful phrases nearby"
     override val arrivedAt = "Arrived at"
     override val naviCourseSpotProgress = "\uD83D\uDCCD %s — Spot %d/%d"

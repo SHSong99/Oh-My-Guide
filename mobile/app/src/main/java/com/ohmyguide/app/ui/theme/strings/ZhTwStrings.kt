@@ -181,7 +181,7 @@ object ZhTwStrings : AppStrings {
 
     // ── Navi Chat ──
     override val guideToPlace = "這個地方的導覽"
-    override val storyAboutPlace = "這個地方的故事"
+    override val storyAboutPlace = "我有一個關於%s的故事！"
     override val usefulPhrases = "附近實用用語"
     override val arrivedAt = "已到達"
     override val naviCourseSpotProgress = "\uD83D\uDCCD %s — 第%d/%d站"

@@ -15,8 +15,12 @@ class AuthInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        val host = request.url.host
 
-        if (request.url.encodedPath.contains("/auth/")) {
+        // 외부 API (Naver, OdSay, Tmap, OpenMeteo 등)에는 인증 토큰 추가하지 않음
+        val isExternalApi = !host.contains("ssafy.io") && !host.contains("localhost") && !host.contains("10.0.2.2")
+
+        if (request.url.encodedPath.contains("/auth/") || isExternalApi) {
             return chain.proceed(request)
         }
 

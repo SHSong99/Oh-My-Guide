@@ -40,6 +40,7 @@ import androidx.navigation.NavController
 import com.ohmyguide.app.ui.navi.Screen
 import com.ohmyguide.app.ui.theme.BgScreen
 import com.ohmyguide.app.ui.theme.LocalStrings
+import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Primary
 import com.ohmyguide.app.ui.theme.Secondary
 import com.ohmyguide.app.ui.theme.Star
@@ -159,7 +160,7 @@ private fun SubmitButton(
             Text(
                 text = text,
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = if (enabled) Secondary else Secondary.copy(alpha = 0.6f),
+                color = if (enabled) BgWhite else BgWhite.copy(alpha = 0.6f),
             )
         }
     }

@@ -181,7 +181,7 @@ object KoStrings : AppStrings {
 
     // ── Navi Chat ──
     override val guideToPlace = "이 장소 가이드"
-    override val storyAboutPlace = "이 장소 이야기"
+    override val storyAboutPlace = "%s에 대한 이야기가 있어요!"
     override val usefulPhrases = "주변 유용한 표현"
     override val arrivedAt = "도착:"
     override val naviCourseSpotProgress = "\uD83D\uDCCD %s — %d번째/%d곳"

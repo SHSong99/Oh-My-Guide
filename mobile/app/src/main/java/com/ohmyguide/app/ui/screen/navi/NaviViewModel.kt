@@ -362,9 +362,6 @@ class NaviViewModel @Inject constructor(
                 addMessage(NaviChatMessage.BotTyping)
                 delay(800L)
                 removeTyping()
-                addMessage(NaviChatMessage.BotText(
-                    s.storyAboutPlace.replace("%s", placeName)
-                ))
                 addMessage(NaviChatMessage.StoryPrompt(placeName = placeName))
                 notifyUser()
             }
@@ -806,10 +803,6 @@ class NaviViewModel @Inject constructor(
         _uiState.update { it.copy(arrived = true, progressPct = 1f) }
         viewModelScope.launch {
             removeArrivalConfirm()
-            addMessage(NaviChatMessage.BotText(
-                s.arrivedAt.replace("%s", detail?.place?.name ?: s.destination)
-            ))
-            notifyUser()
         }
     }
 

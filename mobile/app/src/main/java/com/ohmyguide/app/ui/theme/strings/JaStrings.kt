@@ -181,7 +181,7 @@ object JaStrings : AppStrings {
 
     // ── Navi Chat ──
     override val guideToPlace = "この場所のガイド"
-    override val storyAboutPlace = "この場所のストーリー"
+    override val storyAboutPlace = "%sについてのお話があります！"
     override val usefulPhrases = "近くで使えるフレーズ"
     override val arrivedAt = "到着:"
     override val naviCourseSpotProgress = "\uD83D\uDCCD %s — スポット %d/%d"

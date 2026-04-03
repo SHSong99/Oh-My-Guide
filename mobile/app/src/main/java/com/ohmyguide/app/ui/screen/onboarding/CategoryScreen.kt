@@ -32,8 +32,12 @@ import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import android.location.Geocoder
-import java.util.Locale
+import com.ohmyguide.app.BuildConfig
+import com.ohmyguide.app.data.api.NaverGeocodingApi
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -60,8 +64,6 @@ import com.ohmyguide.app.ui.theme.BgSub
 import com.ohmyguide.app.ui.theme.BgWhite
 import com.ohmyguide.app.ui.theme.Border
 import com.ohmyguide.app.ui.theme.BorderCategory
-import com.ohmyguide.app.ui.theme.AppLanguage
-import com.ohmyguide.app.ui.theme.LanguageManager
 import com.ohmyguide.app.ui.theme.LocalStrings
 import com.ohmyguide.app.ui.theme.OhMyGuideTheme
 import com.ohmyguide.app.ui.theme.Primary
@@ -71,6 +73,12 @@ import com.ohmyguide.app.ui.theme.TextCaption
 import com.ohmyguide.app.ui.theme.TextPrimary
 import com.ohmyguide.app.ui.theme.TextSecondary
 import kotlinx.coroutines.delay
+
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface CategoryScreenEntryPoint {
+    fun naverGeocodingApi(): NaverGeocodingApi
+}
 
 private enum class ChatStep { GPS, MSG1, MSG2, CARDS, SENT, DONE }
 
@@ -87,23 +95,32 @@ fun CategoryScreen(
     val scrollState = rememberScrollState()
     val locationData by LocationForegroundService.locationFlow.collectAsState()
 
-    // GPS 좌표 → 영어 주소 변환
+    // GPS 좌표 → Naver Reverse Geocoding으로 주소 변환
+    val naverGeoApi = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            CategoryScreenEntryPoint::class.java,
+        ).naverGeocodingApi()
+    }
     LaunchedEffect(locationData) {
         if (locationName.isNotEmpty()) return@LaunchedEffect
         val loc = locationData ?: return@LaunchedEffect
         try {
-            val locale = if (LanguageManager.current.value == AppLanguage.KO) Locale.KOREAN else Locale.ENGLISH
-            val geocoder = Geocoder(context, locale)
-            val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
-            val address = addresses?.firstOrNull()
-            if (address != null) {
-                val district = address.subLocality ?: address.locality ?: ""
-                val city = address.adminArea ?: ""
-                locationName = if (district.isNotEmpty() && city.isNotEmpty()) "$district, $city"
-                else city.ifEmpty { strings.yourLocation }
+            val response = naverGeoApi.reverseGeocode(
+                clientId = BuildConfig.NAVER_MAP_CLIENT_ID,
+                clientSecret = BuildConfig.NAVER_MAP_CLIENT_SECRET,
+                coords = "${loc.longitude},${loc.latitude}",
+            )
+            val region = response.results?.firstOrNull()?.region
+            val city = region?.area1?.name ?: ""
+            val district = region?.area2?.name ?: ""
+            locationName = when {
+                district.isNotEmpty() && city.isNotEmpty() -> "$district, $city"
+                city.isNotEmpty() -> city
+                else -> strings.yourLocation
             }
         } catch (_: Exception) {
-            // Geocoder 실패 시 무시, 타이머 폴백으로 처리
+            // API 실패 시 무시, 타이머 폴백으로 처리
         }
     }
 
