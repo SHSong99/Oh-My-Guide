@@ -1,0 +1,30 @@
+# =============================================================================
+# 부하테스트용 override — 인스턴스 B (전체 스택)
+# =============================================================================
+# 베이스(exec/docker-compose.local.yml) 위에 덮어쓰는 용도.
+#   - Grafana 제거 (사용 안 함)
+#   - K6 가 Prometheus remote-write 로 부하 지표를 보낼 경우를 대비해
+#     Prometheus 수신기 활성화 + 9090 노출 (안 쓰면 그냥 무시됨)
+#
+# nginx 없음: spring-boot(8080)·fastapi(8000)를 평문 HTTP 로 직접 노출.
+#   → K6 부하 대상 = http://<B_IP>:8080
+#
+# 실행 (인스턴스 B):
+#   docker network create local-network
+#   docker compose -f exec/docker-compose.local.yml -f exec/compose.loadtest.b.yml up -d --build
+# =============================================================================
+
+services:
+  # Grafana 미사용 → profile 을 붙여 기본 기동에서 제외
+  grafana:
+    profiles:
+      - disabled
+
+  # (선택) K6 가 보내는 부하 지표(remote-write)를 받도록 수신기 활성화.
+  # K6 에서 remote-write 를 안 쓰면 이 블록은 무시해도 무방.
+  prometheus:
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--web.enable-remote-write-receiver'
+    ports:
+      - "9090:9090"
