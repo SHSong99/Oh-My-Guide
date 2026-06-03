@@ -35,12 +35,15 @@ public class AttractionsRouteConsumer {
     private final ObjectMapper objectMapper;
     private final KafkaTemplate<String, String> kafkaTemplate;
 
-    @RetryableTopic(
-        attempts = "5",
-        backoff = @Backoff(delay = 1000, multiplier = 2),
-        dltTopicSuffix = ".dlt"
-    )
-    @KafkaListener(topics = "user-go-log", groupId = "attractions-route-group")
+    // [동기 전환] 경로상 장소 조회는 이제 API(GuideService.startNavigation)에서 동기 처리한다.
+    // 아래 Kafka 리스너를 비활성화하여 더 이상 user-go-log를 소비/처리하지 않는다.
+    // (user-go-log 발행 자체는 유지 — UserVisited / HDFS 로깅 컨슈머가 계속 소비)
+//    @RetryableTopic(
+//        attempts = "5",
+//        backoff = @Backoff(delay = 1000, multiplier = 2),
+//        dltTopicSuffix = ".dlt"
+//    )
+//    @KafkaListener(topics = "user-go-log", groupId = "attractions-route-group")
     public void consume(String message) {
         log.info("AttractionsRouteConsumer.consume: consumer 동작!!!! message = {}", message);
 
