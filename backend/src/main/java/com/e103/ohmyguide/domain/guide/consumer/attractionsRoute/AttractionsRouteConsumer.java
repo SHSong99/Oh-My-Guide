@@ -5,6 +5,7 @@ import com.e103.ohmyguide.domain.attraction.repository.AttractionRepository;
 import com.e103.ohmyguide.domain.guide.dto.AttractionsRouteResponseMessage;
 import com.e103.ohmyguide.domain.guide.dto.GuideNavigationResponse;
 import com.e103.ohmyguide.domain.guide.dto.GuideResponse;
+import com.e103.ohmyguide.domain.guide.dto.NearbyPlaceResponse;
 import com.e103.ohmyguide.domain.guide.dto.StartLocationResponse;
 import com.e103.ohmyguide.domain.guide.dto.UserGoLogMessage;
 import com.e103.ohmyguide.global.exception.ResourceNotFoundException;
@@ -75,11 +76,9 @@ public class AttractionsRouteConsumer {
         BigDecimal minLng = currentLng.min(reachLng);
         BigDecimal maxLng = currentLng.max(reachLng);
 
-        List<GuideResponse> nearbyPlaces = attractionRepository
-                .findWithinBoundingBox(minLat, maxLat, minLng, maxLng, placeId)
-                .stream()
-                .map(GuideResponse::from)
-                .toList();
+        // 경량 조회: placeId·좌표만 (상세는 프런트에서 id로 조회) → 메시지 크기/DB 부하 감소
+        List<NearbyPlaceResponse> nearbyPlaces = attractionRepository
+                .findNearbyPlacesWithinBoundingBox(minLat, maxLat, minLng, maxLng, placeId);
 
         GuideNavigationResponse response = GuideNavigationResponse.builder()
                 .startLocation(startLocation)

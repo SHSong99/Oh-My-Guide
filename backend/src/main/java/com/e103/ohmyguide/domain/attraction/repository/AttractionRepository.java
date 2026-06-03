@@ -1,6 +1,7 @@
 package com.e103.ohmyguide.domain.attraction.repository;
 
 import com.e103.ohmyguide.domain.attraction.entity.Attraction;
+import com.e103.ohmyguide.domain.guide.dto.NearbyPlaceResponse;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
@@ -11,6 +12,11 @@ public interface AttractionRepository extends JpaRepository<Attraction, Long> {
 
     @Query("SELECT a FROM Attraction a WHERE a.latitude BETWEEN :minLat AND :maxLat AND a.longitude BETWEEN :minLng AND :maxLng AND a.id <> :excludeId")
     List<Attraction> findWithinBoundingBox(BigDecimal minLat, BigDecimal maxLat, BigDecimal minLng, BigDecimal maxLng, Long excludeId);
+
+    // 경량 조회: placeId·좌표만 SELECT (overview 등 미로딩) → 메시지 크기/DB 부하 감소
+    @Query("SELECT new com.e103.ohmyguide.domain.guide.dto.NearbyPlaceResponse(a.id, a.latitude, a.longitude) " +
+           "FROM Attraction a WHERE a.latitude BETWEEN :minLat AND :maxLat AND a.longitude BETWEEN :minLng AND :maxLng AND a.id <> :excludeId")
+    List<NearbyPlaceResponse> findNearbyPlacesWithinBoundingBox(BigDecimal minLat, BigDecimal maxLat, BigDecimal minLng, BigDecimal maxLng, Long excludeId);
 
     @Query("SELECT a FROM Attraction a WHERE a.addr1 LIKE '서울특별시%' AND a.contentType.contentTypeId = 12 AND a.contentId IS NOT NULL AND (a.firstImage1 = '' OR a.overview = '')")
     List<Attraction> findSeoulAttractionsWithMissingData();

@@ -15,5 +15,5 @@ public class GuideNavigationResponse {
 
     private StartLocationResponse startLocation;
     private GuideResponse destination;
-    private List<GuideResponse> nearbyPlaces;
+    private List<NearbyPlaceResponse> nearbyPlaces;
 }
