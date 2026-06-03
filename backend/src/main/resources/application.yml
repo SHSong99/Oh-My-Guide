@@ -35,11 +35,16 @@ spring:
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        max.partition.fetch.bytes: 5242880
+        fetch.max.bytes: 5242880
     listener:
       concurrency: ${KAFKA_LISTENER_CONCURRENCY:1}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        max.request.size: 5242880
 
   # OAuth2
   security:

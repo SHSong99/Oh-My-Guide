@@ -68,6 +68,9 @@ services:
       - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
       - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      # 메시지 크기 한도 5MB 상향 (attractions-route-response 대용량 응답 대응)
+      - KAFKA_MESSAGE_MAX_BYTES=5242880
+      - KAFKA_REPLICA_FETCH_MAX_BYTES=5242880
     volumes:
       - kafka_data:/var/lib/kafka/data
     healthcheck:
