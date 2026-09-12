@@ -34,14 +34,13 @@ public class GuideService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public GuideNavigationResponse startNavigation(Long userId, Long placeId,
-                                                   BigDecimal currentLat, BigDecimal currentLng,
-                                                   BigDecimal reachLat, BigDecimal reachLng) {
+    public GuideGoResponse startNavigation(Long userId, Long placeId,
+                                           BigDecimal currentLat, BigDecimal currentLng,
+                                           BigDecimal reachLat, BigDecimal reachLng) {
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResourceNotFoundException("User", "id", userId));
 
-        // 활동 로그는 그대로 Kafka 발행 (UserVisited / HDFS 로깅 컨슈머가 소비)
         UserGoLogMessage logRequest = UserGoLogMessage.toMessage(user, placeId, currentLat, currentLng, reachLat, reachLng);
 
         try {
@@ -55,26 +54,12 @@ public class GuideService {
         Attraction attraction = attractionRepository.findById(placeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attraction", "id", placeId));
 
-        StartLocationResponse startLocation = StartLocationResponse.builder()
-                .latitude(currentLat)
-                .longitude(currentLng)
-                .build();
-
-        GuideResponse destination = GuideResponse.from(attraction);
-
-        // 경로상(출발↔목적 바운딩 박스) 장소 조회를 API에서 동기 처리 (기존 Kafka 컨슈머 → 동기 전환)
-        BigDecimal minLat = currentLat.min(reachLat);
-        BigDecimal maxLat = currentLat.max(reachLat);
-        BigDecimal minLng = currentLng.min(reachLng);
-        BigDecimal maxLng = currentLng.max(reachLng);
-
-        List<NearbyPlaceResponse> nearbyPlaces = attractionRepository
-                .findNearbyPlacesWithinBoundingBox(minLat, maxLat, minLng, maxLng, placeId);
-
-        return GuideNavigationResponse.builder()
-                .startLocation(startLocation)
-                .destination(destination)
-                .nearbyPlaces(nearbyPlaces)
+        return GuideGoResponse.builder()
+                .startLocation(StartLocationResponse.builder()
+                        .latitude(currentLat)
+                        .longitude(currentLng)
+                        .build())
+                .destination(GuideResponse.from(attraction))
                 .build();
     }
 
